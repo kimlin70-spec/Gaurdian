@@ -15,7 +15,8 @@ export default class CharacterCreateScene extends Phaser.Scene {
 
     // 미리보기
     panel(this, 10, 28, 96, 150, { color: 0x3a4a6a });
-    this.preview = makeCharacter(this, 58, 150, this.look).setScale(4).setDepth(DEPTH.UI + 1);
+    this.add.rectangle(58, 172, 60, 6, 0x000000, 0.25).setDepth(DEPTH.UI + 1);
+    this.preview = makeCharacter(this, 58, 172, this.look).setScale(3.5).setDepth(DEPTH.UI + 1);
     txt(this, 58, 34, Data.strings.heroName, { size: 11, origin: [0.5, 0], color: '#fff' });
 
     // 선택 줄들

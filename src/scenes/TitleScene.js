@@ -17,7 +17,7 @@ export default class TitleScene extends Phaser.Scene {
       const s = this.add.rectangle(Phaser.Math.Between(0, W), Phaser.Math.Between(0, 150), 1, 1, 0xffffff, Phaser.Math.FloatBetween(0.3, 1));
       this.tweens.add({ targets: s, alpha: 0.1, duration: Phaser.Math.Between(600, 1800), yoyo: true, repeat: -1, delay: Phaser.Math.Between(0, 1000) });
     }
-    for (let i = 0; i < 12; i++) this.add.image(i * 28 + 6, H - 56, 'tiles', 1).setScale(1.5).setAlpha(0.6);
+    for (let i = 0; i < 14; i++) this.add.image(i * 26 + 4 + (i % 2) * 6, H - 54 + (i % 3) * 4, 'tree').setOrigin(0.5, 1).setScale(1.5).setAlpha(0.7);
 
     const title = txt(this, W / 2, 62, Data.strings.gameTitle, { size: 14, origin: 0.5, color: COLORS.yellow, strokeThickness: 3 }).setScale(2);
     this.tweens.add({ targets: title, y: 66, duration: 1400, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });

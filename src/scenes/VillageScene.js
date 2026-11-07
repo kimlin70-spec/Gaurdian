@@ -1,10 +1,10 @@
 // 마을: 여관 / 상점 / 대장간 / 현자의 집 / 동물 쉼터 / 숲 입구
-import { W, H, COLORS, TILE } from '../config.js';
+import { W, H, COLORS, TILE, wd } from '../config.js';
 import Data from '../systems/Data.js';
 import GameState from '../systems/GameState.js';
 import Audio from '../systems/Audio.js';
 import { txt, Button, panel, UIGroup, DialogBox, confirm, toast, soundButton, fadeIn, fadeOut, tween, DEPTH } from '../systems/UI.js';
-import { makeCharacter } from '../systems/Assets.js';
+import { makeCharacter, decorateMap } from '../systems/Assets.js';
 
 const BUILDINGS = [
   { key: 'inn',     name: '여관',      x: 44,  y: 84 },
@@ -47,15 +47,16 @@ export default class VillageScene extends Phaser.Scene {
 
     // 바닥
     const legend = { '.': 0, 'T': 1, 'p': 11, '*': 4 };
-    const data = VILLAGE_ROWS.map(r => r.split('').map(c => legend[c] ?? 0));
-    const map = this.make.tilemap({ data, tileWidth: TILE, tileHeight: TILE });
+    const grid = VILLAGE_ROWS.map(r => r.split('').map(c => legend[c] ?? 0));
+    const deco = decorateMap(this, grid, 0, 0);
+    const map = this.make.tilemap({ data: deco.data, tileWidth: TILE, tileHeight: TILE });
     const tileset = map.addTilesetImage('tiles', 'tiles', TILE, TILE, 0, 0);
     map.createLayer(0, tileset, 0, 0);
 
     // 건물
     this.buildings = {};
     for (const b of BUILDINGS) {
-      const img = this.add.image(b.x, b.y, 'bld_' + b.key).setOrigin(0.5, 1).setDepth(b.y);
+      const img = this.add.image(b.x, b.y, 'bld_' + b.key).setOrigin(0.5, 1).setDepth(wd(b.y));
       img.setInteractive({ useHandCursor: true, hitArea: new Phaser.Geom.Rectangle(-6, -6, 52, 48), hitAreaCallback: Phaser.Geom.Rectangle.Contains });
       img.on('pointerup', () => this.goTo(b));
       const label = txt(this, b.x, b.y + 2, b.name, { size: 11, origin: [0.5, 0], depth: DEPTH.WORLD_UI });
@@ -63,9 +64,9 @@ export default class VillageScene extends Phaser.Scene {
     }
 
     // 주인공
-    this.hero = makeCharacter(this, 160, 150, s.player.look); this.hero.setDepth(150);
+    this.hero = makeCharacter(this, 160, 150, s.player.look); this.hero.setDepth(wd(150));
     // 안내 동물 (힌트)
-    this.guide = this.add.image(190, 196, 'guide').setOrigin(0.5, 1).setDepth(196).setInteractive({ useHandCursor: true, hitArea: new Phaser.Geom.Rectangle(-8, -8, 32, 32), hitAreaCallback: Phaser.Geom.Rectangle.Contains });
+    this.guide = this.add.image(190, 196, 'guide').setOrigin(0.5, 1).setDepth(wd(196)).setInteractive({ useHandCursor: true, hitArea: new Phaser.Geom.Rectangle(-8, -8, 32, 32), hitAreaCallback: Phaser.Geom.Rectangle.Contains });
     this.tweens.add({ targets: this.guide, y: this.guide.y - 3, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     this.guide.on('pointerup', () => this.guideHint());
     txt(this, 190, 198, Data.strings.guideAnimal, { size: 11, origin: [0.5, 0], color: COLORS.yellow });
@@ -103,7 +104,7 @@ export default class VillageScene extends Phaser.Scene {
     this.hero.setFlip(b.x < this.hero.x);
     const dist = Phaser.Math.Distance.Between(this.hero.x, this.hero.y, b.x, b.y + 10);
     await tween(this, { targets: this.hero, x: b.x, y: b.y + 10, duration: Math.min(900, dist * 5), ease: 'Linear' });
-    this.hero.setDepth(this.hero.y);
+    this.hero.setDepth(wd(this.hero.y));
     this.busy = false;
     this.openFacility(b.key);
   }

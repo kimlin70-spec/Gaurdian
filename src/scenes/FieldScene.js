@@ -1,10 +1,10 @@
 // 탐험: 탑뷰 타일맵, 탭한 칸으로 BFS 이동, 배회하는 적, 상자, NPC, 출구
-import { W, H, TILE, TILE_LEGEND, SOLID_TILES, COLORS } from '../config.js';
+import { W, H, TILE, TILE_LEGEND, SOLID_TILES, COLORS, wd } from '../config.js';
 import Data from '../systems/Data.js';
 import GameState from '../systems/GameState.js';
 import Audio from '../systems/Audio.js';
 import { txt, Button, panel, UIGroup, DialogBox, confirm, toast, bar, fadeIn, fadeOut, tween, wait, DEPTH } from '../systems/UI.js';
-import { makeCharacter } from '../systems/Assets.js';
+import { makeCharacter, decorateMap } from '../systems/Assets.js';
 
 const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 const CORRUPT_TINT = 0x9a7fd6;
@@ -31,7 +31,8 @@ export default class FieldScene extends Phaser.Scene {
     const mapW = this.gw * TILE, mapH = this.gh * TILE;
     this.ox = Math.max(0, Math.floor((W - mapW) / 2)); this.oy = Math.max(0, Math.floor((H - mapH) / 2));
     this.add.rectangle(0, 0, Math.max(W, mapW) * 2, Math.max(H, mapH) * 2, 0x0e0f1c).setOrigin(0);
-    const tilemap = this.make.tilemap({ data: this.grid, tileWidth: TILE, tileHeight: TILE });
+    const deco = decorateMap(this, this.grid, this.ox, this.oy);
+    const tilemap = this.make.tilemap({ data: deco.data, tileWidth: TILE, tileHeight: TILE });
     const tileset = tilemap.addTilesetImage('tiles', 'tiles', TILE, TILE, 0, 0);
     tilemap.createLayer(0, tileset, this.ox, this.oy).setDepth(0);
     this.cameras.main.setBounds(0, 0, Math.max(W, mapW + this.ox * 2), Math.max(H, mapH + this.oy * 2));
@@ -55,7 +56,7 @@ export default class FieldScene extends Phaser.Scene {
     this.tx = this.p.x; this.ty = this.p.y;
     const wp = this.tileToWorld(this.tx, this.ty);
     this.hero = makeCharacter(this, wp.x, wp.y + 8, s.player.look);
-    this.hero.setDepth(this.hero.y);
+    this.hero.setDepth(wd(this.hero.y));
     this.cameras.main.startFollow(this.hero, true, 1, 1);
     this.cameras.main.setRoundPixels(true);
     this.path = []; this.moving = false; this.pendingInteract = null; this.busy = false;
@@ -91,25 +92,25 @@ export default class FieldScene extends Phaser.Scene {
     const obj = { ...o, key };
     if (o.type === 'chest') {
       obj.opened = !!s.flags.chests[key];
-      obj.sprite = this.add.image(wp.x, wp.y, obj.opened ? 'chest_open' : 'chest').setDepth(wp.y);
+      obj.sprite = this.add.image(wp.x, wp.y, obj.opened ? 'chest_open' : 'chest').setDepth(wd(wp.y));
       this.blocked.add(o.x + ',' + o.y);
       this.makeTappable(obj.sprite, () => this.approach(obj));
     } else if (o.type === 'npc') {
-      obj.sprite = this.add.image(wp.x, wp.y + 8, o.sprite || 'guide').setOrigin(0.5, 1).setDepth(wp.y + 8);
+      obj.sprite = this.add.image(wp.x, wp.y + 8, o.sprite || 'guide').setOrigin(0.5, 1).setDepth(wd(wp.y + 8));
       this.tweens.add({ targets: obj.sprite, y: obj.sprite.y - 2, duration: 700, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
       const bubble = txt(this, wp.x, wp.y - 14, '…', { size: 11, origin: 0.5, color: COLORS.yellow, depth: DEPTH.WORLD_UI });
       this.tweens.add({ targets: bubble, y: bubble.y - 2, duration: 500, yoyo: true, repeat: -1 });
       this.blocked.add(o.x + ',' + o.y);
       this.makeTappable(obj.sprite, () => this.approach(obj));
     } else if (o.type === 'exit' || o.type === 'village_exit') {
-      const g = this.add.rectangle(wp.x, wp.y, TILE - 2, TILE - 2, o.type === 'village_exit' ? 0x5aa9ff : COLORS.gold, 0.35).setDepth(1);
+      const g = this.add.rectangle(wp.x, wp.y, TILE - 2, TILE - 2, o.type === 'village_exit' ? 0x5aa9ff : COLORS.gold, 0.35).setDepth(0.5);
       this.tweens.add({ targets: g, alpha: 0.75, duration: 600, yoyo: true, repeat: -1 });
       txt(this, wp.x, wp.y - 10, o.type === 'village_exit' ? '마을' : '▶', { size: 11, origin: 0.5, depth: DEPTH.WORLD_UI, color: COLORS.yellow });
       this.exits[o.x + ',' + o.y] = obj;
     } else if (o.type === 'boss') {
       if (s.flags.cleared[this.p.stageId]) return;
       const e = Data.enemy(o.enemy);
-      obj.sprite = this.add.image(wp.x, wp.y + 8, e.sprite).setOrigin(0.5, 1).setDepth(wp.y + 8).setTint(CORRUPT_TINT);
+      obj.sprite = this.add.image(wp.x, wp.y + 8, e.sprite).setOrigin(0.5, 1).setDepth(wd(wp.y + 8)).setTint(CORRUPT_TINT);
       this.tweens.add({ targets: obj.sprite, scaleX: 1.04, scaleY: 0.96, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
       this.blocked.add(o.x + ',' + o.y);
       this.makeTappable(obj.sprite, () => this.approach(obj));
@@ -124,7 +125,7 @@ export default class FieldScene extends Phaser.Scene {
 
   spawnEnemy(e, key) {
     const wp = this.tileToWorld(e.x, e.y), data = Data.enemy(e.group[0]);
-    const sprite = this.add.image(wp.x, wp.y + 8, data.sprite).setOrigin(0.5, 1).setDepth(wp.y + 8).setTint(CORRUPT_TINT);
+    const sprite = this.add.image(wp.x, wp.y + 8, data.sprite).setOrigin(0.5, 1).setDepth(wd(wp.y + 8)).setTint(CORRUPT_TINT);
     const en = { key, group: e.group, tx: e.x, ty: e.y, sprite, moving: false, timer: Phaser.Math.Between(500, 1500) };
     this.makeTappable(sprite, () => this.tapTile(en.tx, en.ty));
     this.enemies.push(en);
@@ -186,7 +187,7 @@ export default class FieldScene extends Phaser.Scene {
     const wp = this.tileToWorld(nx, ny);
     this.tweens.add({
       targets: this.hero, x: wp.x, y: wp.y + 8, duration: 150, ease: 'Linear',
-      onUpdate: () => { this.hero.setDepth(this.hero.y); },
+      onUpdate: () => { this.hero.setDepth(wd(this.hero.y)); },
       onComplete: () => {
         this.tx = nx; this.ty = ny;
         if (this.checkExit()) return;
@@ -251,7 +252,7 @@ export default class FieldScene extends Phaser.Scene {
       }
       // 접촉 → 전투
       if (!this.busy && !dialogOpen && time > this.safeUntil) {
-        const dx = en.sprite.x - this.hero.x, dy = (en.sprite.y - 8) - (this.hero.y - 12);
+        const dx = en.sprite.x - this.hero.x, dy = (en.sprite.y - 8) - (this.hero.y - 10);
         if (Math.abs(dx) < 11 && Math.abs(dy) < 11) { this.startBattle(en.group, en.key, false); return; }
       }
     }
@@ -271,7 +272,7 @@ export default class FieldScene extends Phaser.Scene {
       en.moving = true; en.tx = nx; en.ty = ny;
       en.sprite.setFlipX(dx < 0);
       const wp = this.tileToWorld(nx, ny);
-      this.tweens.add({ targets: en.sprite, x: wp.x, y: wp.y + 8, duration: 650, ease: 'Linear', onUpdate: () => en.sprite.setDepth(en.sprite.y), onComplete: () => { en.moving = false; } });
+      this.tweens.add({ targets: en.sprite, x: wp.x, y: wp.y + 8, duration: 650, ease: 'Linear', onUpdate: () => en.sprite.setDepth(wd(en.sprite.y)), onComplete: () => { en.moving = false; } });
       return;
     }
   }

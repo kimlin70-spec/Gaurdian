@@ -44,3 +44,6 @@ export const TILE_LEGEND = {
   'p': 11, // 마을 바닥(흙)
 };
 export const SOLID_TILES = new Set([1, 3, 6, 7, 9, 10]);
+
+// 월드 오브젝트의 깊이: y 가 클수록 앞. UI(50 이상)보다 항상 작게.
+export const wd = (y) => 1 + y / 1000;

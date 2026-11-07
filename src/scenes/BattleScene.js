@@ -1,5 +1,5 @@
 // 턴제 전투. 아군 전원 명령 → 빠르기 순으로 전원 행동 → 다음 턴.
-import { W, H, COLORS } from '../config.js';
+import { W, H, COLORS, wd } from '../config.js';
 import Data from '../systems/Data.js';
 import GameState from '../systems/GameState.js';
 import Audio from '../systems/Audio.js';
@@ -7,7 +7,7 @@ import { txt, Button, panel, UIGroup, DialogBox, bar, toast, fadeIn, fadeOut, tw
 import { makeUnitSprite } from '../systems/Assets.js';
 
 const CORRUPT_TINT = 0x9a7fd6;
-const ALLY_POS = [[62, 96], [44, 124], [62, 152], [44, 178]];
+const ALLY_POS = [[64, 100], [44, 126], [64, 152], [44, 178]];
 const ENEMY_POS = { 1: [[252, 140]], 2: [[238, 112], [278, 150]], 3: [[236, 100], [282, 128], [244, 156]] };
 const PANEL_Y = 182;
 
@@ -59,7 +59,7 @@ export default class BattleScene extends Phaser.Scene {
   placeUnit(u, x, y) {
     u.x = x; u.y = y;
     u.obj = makeUnitSprite(this, u, x, y, GameState.s.player.look);
-    u.obj.setDepth(y);
+    u.obj.setDepth(wd(y));
     if (u.side === 'enemy') {
       u.obj.setFlipX(true).setTint(CORRUPT_TINT);
       u.nameT = txt(this, x, y + 2, u.name, { size: 11, origin: [0.5, 0], color: '#f2c6ff' });
@@ -68,7 +68,7 @@ export default class BattleScene extends Phaser.Scene {
       u.obj.on('pointerup', () => this.onTargetTap(u));
     } else {
       // 아군 스프라이트도 탭 가능(회복 대상)
-      const hit = this.add.rectangle(x, y - 12, 28, 32, 0xffffff, 0.001).setInteractive({ useHandCursor: true });
+      const hit = this.add.rectangle(x, y - 16, 32, 40, 0xffffff, 0.001).setInteractive({ useHandCursor: true });
       hit.on('pointerup', () => this.onTargetTap(u));
       u.hit = hit;
     }

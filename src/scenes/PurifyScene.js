@@ -17,8 +17,12 @@ export default class PurifyScene extends Phaser.Scene {
     for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
       const i = y * cols + x, r = rng(i);
       const tree = r < 0.22 && !(y > 5 && y < 10 && x > 6 && x < 13);
-      this.dark.push(this.add.image(x * TILE, y * TILE, 'tiles', tree ? 6 : 5).setOrigin(0));
-      this.green.push(this.add.image(x * TILE, y * TILE, 'tiles', tree ? 1 : (r > 0.9 ? 4 : 0)).setOrigin(0).setAlpha(0));
+      this.dark.push(this.add.image(x * TILE, y * TILE, 'tiles', 5).setOrigin(0));
+      this.green.push(this.add.image(x * TILE, y * TILE, 'tiles', r > 0.9 ? 4 : 0).setOrigin(0).setAlpha(0));
+      if (tree) {
+        this.dark.push(this.add.image(x * TILE + 8, (y + 1) * TILE, 'tree_dark').setOrigin(0.5, 1).setDepth(2));
+        this.green.push(this.add.image(x * TILE + 8, (y + 1) * TILE, 'tree').setOrigin(0.5, 1).setDepth(3).setAlpha(0));
+      }
     }
     const boss = Data.enemy(this.p.bossId);
     this.bear = this.add.image(W / 2, 150, boss.sprite).setOrigin(0.5, 1).setScale(2).setTint(0x9a7fd6).setDepth(10);
@@ -32,9 +36,8 @@ export default class PurifyScene extends Phaser.Scene {
     const ring = this.add.circle(W / 2, 130, 4, 0xffffff, 0.8).setDepth(20);
     this.tweens.add({ targets: ring, radius: 260, alpha: 0, duration: 1800, ease: 'Quad.easeOut', onUpdate: () => { ring.setRadius(ring.radius); } });
     const cols = Math.ceil(W / TILE);
-    this.green.forEach((g, i) => {
-      const x = (i % cols) * TILE, y = Math.floor(i / cols) * TILE;
-      const d = Phaser.Math.Distance.Between(x, y, W / 2, 130);
+    this.green.forEach((g) => {
+      const d = Phaser.Math.Distance.Between(g.x, g.y, W / 2, 130);
       this.tweens.add({ targets: g, alpha: 1, delay: d * 5, duration: 400 });
     });
     const from = Phaser.Display.Color.ValueToColor(0x9a7fd6), to = Phaser.Display.Color.ValueToColor(0xffffff);
