@@ -1,0 +1,8 @@
+{
+  "_comment": "type: heal(HP) | mp(MP) | revive(쓰러진 친구 깨우기) | heal_all. price 는 상점 가격(별가루). shop:true 면 상점에서 팔아요.",
+  "potion_s": { "name": "작은 물약",  "type": "heal", "power": 30, "price": 8,  "shop": true, "desc": "HP를 30 회복해요" },
+  "potion_l": { "name": "큰 물약",    "type": "heal", "power": 80, "price": 20, "shop": true, "desc": "HP를 80 회복해요" },
+  "berry":    { "name": "마나 열매",  "type": "mp",   "power": 15, "price": 12, "shop": true, "desc": "MP를 15 회복해요" },
+  "feather":  { "name": "부활 깃털",  "type": "revive", "power": 40, "price": 30, "shop": true, "desc": "쓰러진 친구를 깨워요" },
+  "honey":    { "name": "숲의 꿀",    "type": "heal_all", "power": 40, "price": 35, "shop": false, "desc": "모두 HP를 40 회복해요" }
+}

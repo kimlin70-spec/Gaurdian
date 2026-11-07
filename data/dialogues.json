@@ -1,0 +1,62 @@
+{
+  "_comment": "{hero} {guide} {world} {king} {cage} {gem} 는 strings.json 의 이름으로 바뀝니다. 한 줄은 짧게!",
+  "intro": [
+    { "bg": "real",   "who": "narr",  "text": "어느 날, {hero}는 공원에서\n다친 작은 동물을 보았어요." },
+    { "bg": "real",   "who": "hero",  "text": "괜찮아? 내가 도와줄게." },
+    { "bg": "real",   "who": "guide", "text": "고마워... 나는 {guide}야." },
+    { "bg": "real",   "who": "narr",  "text": "그때 {guide}의 팔찌에서\n보석이 반짝반짝 빛났어요!" },
+    { "bg": "portal", "who": "guide", "text": "{gem}이 너를 골랐어!\n새로운 숲의 수호자야!" },
+    { "bg": "portal", "who": "hero",  "text": "우와, 어디로 가는 거야?" },
+    { "bg": "forest", "who": "guide", "text": "여기는 {world}.\n{king}이 숲을 더럽혔어." },
+    { "bg": "forest", "who": "guide", "text": "검은 안개 때문에\n동물들이 사나워졌어." },
+    { "bg": "forest", "who": "guide", "text": "동물들을 쓰러뜨리지 말고\n보석으로 '정화'해 줘!" },
+    { "bg": "forest", "who": "hero",  "text": "좋아! 내가 숲을 구할게!" }
+  ],
+  "villageWelcome": [
+    "여기는 숲 마을이야.",
+    "준비가 되면 숲 입구로 가자!"
+  ],
+  "guideHints": [
+    "적의 HP가 조금 남으면\n'정화' 버튼이 빛나!",
+    "동물은 정화하면 친구가 돼.\n{cage}에 넣어 데리고 다녀!",
+    "여관에서 쉬면 모두 회복하고\n저장도 돼.",
+    "현자의 집에서 {shard}으로\n스킬을 세게 할 수 있어."
+  ],
+  "innRest": "푹 잤어요! 모두 건강해졌어요.\n저장도 했어요.",
+  "lose": [
+    "{hero}는 쓰러졌어요...",
+    "...",
+    "여관에서 눈을 떴어요.\n괜찮아, 다시 하면 돼!"
+  ],
+  "bossIntro": {
+    "bear_boss": [
+      "크르르... 누구냐...",
+      "{guide}: 수호곰이야! 검은 안개에\n잡혀 있어. 정화해서 구하자!"
+    ]
+  },
+  "bossPurified": {
+    "bear_boss": [
+      "수호곰: ...고마워, 작은 수호자.",
+      "수호곰: 안개가 걷히고 있어.\n숲이 돌아오고 있어!"
+    ]
+  },
+  "stageClear": [
+    "초록숲이 깨끗해졌어요!",
+    "{guide}: 잘했어! 마을로 돌아가자."
+  ],
+  "allClear": [
+    "모든 숲이 깨끗해졌어요!"
+  ],
+  "ending": [
+    { "bg": "forest", "who": "narr",  "text": "{king}도 정화되어\n착한 마음을 되찾았어요." },
+    { "bg": "forest", "who": "guide", "text": "{world}가 다시 반짝여!\n고마워, {hero}." },
+    { "bg": "portal", "who": "hero",  "text": "또 놀러 올게!" },
+    { "bg": "real",   "who": "narr",  "text": "{hero}는 집으로 돌아왔어요.\n보석은 아직 빛나고 있어요." },
+    { "bg": "real",   "who": "narr",  "text": "언제든 다시 갈 수 있어요.\n— 끝 —" }
+  ],
+  "npc": {
+    "guide_m1": ["{guide}: 적에게 닿으면 싸움이 시작돼.", "{guide}: HP가 조금 남으면 정화해 줘!"],
+    "scared_bird": ["새: 안개 속에 곰이 있어...\n무서워서 못 가겠어.", "새: 길 끝에 돌문이 있대."],
+    "old_tree": ["큰 나무: 상자를 열어 보렴.\n도움이 될 거야."]
+  }
+}

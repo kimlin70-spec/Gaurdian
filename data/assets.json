@@ -1,0 +1,8 @@
+{
+  "_comment": "나중에 진짜 도트 PNG 로 바꿀 때 여기에 적으면 코드 수정 없이 교체됩니다. type: image | spritesheet. 적지 않은 키는 코드가 임시 도트로 만듭니다.",
+  "_example": {
+    "tiles": { "type": "spritesheet", "file": "assets/tiles.png", "frameWidth": 16, "frameHeight": 16 },
+    "rabbit": { "type": "image", "file": "assets/rabbit.png" }
+  },
+  "overrides": {}
+}

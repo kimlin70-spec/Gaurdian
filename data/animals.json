@@ -1,0 +1,21 @@
+{
+  "_comment": "구조할 수 있는 동물. base 는 1레벨 능력치, growth 는 레벨마다 오르는 양. stage 는 등장 스테이지.",
+  "rabbit": {
+    "name": "토끼", "role": "회복", "sprite": "rabbit", "stage": "stage1",
+    "base":   { "hp": 26, "mp": 14, "atk": 6, "def": 3, "spd": 9 },
+    "growth": { "hp": 5, "mp": 3, "atk": 1, "def": 1, "spd": 1 },
+    "skills": ["heal", "quick_kick"]
+  },
+  "squirrel": {
+    "name": "다람쥐", "role": "공격", "sprite": "squirrel", "stage": "stage1",
+    "base":   { "hp": 24, "mp": 12, "atk": 9, "def": 2, "spd": 7 },
+    "growth": { "hp": 4, "mp": 2, "atk": 2, "def": 1, "spd": 1 },
+    "skills": ["acorn", "acorn_rain"]
+  },
+  "boar": {
+    "name": "멧돼지", "role": "탱커", "sprite": "boar", "stage": "stage1",
+    "base":   { "hp": 40, "mp": 10, "atk": 8, "def": 6, "spd": 4 },
+    "growth": { "hp": 8, "mp": 2, "atk": 1, "def": 2, "spd": 0 },
+    "skills": ["charge", "stomp"]
+  }
+}

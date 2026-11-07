@@ -1,0 +1,9 @@
+{
+  "_comment": "주인공 능력치. base 는 1레벨, growth 는 레벨마다 오르는 양.",
+  "base":   { "hp": 40, "mp": 12, "atk": 8, "def": 4, "spd": 6 },
+  "growth": { "hp": 7, "mp": 3, "atk": 2, "def": 1, "spd": 1 },
+  "skills": ["slash", "heal", "star_rain"],
+  "startEquip": { "weapon": "stick", "armor": "cloth", "bracelet": "bracelet_1" },
+  "startItems": { "potion_s": 3 },
+  "startStardust": 20
+}
