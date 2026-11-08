@@ -10,7 +10,7 @@ export const LOOKS = {
   hairColorNames: ['갈색', '노랑', '빨강', '검정'],
 };
 
-import { PAL, PLAYER_BODY, PLAYER_CLOTHES, HAIR, TREE, TREE_DARK, BUSH, ROCK, SPRITES } from './Pixels.js';
+import { PAL, PLAYER_BODY, PLAYER_CLOTHES, HAIR, TREE, TREE_DARK, BUSH, ROCK, SPRITES, FURNITURE } from './Pixels.js';
 
 // 자리표시자용 알파벳 팔레트 → Phaser generate 형식
 function gen(scene, key, rows, palette = PAL) {
@@ -64,6 +64,7 @@ const BUILDINGS = {
   sage:   { wall: '#d9c9f0', roof: '#6a4fb3', sign: '#ffd93b' },
   shelter:{ wall: '#f7e6b0', roof: '#d98c5f', sign: '#5cb85c' },
   gate:   { wall: '#5a3a1a', roof: '#2e7d32', sign: '#ffd93b' },
+  home:   { wall: '#fff1d6', roof: '#ff8fa8', sign: '#ff6fa0' },
 };
 function genBuildings(scene) {
   for (const [key, c] of Object.entries(BUILDINGS)) {
@@ -109,6 +110,7 @@ export function generateAll(scene) {
   HAIR.forEach((rows, i) => gen(scene, 'hair_' + i, rows));
   gen(scene, 'tree', TREE); gen(scene, 'tree_dark', TREE_DARK); gen(scene, 'bush', BUSH); gen(scene, 'rock', ROCK);
   for (const [key, rows] of Object.entries(SPRITES)) gen(scene, key, rows);
+  for (const [key, rows] of Object.entries(FURNITURE)) gen(scene, key, rows);
   // 1x1 흰 점 (파티클/플래시용)
   if (!scene.textures.exists('dot')) {
     const t = scene.textures.createCanvas('dot', 2, 2); t.getContext().fillStyle = '#fff'; t.getContext().fillRect(0, 0, 2, 2); t.refresh();

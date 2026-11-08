@@ -16,7 +16,7 @@ export default class FieldScene extends Phaser.Scene {
   create() {
     const { stageId, mapId } = this.p;
     this.stage = Data.stage(stageId); this.map = Data.map(stageId, mapId);
-    if (!this.map) { this.scene.start('Village'); return; }
+    if (!this.map) { this.scene.start('Village', {}); return; }
     fadeIn(this);
     // 씬 인스턴스가 재사용되므로 상태를 전부 초기화
     this.transitioning = false; this.busy = false; this.boss = null; this.menu = null; this.marker = null;
@@ -107,6 +107,15 @@ export default class FieldScene extends Phaser.Scene {
       this.tweens.add({ targets: g, alpha: 0.75, duration: 600, yoyo: true, repeat: -1 });
       txt(this, wp.x, wp.y - 10, o.type === 'village_exit' ? '마을' : '▶', { size: 11, origin: 0.5, depth: DEPTH.WORLD_UI, color: COLORS.yellow });
       this.exits[o.x + ',' + o.y] = obj;
+    } else if (o.type === 'injured') {
+      if (s.flags.healed[key]) return;
+      const a = Data.animal(o.animal);
+      obj.sprite = this.add.image(wp.x, wp.y + 8, a.sprite).setOrigin(0.5, 1).setDepth(wd(wp.y + 8)).setAngle(-12).setAlpha(0.9);
+      const bubble = txt(this, wp.x + 10, wp.y - 14, '아야', { size: 11, origin: 0.5, color: '#ff8080', depth: DEPTH.WORLD_UI });
+      this.tweens.add({ targets: bubble, y: bubble.y - 2, alpha: 0.5, duration: 600, yoyo: true, repeat: -1 });
+      obj.bubble = bubble;
+      this.blocked.add(o.x + ',' + o.y);
+      this.makeTappable(obj.sprite, () => this.approach(obj));
     } else if (o.type === 'boss') {
       if (s.flags.cleared[this.p.stageId]) return;
       const e = Data.enemy(o.enemy);
@@ -210,7 +219,7 @@ export default class FieldScene extends Phaser.Scene {
   }
   async goExit(ex) {
     await fadeOut(this, 250);
-    if (ex.type === 'village_exit') { this.scene.start('Village'); return; }
+    if (ex.type === 'village_exit') { this.scene.start('Village', {}); return; }
     this.scene.start('Field', { stageId: this.p.stageId, mapId: ex.to, x: ex.tx, y: ex.ty });
   }
 
@@ -233,12 +242,70 @@ export default class FieldScene extends Phaser.Scene {
       this.hero.setFlip(obj.x < this.tx);
       await this.dialog.show(lines);
       this.busy = false;
+    } else if (obj.type === 'injured') {
+      this.busy = true;
+      this.hero.setFlip(obj.x < this.tx);
+      await this.dialog.show(Data.dialogues.injured.found.map(l => Data.fmt(l)));
+      await this.healMinigame(obj);
+      this.busy = false;
     } else if (obj.type === 'boss') {
       this.busy = true;
       const lines = (Data.dialogues.bossIntro[obj.enemy] || []).map(l => Data.fmt(l));
       if (lines.length) await this.dialog.show(lines);
       this.startBattle([obj.enemy], null, true);
     }
+  }
+
+  // ---------- 치료 미니게임: 반짝이는 상처를 탭해서 붕대 감기 ----------
+  healMinigame(obj) {
+    return new Promise(resolve => {
+      const a = Data.animal(obj.animal), g = new UIGroup();
+      g.add(this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.6).setDepth(DEPTH.MODAL - 2).setScrollFactor(0).setInteractive());
+      g.add(panel(this, 20, 14, W - 40, H - 28, { depth: DEPTH.MODAL - 1, fixed: true }));
+      g.add(txt(this, W / 2, 20, `${a.name} 치료하기`, { size: 14, origin: [0.5, 0], color: COLORS.yellow, depth: DEPTH.MODAL, fixed: true }));
+      const hint = g.add(txt(this, W / 2, 40, Data.fmt(Data.dialogues.injured.how), { size: 11, origin: [0.5, 0], align: 'center', depth: DEPTH.MODAL, fixed: true, lineSpacing: 3 }));
+      const big = g.add(this.add.image(W / 2, 170, a.sprite).setScale(5).setOrigin(0.5, 1).setDepth(DEPTH.MODAL).setScrollFactor(0));
+      const spots = [[-12, -58], [16, -40], [-6, -18]]; // 몸 위 상처 위치 (3곳)
+      let i = 0;
+      const bandages = [];
+      const next = () => {
+        if (i >= spots.length) { finish(); return; }
+        const [dx, dy] = spots[i];
+        const wound = this.add.circle(big.x + dx, big.y + dy, 7, 0xff4d6d, 0.9).setDepth(DEPTH.MODAL + 1).setScrollFactor(0).setStrokeStyle(2, 0xffffff);
+        const hit = this.add.circle(big.x + dx, big.y + dy, 16, 0xffffff, 0.001).setDepth(DEPTH.MODAL + 2).setScrollFactor(0).setInteractive();
+        const tw = this.tweens.add({ targets: wound, scale: 1.4, alpha: 0.5, duration: 400, yoyo: true, repeat: -1 });
+        g.add(wound); g.add(hit);
+        hit.once('pointerdown', () => {
+          tw.stop(); wound.destroy(); hit.destroy();
+          Audio.sfx('chest');
+          const b = this.add.rectangle(big.x + dx, big.y + dy, 16, 7, 0xfff4e0).setStrokeStyle(1, 0x1b1b2a).setAngle(-25).setDepth(DEPTH.MODAL + 1).setScrollFactor(0);
+          g.add(b); bandages.push(b);
+          this.tweens.add({ targets: big, x: big.x + 3, duration: 50, yoyo: true, repeat: 1 });
+          hint.setText(i + 1 >= spots.length ? '다 감았어요!' : `잘했어요! ${spots.length - i - 1}곳 남았어요`);
+          i += 1; this.time.delayedCall(250, next);
+        });
+      };
+      const finish = async () => {
+        Audio.sfx('purify');
+        for (let k = 0; k < 8; k++) { const p = this.add.image(big.x + Phaser.Math.Between(-40, 40), big.y - Phaser.Math.Between(0, 80), 'star').setScale(0.6).setDepth(DEPTH.MODAL + 3).setScrollFactor(0); g.add(p); this.tweens.add({ targets: p, y: p.y - 20, alpha: 0, duration: 700, delay: k * 60 }); }
+        this.tweens.add({ targets: big, y: big.y - 12, duration: 150, yoyo: true, repeat: 2 });
+        await wait(this, 900);
+        g.destroy();
+        GameState.healAnimal(obj.animal);
+        GameState.s.flags.healed[obj.key] = true;
+        GameState.save();
+        if (obj.bubble) obj.bubble.destroy();
+        await this.dialog.show([Data.fmt(Data.dialogues.injured.done).replace(/\{name\}/g, a.name)]);
+        // 친구가 되어 뛰어감
+        obj.sprite.setAngle(0).setAlpha(1);
+        this.blocked.delete(obj.x + ',' + obj.y);
+        this.objects = this.objects.filter(o => o !== obj);
+        await tween(this, { targets: obj.sprite, x: obj.sprite.x + 40, y: obj.sprite.y - 6, alpha: 0, duration: 600 });
+        obj.sprite.destroy();
+        resolve();
+      };
+      next();
+    });
   }
 
   // ---------- 적 ----------
@@ -304,7 +371,7 @@ export default class FieldScene extends Phaser.Scene {
       const ok = await confirm(this, '마을로 돌아갈까요?', '네', '아니요', { fixed: true });
       if (!ok) return;
       this.closeMenu(); this.transitioning = true;
-      await fadeOut(this); this.scene.start('Village');
+      await fadeOut(this); this.scene.start('Village', {});
     }, { depth: DEPTH.MODAL, fixed: true }));
     this.selectedItem = null;
     this.renderMenu();
@@ -323,7 +390,7 @@ export default class FieldScene extends Phaser.Scene {
       this.menuRows.add(txt(this, 172, y + 12, `MP ${u.mp}/${u.maxMp}`, { size: 11, depth: DEPTH.MODAL, fixed: true, strokeThickness: 1, color: '#9ecbff' }));
     });
     // 아이템 (오른쪽 열)
-    const items = GameState.itemList().filter(it => it.type !== 'revive');
+    const items = GameState.itemList().filter(it => ['heal', 'mp', 'heal_all'].includes(it.type));
     items.slice(0, 5).forEach((it, i) => {
       const y = 50 + i * 26;
       const b = this.menuItems.add(new Button(this, 236, y, 72, 22, `${it.name} ${it.n}`, () => { this.selectedItem = this.selectedItem === it.id ? null : it.id; this.renderMenu(); },

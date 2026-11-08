@@ -69,7 +69,7 @@ export default class StoryIntroScene extends Phaser.Scene {
       this.scene.start('Village', { welcome: true });
     } else {
       GameState.save();
-      this.scene.start('Title');
+      this.scene.start('Title', {});
     }
   }
 }

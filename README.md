@@ -48,6 +48,14 @@ PC 브라우저에서 `http://localhost:8000` 을 열면 됩니다.
 - 지면 게임오버 없이 여관에서 깨어남 (페널티 없음)
 - 자동 저장: 마을 도착, 맵 이동, 전투 후, 여관 (1슬롯, localStorage)
 
+## 돌보기 · 치료 · 집 꾸미기 (Grace 의 아이디어)
+
+- **다친 동물 치료**: 숲에 "아야" 하고 앉아 있는 동물을 탭 → 반짝이는 상처 3곳을 탭해 붕대를 감으면 친구가 돼요. 사슴·여우는 치료로만 만날 수 있어요.
+- **친구 레벨(하트 0~5)**: 쉼터에서 동물을 탭 → 놀아주기(숲에 다녀올 때마다 1번), 간식 주기(상점 당근 과자). 하트 4개 이상이면 전투에서 힘이 나요(공격 +10%). 전투에서 쓰러지면 조금 내려가요.
+  - 하트가 0이 되면 **삐져서 숨어요**(전투에 못 데려감). 놀아주거나 간식을 주면 돌아와요. 영영 떠나지는 않아요.
+- **샤워**: 전투할 때마다 더러워져요. 5번이면 "더러움", 8번이면 **감기**(전투 불가, 상점 감기약으로 치료). 샤워하면 하트가 조금 내려가지만 간식을 주면 더 많이 올라가요.
+- **우리 집**: 마을의 집에 들어가 가구를 놓아 꾸며요. 가구 가게(별가루)와 제작대(나뭇가지·꽃잎·반짝 돌 재료, 적 드롭/상자)에서 가구를 구해요. 가구 데이터는 `data/furniture.json`.
+
 ## 폴더 구조
 
 ```
@@ -55,7 +63,7 @@ index.html            진입점 (iPad Safari 메타 태그, 세로모드 안내)
 src/
   main.js             Phaser 설정, 폰트 로딩, 씬 등록
   config.js           해상도·색·타일 범례 등 상수
-  scenes/             Boot → Title → CharacterCreate → StoryIntro → Village ⇄ Field ⇄ Battle → Purify
+  scenes/             Boot → Title → CharacterCreate → StoryIntro → Village ⇄ Field ⇄ Battle → Purify, Village ⇄ Home
   systems/
     Data.js           JSON 데이터 접근 + {hero} 같은 이름 치환
     GameState.js      진행 상태, 능력치 계산, 경험치/레벨, 구조/파티
@@ -80,7 +88,8 @@ vendor/               phaser.min.js (3.87.0 고정), Galmuri 폰트 (OFL)
 | `data/skills.json` | 스킬 (type: damage / damage_all / heal / heal_all, 레벨 1~3 수치) |
 | `data/items.json` | 아이템 (heal / mp / revive / heal_all, 상점 판매 여부) |
 | `data/equipment.json` | 무기·옷·팔찌 (팔찌의 `purify` = 정화 가능 HP 비율) |
-| `data/stages.json` | 스테이지와 맵. `rows` 는 글자 지도 (`.`풀 `T`나무 `=`길 `~`물 `*`꽃 `d`오염 풀 `D`오염 나무 `r`바위 `s`돌바닥 `#`돌벽 `b`덤불), `objects` 는 상자/NPC/출구/보스, `enemies` 는 1~3마리 그룹 |
+| `data/furniture.json` | 집 가구 (크기, 가격 또는 제작 재료) |
+| `data/stages.json` | 스테이지와 맵. `rows` 는 글자 지도 (`.`풀 `T`나무 `=`길 `~`물 `*`꽃 `d`오염 풀 `D`오염 나무 `r`바위 `s`돌바닥 `#`돌벽 `b`덤불), `objects` 는 상자/NPC/출구/보스/다친 동물(injured), `enemies` 는 1~3마리 그룹 |
 | `data/assets.json` | PNG 교체 목록. `overrides` 에 적은 키는 코드가 임시 도트를 만들지 않고 파일을 읽음 |
 
 ### 새 스테이지 추가 예
@@ -106,6 +115,7 @@ vendor/               phaser.min.js (3.87.0 고정), Galmuri 폰트 (OFL)
 - [x] Phase 3 Battle: 턴제 전투, JSON 스킬, 정화·구조, 자동 전투, 승패 처리
 - [x] Phase 4 스테이지 1(맵 3개 + 보스방) + 보스 + 정화 연출 + 마을 시설 전부
 - [~] Phase 5: 인트로/엔딩 컷신, 효과음·BGM(간단한 칩튠) 완료. 그래픽은 코드로 그린 도트(주인공 24×32, 명암 있는 나무/동물) — **전문가 도트 PNG 로 교체 가능** (`data/assets.json`)
+- [x] 추가 콘텐츠: 다친 동물 치료 미니게임, 친구 레벨·놀아주기·샤워·감기, 집 꾸미기·제작대
 - [ ] 스테이지 2~5 (데이터만 추가하면 됨)
 
 ## 라이선스

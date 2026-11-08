@@ -46,7 +46,7 @@ export default class TitleScene extends Phaser.Scene {
       if (!ok) return;
     }
     await fadeOut(this);
-    this.scene.start('CharacterCreate');
+    this.scene.start('CharacterCreate', {});
   }
 
   async continueGame() {
@@ -54,6 +54,6 @@ export default class TitleScene extends Phaser.Scene {
     await fadeOut(this);
     const loc = GameState.s.location || { scene: 'Village' };
     if (loc.scene === 'Field' && Data.map(loc.stageId, loc.mapId)) this.scene.start('Field', { stageId: loc.stageId, mapId: loc.mapId, x: loc.x, y: loc.y });
-    else this.scene.start('Village');
+    else this.scene.start('Village', {});
   }
 }

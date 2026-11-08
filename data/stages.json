@@ -1,8 +1,14 @@
 {
-  "_comment": "rows 의 글자는 src/config.js 의 TILE_LEGEND 참고. objects type: chest | npc | exit | village_exit | boss. enemies 의 group 은 1~3마리.",
+  "_comment": "rows 의 글자는 src/config.js 의 TILE_LEGEND 참고. objects type: chest | npc | exit | village_exit | boss. enemies 의 group 은 1~3마리. injured 는 다친 동물(치료하면 친구).",
   "stage1": {
-    "name": "초록숲", "order": 1, "final": false,
-    "start": { "map": "m1", "x": 1, "y": 8 },
+    "name": "초록숲",
+    "order": 1,
+    "final": false,
+    "start": {
+      "map": "m1",
+      "x": 1,
+      "y": 8
+    },
     "boss": "bear_boss",
     "maps": {
       "m1": {
@@ -26,16 +32,70 @@
           "TTTTTTTTTTTTTTTTTTTTTTTT"
         ],
         "objects": [
-          { "type": "village_exit", "x": 0, "y": 8 },
-          { "type": "npc", "x": 2, "y": 6, "sprite": "guide", "text": "guide_m1" },
-          { "type": "chest", "x": 10, "y": 1, "item": "potion_s", "count": 2 },
-          { "type": "chest", "x": 22, "y": 13, "item": "berry", "count": 1 },
-          { "type": "exit", "x": 23, "y": 10, "to": "m2", "tx": 1, "ty": 7 }
+          {
+            "type": "village_exit",
+            "x": 0,
+            "y": 8
+          },
+          {
+            "type": "npc",
+            "x": 2,
+            "y": 6,
+            "sprite": "guide",
+            "text": "guide_m1"
+          },
+          {
+            "type": "chest",
+            "x": 10,
+            "y": 1,
+            "item": "potion_s",
+            "count": 2
+          },
+          {
+            "type": "chest",
+            "x": 22,
+            "y": 13,
+            "item": "berry",
+            "count": 1
+          },
+          {
+            "type": "exit",
+            "x": 23,
+            "y": 10,
+            "to": "m2",
+            "tx": 1,
+            "ty": 7
+          },
+          {
+            "type": "injured",
+            "x": 13,
+            "y": 13,
+            "animal": "rabbit"
+          }
         ],
         "enemies": [
-          { "group": ["mushroom"], "x": 7, "y": 5 },
-          { "group": ["mushroom", "mushroom"], "x": 15, "y": 12 },
-          { "group": ["rabbit_c"], "x": 20, "y": 5 }
+          {
+            "group": [
+              "mushroom"
+            ],
+            "x": 7,
+            "y": 5
+          },
+          {
+            "group": [
+              "mushroom",
+              "mushroom"
+            ],
+            "x": 15,
+            "y": 12
+          },
+          {
+            "group": [
+              "rabbit_c"
+            ],
+            "x": 20,
+            "y": 5
+          }
         ]
       },
       "m2": {
@@ -59,17 +119,80 @@
           "DDDDDDDDDDDDDDDDDDDDDDDD"
         ],
         "objects": [
-          { "type": "exit", "x": 0, "y": 7, "to": "m1", "tx": 22, "ty": 10 },
-          { "type": "npc", "x": 3, "y": 13, "sprite": "bird", "text": "scared_bird" },
-          { "type": "chest", "x": 21, "y": 2, "item": "potion_l", "count": 1 },
-          { "type": "chest", "x": 8, "y": 11, "item": "feather", "count": 1 },
-          { "type": "exit", "x": 23, "y": 12, "to": "m3", "tx": 1, "ty": 7 }
+          {
+            "type": "exit",
+            "x": 0,
+            "y": 7,
+            "to": "m1",
+            "tx": 22,
+            "ty": 10
+          },
+          {
+            "type": "npc",
+            "x": 3,
+            "y": 13,
+            "sprite": "bird",
+            "text": "scared_bird"
+          },
+          {
+            "type": "chest",
+            "x": 21,
+            "y": 2,
+            "item": "potion_l",
+            "count": 1
+          },
+          {
+            "type": "chest",
+            "x": 8,
+            "y": 11,
+            "item": "feather",
+            "count": 1
+          },
+          {
+            "type": "exit",
+            "x": 23,
+            "y": 12,
+            "to": "m3",
+            "tx": 1,
+            "ty": 7
+          },
+          {
+            "type": "injured",
+            "x": 20,
+            "y": 9,
+            "animal": "deer"
+          }
         ],
         "enemies": [
-          { "group": ["vine"], "x": 7, "y": 4 },
-          { "group": ["squirrel_c"], "x": 13, "y": 9 },
-          { "group": ["mushroom", "vine"], "x": 18, "y": 6 },
-          { "group": ["boar_c"], "x": 16, "y": 13 }
+          {
+            "group": [
+              "vine"
+            ],
+            "x": 7,
+            "y": 4
+          },
+          {
+            "group": [
+              "squirrel_c"
+            ],
+            "x": 13,
+            "y": 9
+          },
+          {
+            "group": [
+              "mushroom",
+              "vine"
+            ],
+            "x": 18,
+            "y": 6
+          },
+          {
+            "group": [
+              "boar_c"
+            ],
+            "x": 16,
+            "y": 13
+          }
         ]
       },
       "m3": {
@@ -92,16 +215,76 @@
           "DDDDDDDDDsDDDDDDDDDD"
         ],
         "objects": [
-          { "type": "exit", "x": 0, "y": 7, "to": "m2", "tx": 22, "ty": 12 },
-          { "type": "npc", "x": 2, "y": 2, "sprite": "tree_face", "text": "old_tree" },
-          { "type": "chest", "x": 17, "y": 1, "item": "potion_l", "count": 2 },
-          { "type": "exit", "x": 9, "y": 14, "to": "boss", "tx": 6, "ty": 9 }
+          {
+            "type": "exit",
+            "x": 0,
+            "y": 7,
+            "to": "m2",
+            "tx": 22,
+            "ty": 12
+          },
+          {
+            "type": "npc",
+            "x": 2,
+            "y": 2,
+            "sprite": "tree_face",
+            "text": "old_tree"
+          },
+          {
+            "type": "chest",
+            "x": 17,
+            "y": 1,
+            "item": "potion_l",
+            "count": 2
+          },
+          {
+            "type": "exit",
+            "x": 9,
+            "y": 14,
+            "to": "boss",
+            "tx": 6,
+            "ty": 9
+          },
+          {
+            "type": "injured",
+            "x": 17,
+            "y": 12,
+            "animal": "fox"
+          }
         ],
         "enemies": [
-          { "group": ["vine", "vine"], "x": 7, "y": 3 },
-          { "group": ["boar_c"], "x": 14, "y": 6 },
-          { "group": ["mushroom", "vine", "mushroom"], "x": 5, "y": 11 },
-          { "group": ["squirrel_c", "rabbit_c"], "x": 15, "y": 11 }
+          {
+            "group": [
+              "vine",
+              "vine"
+            ],
+            "x": 7,
+            "y": 3
+          },
+          {
+            "group": [
+              "boar_c"
+            ],
+            "x": 14,
+            "y": 6
+          },
+          {
+            "group": [
+              "mushroom",
+              "vine",
+              "mushroom"
+            ],
+            "x": 5,
+            "y": 11
+          },
+          {
+            "group": [
+              "squirrel_c",
+              "rabbit_c"
+            ],
+            "x": 15,
+            "y": 11
+          }
         ]
       },
       "boss": {
@@ -120,16 +303,52 @@
           "######ss######"
         ],
         "objects": [
-          { "type": "exit", "x": 6, "y": 10, "to": "m3", "tx": 9, "ty": 13 },
-          { "type": "exit", "x": 7, "y": 10, "to": "m3", "tx": 9, "ty": 13 },
-          { "type": "boss", "x": 6, "y": 3, "enemy": "bear_boss" }
+          {
+            "type": "exit",
+            "x": 6,
+            "y": 10,
+            "to": "m3",
+            "tx": 9,
+            "ty": 13
+          },
+          {
+            "type": "exit",
+            "x": 7,
+            "y": 10,
+            "to": "m3",
+            "tx": 9,
+            "ty": 13
+          },
+          {
+            "type": "boss",
+            "x": 6,
+            "y": 3,
+            "enemy": "bear_boss"
+          }
         ],
         "enemies": []
       }
     }
   },
-  "stage2": { "name": "눈 내린 숲", "order": 2, "locked": true },
-  "stage3": { "name": "안개 늪",    "order": 3, "locked": true },
-  "stage4": { "name": "불타는 산",  "order": 4, "locked": true },
-  "stage5": { "name": "마왕의 성",  "order": 5, "locked": true, "final": true }
+  "stage2": {
+    "name": "눈 내린 숲",
+    "order": 2,
+    "locked": true
+  },
+  "stage3": {
+    "name": "안개 늪",
+    "order": 3,
+    "locked": true
+  },
+  "stage4": {
+    "name": "불타는 산",
+    "order": 4,
+    "locked": true
+  },
+  "stage5": {
+    "name": "마왕의 성",
+    "order": 5,
+    "locked": true,
+    "final": true
+  }
 }

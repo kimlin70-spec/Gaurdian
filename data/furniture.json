@@ -1,0 +1,92 @@
+{
+  "_comment": "집 꾸미기 가구. w,h 는 칸(16px) 수. price 가 있으면 상점(집 안 가구 가게)에서 별가루로 사고, craft 가 있으면 제작대에서 재료로 만들어요.",
+  "bed": {
+    "name": "포근한 침대",
+    "sprite": "f_bed",
+    "w": 2,
+    "h": 2,
+    "price": 30
+  },
+  "table": {
+    "name": "작은 탁자",
+    "sprite": "f_table",
+    "w": 1,
+    "h": 1,
+    "price": 12
+  },
+  "chair": {
+    "name": "나무 의자",
+    "sprite": "f_chair",
+    "w": 1,
+    "h": 1,
+    "craft": {
+      "twig": 2
+    }
+  },
+  "rug": {
+    "name": "꽃무늬 깔개",
+    "sprite": "f_rug",
+    "w": 2,
+    "h": 2,
+    "craft": {
+      "petal": 3
+    },
+    "floor": true
+  },
+  "pot": {
+    "name": "꽃 화분",
+    "sprite": "f_pot",
+    "w": 1,
+    "h": 1,
+    "craft": {
+      "petal": 2,
+      "pebble": 1
+    }
+  },
+  "shelf": {
+    "name": "책꽂이",
+    "sprite": "f_shelf",
+    "w": 1,
+    "h": 2,
+    "craft": {
+      "twig": 4
+    }
+  },
+  "lamp": {
+    "name": "반짝 등불",
+    "sprite": "f_lamp",
+    "w": 1,
+    "h": 2,
+    "craft": {
+      "pebble": 2,
+      "twig": 1
+    }
+  },
+  "teddy": {
+    "name": "곰 인형",
+    "sprite": "f_teddy",
+    "w": 1,
+    "h": 1,
+    "price": 20
+  },
+  "pond": {
+    "name": "돌 연못",
+    "sprite": "f_pond",
+    "w": 2,
+    "h": 1,
+    "craft": {
+      "pebble": 4
+    },
+    "floor": true
+  },
+  "swing": {
+    "name": "동물 그네",
+    "sprite": "f_swing",
+    "w": 2,
+    "h": 2,
+    "craft": {
+      "twig": 3,
+      "petal": 1
+    }
+  }
+}

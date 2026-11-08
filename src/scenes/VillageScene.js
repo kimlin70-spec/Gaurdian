@@ -12,6 +12,7 @@ const BUILDINGS = [
   { key: 'smithy',  name: '대장간',    x: 192, y: 84 },
   { key: 'sage',    name: '현자의 집', x: 266, y: 84 },
   { key: 'shelter', name: '동물 쉼터', x: 70,  y: 178 },
+  { key: 'home',    name: '우리 집',   x: 160, y: 178 },
   { key: 'gate',    name: '숲 입구',   x: 262, y: 178 },
 ];
 
@@ -39,6 +40,8 @@ export default class VillageScene extends Phaser.Scene {
 
   create() {
     fadeIn(this);
+    // 씬 인스턴스가 재사용되므로 상태 초기화
+    this.busy = false; this.panelGroup = null; this.listGroup = null; this.moneyText = null;
     Audio.playBgm('village');
     const s = GameState.s;
     GameState.setLocation({ scene: 'Village' });
@@ -66,10 +69,10 @@ export default class VillageScene extends Phaser.Scene {
     // 주인공
     this.hero = makeCharacter(this, 160, 150, s.player.look); this.hero.setDepth(wd(150));
     // 안내 동물 (힌트)
-    this.guide = this.add.image(190, 196, 'guide').setOrigin(0.5, 1).setDepth(wd(196)).setInteractive({ useHandCursor: true, hitArea: new Phaser.Geom.Rectangle(-8, -8, 32, 32), hitAreaCallback: Phaser.Geom.Rectangle.Contains });
+    this.guide = this.add.image(216, 214, 'guide').setOrigin(0.5, 1).setDepth(wd(196)).setInteractive({ useHandCursor: true, hitArea: new Phaser.Geom.Rectangle(-8, -8, 32, 32), hitAreaCallback: Phaser.Geom.Rectangle.Contains });
     this.tweens.add({ targets: this.guide, y: this.guide.y - 3, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     this.guide.on('pointerup', () => this.guideHint());
-    txt(this, 190, 198, Data.strings.guideAnimal, { size: 11, origin: [0.5, 0], color: COLORS.yellow });
+    txt(this, 216, 216, Data.strings.guideAnimal, { size: 11, origin: [0.5, 0], color: COLORS.yellow });
 
     // HUD
     this.hud = new UIGroup();
@@ -103,7 +106,9 @@ export default class VillageScene extends Phaser.Scene {
     Audio.sfx('tap');
     this.hero.setFlip(b.x < this.hero.x);
     const dist = Phaser.Math.Distance.Between(this.hero.x, this.hero.y, b.x, b.y + 10);
-    await tween(this, { targets: this.hero, x: b.x, y: b.y + 10, duration: Math.min(900, dist * 5), ease: 'Linear' });
+    // 이미 그 자리에 서 있으면(거리 0) 트윈을 돌리지 않는다 (0ms 트윈이 좌표를 망가뜨림)
+    if (dist > 2) await tween(this, { targets: this.hero, x: b.x, y: b.y + 10, duration: Math.max(120, Math.min(900, dist * 5)), ease: 'Linear' });
+    if (!Number.isFinite(this.hero.x) || !Number.isFinite(this.hero.y)) this.hero.setPosition(b.x, b.y + 10);
     this.hero.setDepth(wd(this.hero.y));
     this.busy = false;
     this.openFacility(b.key);
@@ -112,6 +117,7 @@ export default class VillageScene extends Phaser.Scene {
   // ---------- 공통 패널 ----------
   openPanel(title) {
     this.busy = true;
+    if (this.listGroup) this.listGroup.destroy(); if (this.panelGroup) this.panelGroup.destroy();
     const g = new UIGroup();
     g.add(this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.6).setDepth(DEPTH.MODAL - 2).setInteractive());
     g.add(panel(this, 8, 8, W - 16, H - 16, { depth: DEPTH.MODAL - 1 }));
@@ -158,6 +164,7 @@ export default class VillageScene extends Phaser.Scene {
       case 'sage': return this.openSage();
       case 'shelter': return this.openShelter();
       case 'gate': return this.openGate();
+      case 'home': return this.goHome();
     }
   }
 
@@ -243,26 +250,90 @@ export default class VillageScene extends Phaser.Scene {
 
   // ---------- 동물 쉼터 ----------
   openShelter() {
-    this.openPanel(`${Data.strings.cageName} (3마리까지)`);
+    this.openPanel(`${Data.strings.cageName} (3마리까지 함께)`);
     const render = () => {
       const s = GameState.s;
       const rows = Object.entries(s.animals).map(([id, rec]) => {
-        const a = Data.animal(id), inParty = s.party.includes(id), st = GameState.animalStats(id);
+        const a = Data.animal(id), inParty = s.party.includes(id), st = GameState.animalStatus(id), h = GameState.hearts(id);
         return {
-          label: `${a.name}  Lv${rec.level}  (${a.role})${inParty ? ' ✓' : ''}`,
-          sub: `HP ${rec.hp}/${st.hp}  공격 ${st.atk}  방어 ${st.def}  빠르기 ${st.spd}`,
+          label: `${a.name} Lv${rec.level}  ${'♥'.repeat(h)}${'♡'.repeat(5 - h)}`,
+          sub: `${a.role}  HP ${rec.hp}/${GameState.animalStats(id).hp}  상태: ${st.text}`,
           right: inParty ? '함께 가요' : '쉬는 중', rightColor: inParty ? '#7ee081' : '#b8c0e0',
           color: inParty ? 0x2e5a3a : 0x3d4066,
-          onTap: () => {
-            const r = GameState.toggleParty(id);
-            if (r === 'full') { Audio.sfx('error'); toast(this, '3마리까지만 데려갈 수 있어요!'); }
-            render();
-          },
+          onTap: () => this.openAnimalDetail(id),
         };
       });
       this.renderList(rows);
     };
     render();
+  }
+  openAnimalDetail(id) {
+    const a = Data.animal(id);
+    this.openPanel(a.name);
+    const g = this.listGroup;
+    const sprite = g.add(this.add.image(60, 118, a.sprite).setScale(3).setDepth(DEPTH.MODAL));
+    this.tweens.add({ targets: sprite, y: 114, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    const info = g.add(txt(this, 112, 36, '', { size: 11, depth: DEPTH.MODAL, lineSpacing: 4 }));
+    const btns = new UIGroup(); g.add(btns);
+    const say = (m) => toast(this, m, { y: 120, duration: 1500 });
+    const render = () => {
+      const s = GameState.s, rec = s.animals[id], st = GameState.animalStatus(id), h = GameState.hearts(id), stats = GameState.animalStats(id);
+      const inParty = s.party.includes(id);
+      info.setText([
+        `Lv${rec.level}  ${a.role}   HP ${rec.hp}/${stats.hp}`,
+        `친구 레벨 ${'♥'.repeat(h)}${'♡'.repeat(5 - h)}${rec.friend >= 80 ? '  힘이 나요!' : ''}`,
+        `상태: ${st.text}${rec.dirt >= 5 && !rec.sick ? ' (샤워해 주세요)' : ''}`,
+        inParty ? '지금 함께 모험 중이에요' : '쉼터에서 쉬고 있어요',
+      ].join('\n'));
+      btns.destroy(); btns.items = [];
+      const B = (i, label, fn, opts = {}) => {
+        const col = i % 2, row = Math.floor(i / 2);
+        return btns.add(new Button(this, 112 + col * 100, 96 + row * 30, 96, 26, label, fn, { depth: DEPTH.MODAL, ...opts }));
+      };
+      const canGo = GameState.canBattle(id);
+      B(0, inParty ? '쉬게 하기' : '함께 가기', () => {
+        const r = GameState.toggleParty(id);
+        if (r === 'full') { Audio.sfx('error'); say('3마리까지만 데려갈 수 있어요!'); }
+        render();
+      }, { color: inParty ? 0x555577 : COLORS.ok }).setEnabled(inParty || canGo);
+      B(1, GameState.canPlay(id) ? '놀아주기 ♥' : '오늘은 놀았어요', () => {
+        if (!GameState.canPlay(id)) { say(Data.fmt(Data.dialogues.care.playDone).replace(/\{name\}/g, a.name)); return; }
+        const res = GameState.play(id); Audio.sfx('heal'); this.hop(sprite);
+        say(Data.fmt(Data.dialogues.care.play).replace(/\{name\}/g, a.name));
+        if (res === 'back') this.dialog.show([`${a.name}이(가) 기분이 풀려서 돌아왔어요!`]);
+        render();
+      }, { color: 0xd6679a }).setEnabled(GameState.canPlay(id) && !rec.sick);
+      B(2, rec.dirt >= 5 ? '샤워 (필요!)' : '샤워', () => {
+        const res = GameState.shower(id); Audio.sfx('star');
+        say(Data.fmt(Data.dialogues.care.shower).replace(/\{name\}/g, a.name));
+        if (res === 'sulk') this.dialog.show([Data.fmt(Data.dialogues.care.sulk).replace(/\{name\}/g, a.name)]);
+        render();
+      }, { color: 0x4a90e2 }).setEnabled(rec.dirt > 0 && !rec.sick);
+      const snacks = s.inventory.snack || 0, meds = s.inventory.medicine || 0;
+      B(3, `간식 주기 (${snacks})`, () => {
+        if (!GameState.snack(id)) return;
+        Audio.sfx('heal'); this.hop(sprite); say(Data.fmt(Data.dialogues.care.snack).replace(/\{name\}/g, a.name));
+        if (!s.animals[id].sulk && rec.sulk === false) { /* 상태 갱신은 render 에서 */ }
+        render();
+      }, { color: 0xe08a3c }).setEnabled(snacks > 0 && rec.friend < GameState.FRIEND_MAX);
+      B(4, `감기약 주기 (${meds})`, () => {
+        if (!GameState.cure(id)) return;
+        Audio.sfx('levelup'); this.hop(sprite); say(Data.fmt(Data.dialogues.care.cure).replace(/\{name\}/g, a.name)); render();
+      }, { color: 0x3fa34d }).setEnabled(rec.sick && meds > 0);
+      B(5, '목록으로', () => this.openShelter(), { color: 0x555577 });
+      this.updateMoney();
+      // 아픈/삐진 동물이 파티에 있으면 뺀다
+      if (!canGo && inParty) { GameState.leaveParty(id); render(); }
+    };
+    render();
+  }
+  hop(obj) { this.tweens.add({ targets: obj, y: obj.y - 10, duration: 120, yoyo: true, repeat: 1 }); }
+
+  // ---------- 우리 집 ----------
+  async goHome() {
+    this.busy = true;
+    await fadeOut(this, 250);
+    this.scene.start('Home', {});
   }
 
   // ---------- 숲 입구 ----------
@@ -280,6 +351,7 @@ export default class VillageScene extends Phaser.Scene {
           this.busy = true;
           await fadeOut(this);
           delete s.flags.defeated[st.id]; // 다시 들어가면 적이 다시 나타남
+          s.day += 1; // 숲에 다녀오면 하루가 지나요 (놀아주기 횟수 기준)
           this.scene.start('Field', { stageId: st.id, mapId: st.start.map, x: st.start.x, y: st.start.y, fresh: true });
         },
       };

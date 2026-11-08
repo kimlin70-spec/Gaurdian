@@ -25,8 +25,10 @@ const GameState = {
       stardust: p.startStardust || 0,
       shards: 0,
       skillLevels: {},        // ownerId → { skillId: level }
-      flags: { chests: {}, defeated: {}, cleared: {}, introSeen: false, hintIndex: 0 },
+      flags: { chests: {}, defeated: {}, cleared: {}, healed: {}, introSeen: false, hintIndex: 0 },
       location: { scene: 'Village' },
+      day: 1,                 // 숲에 다녀올 때마다 +1 (놀아주기 하루 1번 기준)
+      home: { placed: [], owned: {} }, // 집 꾸미기: 놓인 가구, 가진 가구
     };
     return this.s;
   },
@@ -40,6 +42,9 @@ const GameState = {
     s.flags.chests = s.flags.chests || {}; s.flags.defeated = s.flags.defeated || {}; s.flags.cleared = s.flags.cleared || {};
     s.inventory = s.inventory || {}; s.party = s.party || []; s.animals = s.animals || {};
     s.ownedEquip = s.ownedEquip || Object.values(s.player.equip);
+    s.flags.healed = s.flags.healed || {}; s.day = s.day || 1;
+    s.home = s.home || { placed: [], owned: {} };
+    for (const id of Object.keys(s.animals)) this.fixAnimal(s.animals[id]);
     return true;
   },
   hasSave() { return Save.has(); },
@@ -99,11 +104,12 @@ const GameState = {
   },
   makeAnimalUnit(id) {
     const a = Data.animal(id), rec = this.s.animals[id], st = this.animalStats(id);
+    if (rec.friend >= 80) st.atk = Math.round(st.atk * 1.1) + 1; // 하트 4개 이상이면 힘이 나요
     return {
       uid: 'animal_' + id, kind: 'animal', side: 'ally', ownerId: id, animalId: id, name: a.name,
       sprite: a.sprite, role: a.role, stats: st, maxHp: st.hp, maxMp: st.mp,
       hp: Math.min(rec.hp, st.hp), mp: Math.min(rec.mp, st.mp),
-      skills: a.skills.slice(), auto: !!this.s.auto[id],
+      skills: a.skills.slice(), auto: !!this.s.auto[id], friend: rec.friend,
     };
   },
   makeEnemyUnit(id, index) {
@@ -116,7 +122,7 @@ const GameState = {
   },
   partyUnits() {
     const list = [this.makePlayerUnit()];
-    for (const id of this.s.party) if (this.s.animals[id]) list.push(this.makeAnimalUnit(id));
+    for (const id of this.s.party) if (this.s.animals[id] && this.canBattle(id)) list.push(this.makeAnimalUnit(id));
     return list;
   },
   syncFromBattle(units) {
@@ -140,10 +146,60 @@ const GameState = {
   rescueAnimal(id) {
     if (this.s.animals[id]) return false; // 이미 친구
     const st = this.animalStats(id);
-    this.s.animals[id] = { level: 1, exp: 0, hp: st.hp, mp: st.mp };
+    this.s.animals[id] = { level: 1, exp: 0, hp: st.hp, mp: st.mp, friend: 60, dirt: 0, sick: false, sulk: false, lastPlayDay: 0 };
     if (this.s.party.length < 3) this.s.party.push(id);
     return true;
   },
+  fixAnimal(rec) { // 예전 저장 파일 호환
+    if (rec.friend === undefined) rec.friend = 60;
+    if (rec.dirt === undefined) rec.dirt = 0;
+    rec.sick = !!rec.sick; rec.sulk = !!rec.sulk; rec.lastPlayDay = rec.lastPlayDay || 0;
+  },
+
+  // ---------- 돌보기 (친구 레벨 / 샤워 / 아픔) ----------
+  FRIEND_MAX: 100,
+  hearts(id) { return Math.round((this.s.animals[id].friend / this.FRIEND_MAX) * 5); }, // 0~5
+  canBattle(id) { const r = this.s.animals[id]; return r && !r.sick && !r.sulk; },
+  animalStatus(id) {
+    const r = this.s.animals[id];
+    if (r.sick) return { text: '아픔', color: '#ff8080' };
+    if (r.sulk) return { text: '삐짐', color: '#c0a0ff' };
+    if (r.dirt >= 5) return { text: '더러움', color: '#d9b57a' };
+    return { text: '좋아요', color: '#7ee081' };
+  },
+  addFriend(id, n) {
+    const r = this.s.animals[id];
+    r.friend = Math.max(0, Math.min(this.FRIEND_MAX, r.friend + n));
+    if (r.friend <= 0 && !r.sulk) { r.sulk = true; this.leaveParty(id); return 'sulk'; }
+    if (r.sulk && r.friend >= 30) { r.sulk = false; return 'back'; }
+    return null;
+  },
+  leaveParty(id) { const i = this.s.party.indexOf(id); if (i >= 0) this.s.party.splice(i, 1); },
+  canPlay(id) { return this.s.animals[id].lastPlayDay < this.s.day; },
+  play(id) { const r = this.s.animals[id]; r.lastPlayDay = this.s.day; return this.addFriend(id, 15); },
+  shower(id) { const r = this.s.animals[id]; r.dirt = 0; return this.addFriend(id, -5); },
+  snack(id) { if (!this.useItem('snack')) return false; this.addFriend(id, Data.item('snack').power); return true; },
+  cure(id) { if (!this.useItem('medicine')) return false; const r = this.s.animals[id]; r.sick = false; r.dirt = 0; return true; },
+  // 전투 한 번 끝날 때 호출: 더러워지고, 쓰러졌으면 친구 레벨 하락. 알림 문구 목록을 돌려준다.
+  afterBattle(units) {
+    const msgs = [];
+    for (const u of units) {
+      if (u.kind !== 'animal') continue;
+      const r = this.s.animals[u.animalId], name = u.name; if (!r) continue;
+      r.dirt += 1;
+      if (r.dirt === 5) msgs.push(Data.fmt(Data.dialogues.care.dirty).replace(/\{name\}/g, name));
+      if (r.dirt >= 8 && !r.sick) { r.sick = true; this.leaveParty(u.animalId); msgs.push(Data.fmt(Data.dialogues.care.sick).replace(/\{name\}/g, name)); }
+      if (u.hp <= 0) { const res = this.addFriend(u.animalId, -10); if (res === 'sulk') msgs.push(Data.fmt(Data.dialogues.care.sulk).replace(/\{name\}/g, name)); }
+    }
+    return msgs;
+  },
+  // 치료(다친 동물)로 구조: 정화 구조와 같지만 친구 레벨이 더 높게 시작
+  healAnimal(id) { const isNew = this.rescueAnimal(id); if (isNew) this.s.animals[id].friend = 75; return isNew; },
+
+  // ---------- 집 꾸미기 ----------
+  addFurniture(id, n = 1) { this.s.home.owned[id] = (this.s.home.owned[id] || 0) + n; },
+  canCraft(id) { const f = Data.furniture[id]; if (!f || !f.craft) return false; return Object.entries(f.craft).every(([m, n]) => (this.s.inventory[m] || 0) >= n); },
+  craft(id) { if (!this.canCraft(id)) return false; for (const [m, n] of Object.entries(Data.furniture[id].craft)) { this.s.inventory[m] -= n; if (this.s.inventory[m] <= 0) delete this.s.inventory[m]; } this.addFurniture(id); return true; },
   toggleParty(id) {
     const i = this.s.party.indexOf(id);
     if (i >= 0) { this.s.party.splice(i, 1); return 'out'; }

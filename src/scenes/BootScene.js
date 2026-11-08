@@ -16,6 +16,6 @@ export default class BootScene extends Phaser.Scene {
     Data.init(this.cache.json);
     Audio.init();
     generateAll(this);
-    this.scene.start('Title');
+    this.scene.start('Title', {});
   }
 }

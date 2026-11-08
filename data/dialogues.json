@@ -1,16 +1,56 @@
 {
   "_comment": "{hero} {guide} {world} {king} {cage} {gem} 는 strings.json 의 이름으로 바뀝니다. 한 줄은 짧게!",
   "intro": [
-    { "bg": "real",   "who": "narr",  "text": "어느 날, {hero}는 공원에서\n다친 작은 동물을 보았어요." },
-    { "bg": "real",   "who": "hero",  "text": "괜찮아? 내가 도와줄게." },
-    { "bg": "real",   "who": "guide", "text": "고마워... 나는 {guide}야." },
-    { "bg": "real",   "who": "narr",  "text": "그때 {guide}의 팔찌에서\n보석이 반짝반짝 빛났어요!" },
-    { "bg": "portal", "who": "guide", "text": "{gem}이 너를 골랐어!\n새로운 숲의 수호자야!" },
-    { "bg": "portal", "who": "hero",  "text": "우와, 어디로 가는 거야?" },
-    { "bg": "forest", "who": "guide", "text": "여기는 {world}.\n{king}이 숲을 더럽혔어." },
-    { "bg": "forest", "who": "guide", "text": "검은 안개 때문에\n동물들이 사나워졌어." },
-    { "bg": "forest", "who": "guide", "text": "동물들을 쓰러뜨리지 말고\n보석으로 '정화'해 줘!" },
-    { "bg": "forest", "who": "hero",  "text": "좋아! 내가 숲을 구할게!" }
+    {
+      "bg": "real",
+      "who": "narr",
+      "text": "어느 날, {hero}는 공원에서\n다친 작은 동물을 보았어요."
+    },
+    {
+      "bg": "real",
+      "who": "hero",
+      "text": "괜찮아? 내가 도와줄게."
+    },
+    {
+      "bg": "real",
+      "who": "guide",
+      "text": "고마워... 나는 {guide}야."
+    },
+    {
+      "bg": "real",
+      "who": "narr",
+      "text": "그때 {guide}의 팔찌에서\n보석이 반짝반짝 빛났어요!"
+    },
+    {
+      "bg": "portal",
+      "who": "guide",
+      "text": "{gem}이 너를 골랐어!\n새로운 숲의 수호자야!"
+    },
+    {
+      "bg": "portal",
+      "who": "hero",
+      "text": "우와, 어디로 가는 거야?"
+    },
+    {
+      "bg": "forest",
+      "who": "guide",
+      "text": "여기는 {world}.\n{king}이 숲을 더럽혔어."
+    },
+    {
+      "bg": "forest",
+      "who": "guide",
+      "text": "검은 안개 때문에\n동물들이 사나워졌어."
+    },
+    {
+      "bg": "forest",
+      "who": "guide",
+      "text": "동물들을 쓰러뜨리지 말고\n보석으로 '정화'해 줘!"
+    },
+    {
+      "bg": "forest",
+      "who": "hero",
+      "text": "좋아! 내가 숲을 구할게!"
+    }
   ],
   "villageWelcome": [
     "여기는 숲 마을이야.",
@@ -20,7 +60,10 @@
     "적의 HP가 조금 남으면\n'정화' 버튼이 빛나!",
     "동물은 정화하면 친구가 돼.\n{cage}에 넣어 데리고 다녀!",
     "여관에서 쉬면 모두 회복하고\n저장도 돼.",
-    "현자의 집에서 {shard}으로\n스킬을 세게 할 수 있어."
+    "현자의 집에서 {shard}으로\n스킬을 세게 할 수 있어.",
+    "동물은 싸울 때마다 더러워져.\n쉼터에서 샤워시켜 줘!",
+    "쉼터에서 놀아주면\n하트가 올라가. 하트가 많으면 더 세져!",
+    "숲에 다친 동물이 앉아 있어.\n정화 말고 치료해 주면 친구가 돼."
   ],
   "innRest": "푹 잤어요! 모두 건강해졌어요.\n저장도 했어요.",
   "lose": [
@@ -48,15 +91,65 @@
     "모든 숲이 깨끗해졌어요!"
   ],
   "ending": [
-    { "bg": "forest", "who": "narr",  "text": "{king}도 정화되어\n착한 마음을 되찾았어요." },
-    { "bg": "forest", "who": "guide", "text": "{world}가 다시 반짝여!\n고마워, {hero}." },
-    { "bg": "portal", "who": "hero",  "text": "또 놀러 올게!" },
-    { "bg": "real",   "who": "narr",  "text": "{hero}는 집으로 돌아왔어요.\n보석은 아직 빛나고 있어요." },
-    { "bg": "real",   "who": "narr",  "text": "언제든 다시 갈 수 있어요.\n— 끝 —" }
+    {
+      "bg": "forest",
+      "who": "narr",
+      "text": "{king}도 정화되어\n착한 마음을 되찾았어요."
+    },
+    {
+      "bg": "forest",
+      "who": "guide",
+      "text": "{world}가 다시 반짝여!\n고마워, {hero}."
+    },
+    {
+      "bg": "portal",
+      "who": "hero",
+      "text": "또 놀러 올게!"
+    },
+    {
+      "bg": "real",
+      "who": "narr",
+      "text": "{hero}는 집으로 돌아왔어요.\n보석은 아직 빛나고 있어요."
+    },
+    {
+      "bg": "real",
+      "who": "narr",
+      "text": "언제든 다시 갈 수 있어요.\n— 끝 —"
+    }
   ],
   "npc": {
-    "guide_m1": ["{guide}: 적에게 닿으면 싸움이 시작돼.", "{guide}: HP가 조금 남으면 정화해 줘!"],
-    "scared_bird": ["새: 안개 속에 곰이 있어...\n무서워서 못 가겠어.", "새: 길 끝에 돌문이 있대."],
-    "old_tree": ["큰 나무: 상자를 열어 보렴.\n도움이 될 거야."]
+    "guide_m1": [
+      "{guide}: 적에게 닿으면 싸움이 시작돼.",
+      "{guide}: HP가 조금 남으면 정화해 줘!"
+    ],
+    "scared_bird": [
+      "새: 안개 속에 곰이 있어...\n무서워서 못 가겠어.",
+      "새: 길 끝에 돌문이 있대."
+    ],
+    "old_tree": [
+      "큰 나무: 상자를 열어 보렴.\n도움이 될 거야."
+    ]
+  },
+  "injured": {
+    "found": [
+      "아야... 다쳤어요.",
+      "{hero}: 괜찮아, 내가 치료해 줄게!"
+    ],
+    "how": "반짝이는 상처를 탭해서\n붕대를 감아 주세요!",
+    "done": "{name}이(가) 나았어요!\n친구가 되었어요!"
+  },
+  "care": {
+    "play": "{name}와(과) 신나게 놀았어요! ♥",
+    "playDone": "{name}은(는) 오늘 이미 놀았어요.\n숲에 다녀온 뒤 또 놀아요.",
+    "shower": "{name}을(를) 씻겼어요!\n싫어하지만 깨끗해졌어요.\n간식을 주면 금방 기분이 풀려요.",
+    "snack": "{name}이(가) 당근 과자를 냠냠! ♥",
+    "cure": "{name}이(가) 다 나았어요!",
+    "sulk": "{name}이(가) 삐져서 숨었어요...\n놀아주거나 간식을 주면 돌아와요.",
+    "sick": "{name}이(가) 감기에 걸렸어요!\n쉼터에서 감기약을 주세요.",
+    "dirty": "{name}이(가) 더러워졌어요.\n쉼터에서 샤워시켜 주세요."
+  },
+  "home": {
+    "welcome": "여기는 {hero}의 집!\n가구를 놓아 예쁘게 꾸며요.",
+    "how": "아래에서 가구를 고르고\n바닥을 탭하면 놓여요.\n놓인 가구를 탭하면 다시 들어요."
   }
 }

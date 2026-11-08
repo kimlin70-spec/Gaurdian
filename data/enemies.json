@@ -1,45 +1,221 @@
 {
   "_comment": "kind: plant(정화하면 사라짐) | animal(정화하면 구조, animal 에 동물 id) | boss(정화하면 스테이지 클리어). skills 의 w 는 고를 확률 가중치.",
   "mushroom": {
-    "name": "오염된 버섯", "kind": "plant", "sprite": "mushroom",
-    "stats": { "hp": 28, "mp": 8, "atk": 7, "def": 3, "spd": 3 },
-    "skills": [ { "id": "attack", "w": 7 }, { "id": "spore", "w": 3 } ],
-    "exp": 7, "stardust": 5, "shards": 0,
-    "drops": [ { "item": "potion_s", "chance": 0.3 } ]
+    "name": "오염된 버섯",
+    "kind": "plant",
+    "sprite": "mushroom",
+    "stats": {
+      "hp": 28,
+      "mp": 8,
+      "atk": 7,
+      "def": 3,
+      "spd": 3
+    },
+    "skills": [
+      {
+        "id": "attack",
+        "w": 7
+      },
+      {
+        "id": "spore",
+        "w": 3
+      }
+    ],
+    "exp": 7,
+    "stardust": 5,
+    "shards": 0,
+    "drops": [
+      {
+        "item": "potion_s",
+        "chance": 0.3
+      },
+      {
+        "item": "twig",
+        "chance": 0.6
+      }
+    ]
   },
   "vine": {
-    "name": "가시덩굴", "kind": "plant", "sprite": "vine",
-    "stats": { "hp": 36, "mp": 9, "atk": 9, "def": 4, "spd": 2 },
-    "skills": [ { "id": "attack", "w": 6 }, { "id": "whip", "w": 4 } ],
-    "exp": 10, "stardust": 7, "shards": 0,
-    "drops": [ { "item": "berry", "chance": 0.25 } ]
+    "name": "가시덩굴",
+    "kind": "plant",
+    "sprite": "vine",
+    "stats": {
+      "hp": 36,
+      "mp": 9,
+      "atk": 9,
+      "def": 4,
+      "spd": 2
+    },
+    "skills": [
+      {
+        "id": "attack",
+        "w": 6
+      },
+      {
+        "id": "whip",
+        "w": 4
+      }
+    ],
+    "exp": 10,
+    "stardust": 7,
+    "shards": 0,
+    "drops": [
+      {
+        "item": "berry",
+        "chance": 0.25
+      },
+      {
+        "item": "twig",
+        "chance": 0.6
+      },
+      {
+        "item": "petal",
+        "chance": 0.4
+      }
+    ]
   },
   "rabbit_c": {
-    "name": "오염된 토끼", "kind": "animal", "animal": "rabbit", "sprite": "rabbit",
-    "stats": { "hp": 34, "mp": 10, "atk": 8, "def": 3, "spd": 10 },
-    "skills": [ { "id": "attack", "w": 6 }, { "id": "quick_kick", "w": 4 } ],
-    "exp": 12, "stardust": 6, "shards": 1,
-    "drops": []
+    "name": "오염된 토끼",
+    "kind": "animal",
+    "animal": "rabbit",
+    "sprite": "rabbit",
+    "stats": {
+      "hp": 34,
+      "mp": 10,
+      "atk": 8,
+      "def": 3,
+      "spd": 10
+    },
+    "skills": [
+      {
+        "id": "attack",
+        "w": 6
+      },
+      {
+        "id": "quick_kick",
+        "w": 4
+      }
+    ],
+    "exp": 12,
+    "stardust": 6,
+    "shards": 1,
+    "drops": [
+      {
+        "item": "petal",
+        "chance": 0.6
+      }
+    ]
   },
   "squirrel_c": {
-    "name": "오염된 다람쥐", "kind": "animal", "animal": "squirrel", "sprite": "squirrel",
-    "stats": { "hp": 32, "mp": 10, "atk": 11, "def": 2, "spd": 8 },
-    "skills": [ { "id": "attack", "w": 5 }, { "id": "acorn", "w": 5 } ],
-    "exp": 13, "stardust": 6, "shards": 1,
-    "drops": []
+    "name": "오염된 다람쥐",
+    "kind": "animal",
+    "animal": "squirrel",
+    "sprite": "squirrel",
+    "stats": {
+      "hp": 32,
+      "mp": 10,
+      "atk": 11,
+      "def": 2,
+      "spd": 8
+    },
+    "skills": [
+      {
+        "id": "attack",
+        "w": 5
+      },
+      {
+        "id": "acorn",
+        "w": 5
+      }
+    ],
+    "exp": 13,
+    "stardust": 6,
+    "shards": 1,
+    "drops": [
+      {
+        "item": "twig",
+        "chance": 0.7
+      }
+    ]
   },
   "boar_c": {
-    "name": "오염된 멧돼지", "kind": "animal", "animal": "boar", "sprite": "boar",
-    "stats": { "hp": 55, "mp": 10, "atk": 11, "def": 6, "spd": 4 },
-    "skills": [ { "id": "attack", "w": 5 }, { "id": "charge", "w": 5 } ],
-    "exp": 18, "stardust": 9, "shards": 1,
-    "drops": [ { "item": "potion_s", "chance": 0.5 } ]
+    "name": "오염된 멧돼지",
+    "kind": "animal",
+    "animal": "boar",
+    "sprite": "boar",
+    "stats": {
+      "hp": 55,
+      "mp": 10,
+      "atk": 11,
+      "def": 6,
+      "spd": 4
+    },
+    "skills": [
+      {
+        "id": "attack",
+        "w": 5
+      },
+      {
+        "id": "charge",
+        "w": 5
+      }
+    ],
+    "exp": 18,
+    "stardust": 9,
+    "shards": 1,
+    "drops": [
+      {
+        "item": "potion_s",
+        "chance": 0.5
+      },
+      {
+        "item": "pebble",
+        "chance": 0.7
+      }
+    ]
   },
   "bear_boss": {
-    "name": "오염된 수호곰", "kind": "boss", "sprite": "bear", "scale": 1.5,
-    "stats": { "hp": 160, "mp": 40, "atk": 14, "def": 7, "spd": 5 },
-    "skills": [ { "id": "attack", "w": 4 }, { "id": "big_claw", "w": 4 }, { "id": "dark_roar", "w": 2 } ],
-    "exp": 60, "stardust": 50, "shards": 3,
-    "drops": [ { "item": "honey", "chance": 1.0 } ]
+    "name": "오염된 수호곰",
+    "kind": "boss",
+    "sprite": "bear",
+    "scale": 1.5,
+    "stats": {
+      "hp": 160,
+      "mp": 40,
+      "atk": 14,
+      "def": 7,
+      "spd": 5
+    },
+    "skills": [
+      {
+        "id": "attack",
+        "w": 4
+      },
+      {
+        "id": "big_claw",
+        "w": 4
+      },
+      {
+        "id": "dark_roar",
+        "w": 2
+      }
+    ],
+    "exp": 60,
+    "stardust": 50,
+    "shards": 3,
+    "drops": [
+      {
+        "item": "honey",
+        "chance": 1.0
+      },
+      {
+        "item": "pebble",
+        "chance": 1.0
+      },
+      {
+        "item": "petal",
+        "chance": 1.0
+      }
+    ]
   }
 }

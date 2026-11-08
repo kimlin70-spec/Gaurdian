@@ -81,6 +81,7 @@ export default class BattleScene extends Phaser.Scene {
     row.hp = bar(this, 56, y + 4, 50, 4, COLORS.hp, { lowAt: 0.3 });
     row.mp = bar(this, 56, y + 9, 50, 3, COLORS.mp);
     row.auto = txt(this, 48, y, '', { size: 11, color: COLORS.yellow, strokeThickness: 1 });
+    if (u.friend >= 80) row.heart = txt(this, 40, y, '♥', { size: 11, color: '#ff6fa0', strokeThickness: 1 });
     const hit = this.add.rectangle(56, y + 7, 108, 14, 0xffffff, 0.001).setInteractive({ useHandCursor: true });
     hit.on('pointerup', () => { if (this.targeting) this.onTargetTap(u); else if (u.kind === 'animal') this.toggleAuto(u); });
     row.pointer = txt(this, 0, y, '▶', { size: 11, color: COLORS.yellow, strokeThickness: 1 }).setVisible(false);
@@ -177,7 +178,7 @@ export default class BattleScene extends Phaser.Scene {
   }
   showItemMenu(u) {
     this.clearCmd();
-    const items = GameState.itemList();
+    const items = GameState.itemList().filter(it => ['heal', 'mp', 'heal_all', 'revive'].includes(it.type));
     const rows = items.map(it => ({ label: `${it.name} ×${it.n}`, sub: '', enabled: true, onTap: () => {
       if (it.type === 'heal_all') return this.finishCmd({ type: 'item', item: it.id, actor: u, targets: 'allies' });
       this.pickTarget(u, { type: 'item', item: it.id }, 'ally', it.type === 'revive' ? (a => !a.alive) : (a => a.alive), it.type === 'revive');
@@ -425,6 +426,7 @@ export default class BattleScene extends Phaser.Scene {
       lines.push(r.isNew ? `${a.name}을(를) 구했어요!\n${Data.strings.cageName}에 들어와 친구가 되었어요!` : `${a.name}이(가) 다시 깨끗해졌어요!`);
     }
     GameState.syncFromBattle(this.allies);
+    const careMsgs = GameState.afterBattle(this.allies);
     for (const a of this.allies) {
       if (!a.alive) continue;
       const rec = a.kind === 'player' ? s.player : s.animals[a.animalId];
@@ -435,6 +437,7 @@ export default class BattleScene extends Phaser.Scene {
         lines.push(`${a.name} 레벨 업! Lv${rec.level}\nHP ${st.hp}  공격 ${st.atk}  방어 ${st.def}`);
       }
     }
+    lines.push(...careMsgs);
     this.markDefeated();
     GameState.save();
     await wait(this, 500);
@@ -447,6 +450,7 @@ export default class BattleScene extends Phaser.Scene {
     Audio.stopBgm();
     this.say('모두 쓰러졌어요...');
     GameState.syncFromBattle(this.allies);
+    GameState.afterBattle(this.allies);
     GameState.save();
     await wait(this, 900);
     await fadeOut(this, 600);
@@ -462,6 +466,7 @@ export default class BattleScene extends Phaser.Scene {
     for (const dr of d.drops || []) if (Math.random() < dr.chance) { GameState.addItem(dr.item, 1); lines.push(`${Data.item(dr.item).name}을(를) 얻었어요!`); }
     lines.push(`경험치 +${d.exp}  ★${d.stardust}  ◆${d.shards || 0}`);
     GameState.syncFromBattle(this.allies);
+    lines.push(...GameState.afterBattle(this.allies));
     for (const a of this.allies) {
       if (!a.alive) continue;
       const rec = a.kind === 'player' ? s.player : s.animals[a.animalId];
