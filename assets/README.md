@@ -31,3 +31,10 @@
 3. 타일 `tiles`, 나무 `tree`, `tree_dark`, 덤불 `bush`, 바위 `rock`
 4. 적 `mushroom`, `vine`, 보스 `bear`
 5. 건물 7장, 가구 10장, 소품 5장
+
+## 아직 임시 그림인 것 (새로 그리면 더 좋아요)
+- 눈 숲: `tree_snow` `tree_snow_dark` (32×48), `rock_snow` (32×32), 동물 `penguin` `owl` `reindeer`, 적 `snowman` `frost_vine` (32×32), 보스 `wolf` (48×48)
+- 눈 타일 `tiles_snow` (32×32 ×8칸 가로 1줄 = 256×32): 눈, 눈(나무밑), 얼음, 오염눈, 오염눈(나무밑), 눈(바위밑), 눈길, 얼음꽃
+- 무기 `w_stick` `w_wood_sword` `w_light_sword` (48×64, 주인공과 같은 캔버스에서 오른손 위치에 그리기)
+- 마당 가구 `f_flowerbed` `f_bench` `f_stonepath` (64×32), `f_birdhouse` (32×64), `f_tree_small` (64×64)
+이 키들은 PNG 를 `assets/` 에 넣고 `data/assets.json` 의 overrides 에 한 줄 추가하면 교체됩니다.

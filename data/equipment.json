@@ -1,12 +1,69 @@
 {
-  "_comment": "slot: weapon | armor | bracelet. bracelet 의 purify 는 정화 가능 HP 비율. price 0 은 처음부터 가진 것.",
-  "stick":      { "name": "나무 막대",   "slot": "weapon", "atk": 1,  "price": 0,  "desc": "처음 무기" },
-  "wood_sword": { "name": "나무 검",     "slot": "weapon", "atk": 3,  "price": 25, "desc": "공격 +3" },
-  "light_sword":{ "name": "빛의 검",     "slot": "weapon", "atk": 6,  "price": 70, "desc": "공격 +6" },
-  "cloth":      { "name": "천 옷",       "slot": "armor",  "def": 1,  "price": 0,  "desc": "처음 옷" },
-  "leather":    { "name": "가죽 옷",     "slot": "armor",  "def": 3,  "price": 25, "desc": "방어 +3" },
-  "leaf_armor": { "name": "나뭇잎 갑옷", "slot": "armor",  "def": 6,  "price": 70, "desc": "방어 +6" },
-  "bracelet_1": { "name": "보석 팔찌",   "slot": "bracelet", "purify": 0.25, "price": 0,  "desc": "HP 25% 아래면 정화" },
-  "bracelet_2": { "name": "빛나는 팔찌", "slot": "bracelet", "purify": 0.35, "price": 60, "desc": "HP 35% 아래면 정화" },
-  "bracelet_3": { "name": "별빛 팔찌",   "slot": "bracelet", "purify": 0.50, "price": 150, "desc": "HP 50% 아래면 정화" }
+  "_comment": "slot: weapon | armor | bracelet. bracelet 의 purify 는 정화 가능 HP 비율. price 0 은 처음부터 가진 것. weapon 의 sprite 는 주인공 손에 보이는 그림(24x32 레이어).",
+  "stick": {
+    "name": "나무 막대",
+    "slot": "weapon",
+    "atk": 1,
+    "price": 0,
+    "desc": "처음 무기",
+    "sprite": "w_stick"
+  },
+  "wood_sword": {
+    "name": "나무 검",
+    "slot": "weapon",
+    "atk": 3,
+    "price": 25,
+    "desc": "공격 +3",
+    "sprite": "w_wood_sword"
+  },
+  "light_sword": {
+    "name": "빛의 검",
+    "slot": "weapon",
+    "atk": 6,
+    "price": 70,
+    "desc": "공격 +6",
+    "sprite": "w_light_sword"
+  },
+  "cloth": {
+    "name": "천 옷",
+    "slot": "armor",
+    "def": 1,
+    "price": 0,
+    "desc": "처음 옷"
+  },
+  "leather": {
+    "name": "가죽 옷",
+    "slot": "armor",
+    "def": 3,
+    "price": 25,
+    "desc": "방어 +3"
+  },
+  "leaf_armor": {
+    "name": "나뭇잎 갑옷",
+    "slot": "armor",
+    "def": 6,
+    "price": 70,
+    "desc": "방어 +6"
+  },
+  "bracelet_1": {
+    "name": "보석 팔찌",
+    "slot": "bracelet",
+    "purify": 0.25,
+    "price": 0,
+    "desc": "HP 25% 아래면 정화"
+  },
+  "bracelet_2": {
+    "name": "빛나는 팔찌",
+    "slot": "bracelet",
+    "purify": 0.35,
+    "price": 60,
+    "desc": "HP 35% 아래면 정화"
+  },
+  "bracelet_3": {
+    "name": "별빛 팔찌",
+    "slot": "bracelet",
+    "purify": 0.5,
+    "price": 150,
+    "desc": "HP 50% 아래면 정화"
+  }
 }

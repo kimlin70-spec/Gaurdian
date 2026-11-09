@@ -5,6 +5,7 @@ import { img } from '../systems/Assets.js';
 import GameState from '../systems/GameState.js';
 import Audio from '../systems/Audio.js';
 import { txt, DialogBox, fadeIn, fadeOut, tween, wait, setupCamera } from '../systems/UI.js';
+import { themeOf } from '../systems/Assets.js';
 
 export default class PurifyScene extends Phaser.Scene {
   constructor() { super('Purify'); }
@@ -16,14 +17,15 @@ export default class PurifyScene extends Phaser.Scene {
     const cols = Math.ceil(W / TILE), rows = Math.ceil(H / TILE);
     const rng = (i) => ((i * 9301 + 49297) % 233280) / 233280;
     this.dark = []; this.green = [];
+    const th = themeOf(this.p.stageId);
     for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
       const i = y * cols + x, r = rng(i);
       const tree = r < 0.22 && !(y > 5 && y < 10 && x > 6 && x < 13);
-      this.dark.push(img(this, x * TILE, y * TILE, 'tiles', 5).setOrigin(0));
-      this.green.push(img(this, x * TILE, y * TILE, 'tiles', r > 0.9 ? 4 : 0).setOrigin(0).setAlpha(0));
+      this.dark.push(img(this, x * TILE, y * TILE, th.tilesKey, th.corrupt).setOrigin(0));
+      this.green.push(img(this, x * TILE, y * TILE, th.tilesKey, r > 0.9 ? th.flower : th.base).setOrigin(0).setAlpha(0));
       if (tree) {
-        this.dark.push(img(this, x * TILE + 8, (y + 1) * TILE, 'tree_dark').setOrigin(0.5, 1).setDepth(2));
-        this.green.push(img(this, x * TILE + 8, (y + 1) * TILE, 'tree').setOrigin(0.5, 1).setDepth(3).setAlpha(0));
+        this.dark.push(img(this, x * TILE + 8, (y + 1) * TILE, th.treeDark).setOrigin(0.5, 1).setDepth(2));
+        this.green.push(img(this, x * TILE + 8, (y + 1) * TILE, th.tree).setOrigin(0.5, 1).setDepth(3).setAlpha(0));
       }
     }
     const boss = Data.enemy(this.p.bossId);
@@ -51,7 +53,8 @@ export default class PurifyScene extends Phaser.Scene {
     }
     await wait(this, 600);
     // 보스 대사는 전투에서 이미 보여줬으니 여기서는 스테이지 클리어 대사만
-    await this.dialog.show(Data.dialogues.stageClear.map(Data.fmt.bind(Data)));
+    const stName = Data.stage(this.p.stageId).name;
+    await this.dialog.show(Data.dialogues.stageClear.map(l => Data.fmt(l, { stage: stName })));
     const s = GameState.s;
     s.flags.cleared[this.p.stageId] = true;
     GameState.healAll();
@@ -60,6 +63,6 @@ export default class PurifyScene extends Phaser.Scene {
     await fadeOut(this, 500);
     const st = Data.stage(this.p.stageId);
     if (st.final) this.scene.start('StoryIntro', { key: 'ending' });
-    else this.scene.start('Village', { cleared: true });
+    else this.scene.start('Village', { cleared: this.p.stageId });
   }
 }

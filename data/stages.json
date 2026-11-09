@@ -328,27 +328,377 @@
         ],
         "enemies": []
       }
+    },
+    "theme": {
+      "name": "green",
+      "tilesKey": "tiles",
+      "base": 0,
+      "corrupt": 5,
+      "flower": 4,
+      "tree": "tree",
+      "treeDark": "tree_dark",
+      "sky": "#3b3357",
+      "ground": "#5d5876",
+      "bossSky": "#2a2240",
+      "bossGround": "#4a4760"
     }
   },
   "stage2": {
     "name": "눈 내린 숲",
     "order": 2,
-    "locked": true
+    "final": false,
+    "requires": "stage1",
+    "theme": {
+      "name": "snow",
+      "tilesKey": "tiles_snow",
+      "base": 0,
+      "corrupt": 3,
+      "flower": 7,
+      "tree": "tree_snow",
+      "treeDark": "tree_snow_dark",
+      "snow": true,
+      "sky": "#2f3a5a",
+      "ground": "#9fb3c8",
+      "bossSky": "#1f2740",
+      "bossGround": "#6c7a94"
+    },
+    "start": {
+      "map": "m1",
+      "x": 1,
+      "y": 8
+    },
+    "boss": "wolf_boss",
+    "maps": {
+      "m1": {
+        "name": "눈밭 입구",
+        "rows": [
+          "WWWWWWWWWWWWWWWWWWWWWWWW",
+          "WSScSSSSSSWWSSSSSScSSSSW",
+          "WSSSSSWSSSSSSSSWSSSSSSSW",
+          "WSSPPPPPPPPPPSSSSSSSWSSW",
+          "WSSPSSSSSSSSPSSRSSSSSSSW",
+          "WSSPSSIIIISSPPPPPPPPSSSW",
+          "WSSPSSIIIIISSSSSSSSPSWSW",
+          "WSSPSSSIIISSSWSSSSSPSSSW",
+          "PPPPSSSSSSSSSSSSSSSPPPPP",
+          "WSSSSSSWSSSSScSSSSSSSSSW",
+          "WSSWSSSSSSSSSSSSWSSSSSSW",
+          "WSSSSSScSSSSWSSSSSSSWSSW",
+          "WSSSSSSSSSSSSSSSRSSSSSSW",
+          "WScSSSWSSSSSSSSSSSSScSSW",
+          "WWSSSSSSSSSSSWSSSSSSSSSW",
+          "WWWWWWWWWWWWWWWWWWWWWWWW"
+        ],
+        "objects": [
+          {
+            "type": "village_exit",
+            "x": 0,
+            "y": 8
+          },
+          {
+            "type": "npc",
+            "x": 2,
+            "y": 6,
+            "sprite": "guide",
+            "text": "guide_s2"
+          },
+          {
+            "type": "chest",
+            "x": 10,
+            "y": 1,
+            "item": "potion_l",
+            "count": 1
+          },
+          {
+            "type": "chest",
+            "x": 21,
+            "y": 13,
+            "item": "snack",
+            "count": 2
+          },
+          {
+            "type": "injured",
+            "x": 13,
+            "y": 13,
+            "animal": "reindeer"
+          },
+          {
+            "type": "exit",
+            "x": 23,
+            "y": 8,
+            "to": "m2",
+            "tx": 1,
+            "ty": 7
+          }
+        ],
+        "enemies": [
+          {
+            "group": [
+              "frost_vine"
+            ],
+            "x": 8,
+            "y": 4
+          },
+          {
+            "group": [
+              "snowman_c",
+              "snowman_c"
+            ],
+            "x": 15,
+            "y": 12
+          },
+          {
+            "group": [
+              "penguin_c"
+            ],
+            "x": 20,
+            "y": 5
+          }
+        ]
+      },
+      "m2": {
+        "name": "얼어붙은 숲",
+        "rows": [
+          "WWWWWXXXXXXXXXXXXXXXXXXX",
+          "WSSSSSFSFFSSSXSSFFFSSSXX",
+          "WSFFSSXSSSSFFSSSXSSFFSSX",
+          "WSSFFFFSFFFSSXSSSSSFFSSX",
+          "WFFSSXSSSFFXSSFFFFSSXSSX",
+          "XSSFFSSSFFFFSXSSFFFSSSSX",
+          "XSFFFSXSSFSSSSSFFSSXSFSX",
+          "PSSFFSSSSXSFFFFSSSSSFFSX",
+          "XSSIIISFFSSSXSSFFSFFSSSX",
+          "XSFIIIISSFFFSSSXSSSSSFSX",
+          "XFSSIISXSSSFFSSFFFXFSSSX",
+          "XSSFFSSSFFSSXSSSSFFSSFSX",
+          "XSFSSSSXSSSFFFSSXSSSFSSP",
+          "XFSSFFSSSFFSSSFFSSSFFSSX",
+          "XSSSXSSSFFSSXSSSSFFSSSSX",
+          "XXXXXXXXXXXXXXXXXXXXXXXX"
+        ],
+        "objects": [
+          {
+            "type": "exit",
+            "x": 0,
+            "y": 7,
+            "to": "m1",
+            "tx": 22,
+            "ty": 8
+          },
+          {
+            "type": "npc",
+            "x": 3,
+            "y": 13,
+            "sprite": "snowman",
+            "text": "snow_friend"
+          },
+          {
+            "type": "chest",
+            "x": 21,
+            "y": 2,
+            "item": "potion_l",
+            "count": 2
+          },
+          {
+            "type": "chest",
+            "x": 8,
+            "y": 11,
+            "item": "medicine",
+            "count": 1
+          },
+          {
+            "type": "injured",
+            "x": 20,
+            "y": 9,
+            "animal": "penguin"
+          },
+          {
+            "type": "exit",
+            "x": 23,
+            "y": 12,
+            "to": "m3",
+            "tx": 1,
+            "ty": 7
+          }
+        ],
+        "enemies": [
+          {
+            "group": [
+              "frost_vine"
+            ],
+            "x": 7,
+            "y": 4
+          },
+          {
+            "group": [
+              "owl_c"
+            ],
+            "x": 13,
+            "y": 9
+          },
+          {
+            "group": [
+              "snowman_c",
+              "frost_vine"
+            ],
+            "x": 18,
+            "y": 6
+          },
+          {
+            "group": [
+              "penguin_c"
+            ],
+            "x": 16,
+            "y": 13
+          }
+        ]
+      },
+      "m3": {
+        "name": "늑대의 숲",
+        "rows": [
+          "XXXXXXXXXXXXXXXXXXXX",
+          "XSSFFSSRRSSFFSSFFFSX",
+          "XSFFFSSXSSSSXSSFFSSX",
+          "XFSSFFSSSFFSSSFSSFSX",
+          "XSSSSXSFFFSSRRSSSFFX",
+          "XSFFSSSSFFSSSSSXSSSX",
+          "XSSXSSFFSSSSFFSSSFSX",
+          "PSSSFFSSSFFFXSSFFSSX",
+          "XSFSSSRSSSFFSSSXSSFX",
+          "XFFSSFFSXSSSSFFSSSSX",
+          "XSSSFSSSSFFSSFSSFFSX",
+          "XSFFSSXSSSSXSSSFSSSX",
+          "XSSFFSSSFFSSFFSSFSSX",
+          "XFFSSSFFSSXSSSSSFFSX",
+          "XXXXXXXXXsXXXXXXXXXX"
+        ],
+        "objects": [
+          {
+            "type": "exit",
+            "x": 0,
+            "y": 7,
+            "to": "m2",
+            "tx": 22,
+            "ty": 12
+          },
+          {
+            "type": "npc",
+            "x": 2,
+            "y": 2,
+            "sprite": "owl",
+            "text": "old_owl"
+          },
+          {
+            "type": "chest",
+            "x": 17,
+            "y": 1,
+            "item": "feather",
+            "count": 1
+          },
+          {
+            "type": "exit",
+            "x": 9,
+            "y": 14,
+            "to": "boss",
+            "tx": 6,
+            "ty": 9
+          }
+        ],
+        "enemies": [
+          {
+            "group": [
+              "frost_vine",
+              "frost_vine"
+            ],
+            "x": 7,
+            "y": 3
+          },
+          {
+            "group": [
+              "penguin_c"
+            ],
+            "x": 14,
+            "y": 6
+          },
+          {
+            "group": [
+              "snowman_c",
+              "frost_vine",
+              "snowman_c"
+            ],
+            "x": 5,
+            "y": 11
+          },
+          {
+            "group": [
+              "owl_c",
+              "penguin_c"
+            ],
+            "x": 15,
+            "y": 11
+          }
+        ]
+      },
+      "boss": {
+        "name": "얼음 늑대의 방",
+        "rows": [
+          "##############",
+          "#ssssssssssss#",
+          "#ss##ssss##ss#",
+          "#ssssssssssss#",
+          "#ssssssssssss#",
+          "#ssssssssssss#",
+          "#ss##ssss##ss#",
+          "#ssssssssssss#",
+          "#ssssssssssss#",
+          "#ssssssssssss#",
+          "######ss######"
+        ],
+        "objects": [
+          {
+            "type": "exit",
+            "x": 6,
+            "y": 10,
+            "to": "m3",
+            "tx": 9,
+            "ty": 13
+          },
+          {
+            "type": "exit",
+            "x": 7,
+            "y": 10,
+            "to": "m3",
+            "tx": 9,
+            "ty": 13
+          },
+          {
+            "type": "boss",
+            "x": 6,
+            "y": 3,
+            "enemy": "wolf_boss"
+          }
+        ],
+        "enemies": []
+      }
+    }
   },
   "stage3": {
     "name": "안개 늪",
     "order": 3,
-    "locked": true
+    "locked": true,
+    "requires": "stage2"
   },
   "stage4": {
     "name": "불타는 산",
     "order": 4,
-    "locked": true
+    "locked": true,
+    "requires": "stage3"
   },
   "stage5": {
     "name": "마왕의 성",
     "order": 5,
     "locked": true,
-    "final": true
+    "final": true,
+    "requires": "stage4"
   }
 }

@@ -4,7 +4,7 @@ import Data from '../systems/Data.js';
 import GameState from '../systems/GameState.js';
 import Audio from '../systems/Audio.js';
 import { txt, Button, panel, UIGroup, DialogBox, bar, toast, fadeIn, fadeOut, tween, wait, DEPTH, setupCamera } from '../systems/UI.js';
-import { makeUnitSprite, img } from '../systems/Assets.js';
+import { makeUnitSprite, themeOf, img } from '../systems/Assets.js';
 
 const CORRUPT_TINT = 0x9a7fd6;
 const ALLY_POS = [[64, 100], [44, 126], [64, 152], [44, 178]];
@@ -22,9 +22,11 @@ export default class BattleScene extends Phaser.Scene {
     Audio.playBgm(this.isBoss ? 'boss' : 'battle');
     const s = GameState.s;
 
-    // 배경
-    this.add.rectangle(W / 2, H / 2, W, H, this.isBoss ? 0x2a2240 : 0x3b3357);
-    this.add.rectangle(W / 2, 150, W, 90, this.isBoss ? 0x4a4760 : 0x5d5876);
+    // 배경 (스테이지 테마 색)
+    const th = themeOf(this.p.stageId);
+    const col = (hex) => Phaser.Display.Color.HexStringToColor(hex).color;
+    this.add.rectangle(W / 2, H / 2, W, H, col(this.isBoss ? th.bossSky : th.sky));
+    this.add.rectangle(W / 2, 150, W, 90, col(this.isBoss ? th.bossGround : th.ground));
     // 멀리 보이는 나무/돌벽 실루엣
     for (let i = 0; i < 14; i++) {
       const h = 30 + ((i * 37) % 26), x = i * 24 + 8;
@@ -76,7 +78,7 @@ export default class BattleScene extends Phaser.Scene {
     if (u.side === 'ally' && u.kind !== 'player') u.obj.setFlipX(false);
   }
   makeStatusRow(u, i) {
-    const y = PANEL_Y + 3 + i * 14;
+    const y = PANEL_Y + 2 + i * 13;
     const row = {};
     row.name = txt(this, 6, y, u.name, { size: 11, strokeThickness: 1 });
     row.hp = bar(this, 56, y + 4, 50, 4, COLORS.hp, { lowAt: 0.3 });
@@ -376,12 +378,12 @@ export default class BattleScene extends Phaser.Scene {
   bounce(obj) { this.tweens.add({ targets: obj, y: obj.y - 6, duration: 100, yoyo: true }); }
   flash(t) {
     const isC = !!t.obj.parts;
-    const targets = isC ? [t.obj.parts.body, t.obj.parts.clothes, t.obj.parts.hair] : [t.obj];
+    const targets = isC ? [t.obj.parts.body, t.obj.parts.clothes, t.obj.parts.hair, t.obj.parts.weapon] : [t.obj];
     const orig = isC ? null : t.obj.tintTopLeft;
     targets.forEach(o => o.setTintFill(0xffffff));
     this.tweens.add({ targets: t.obj, x: t.x + (t.side === 'ally' ? -5 : 5), duration: 60, yoyo: true, repeat: 1 });
     this.time.delayedCall(120, () => {
-      if (isC) { const lk = GameState.s.player.look; t.obj.setLook(lk); t.obj.parts.clothes.clearTint(); }
+      if (isC) { const lk = GameState.s.player.look; t.obj.setLook(lk); t.obj.parts.clothes.clearTint(); t.obj.parts.weapon.clearTint(); }
       else if (t.side === 'enemy' && !t.purified) t.obj.setTint(CORRUPT_TINT);
       else t.obj.clearTint();
     });

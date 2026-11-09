@@ -4,7 +4,7 @@ import Data from '../systems/Data.js';
 import GameState from '../systems/GameState.js';
 import Audio from '../systems/Audio.js';
 import { txt, Button, panel, UIGroup, DialogBox, confirm, toast, soundButton, fadeIn, fadeOut, tween, DEPTH, setupCamera } from '../systems/UI.js';
-import { makeCharacter, decorateMap, img } from '../systems/Assets.js';
+import { makeCharacter, buildTilemap, img } from '../systems/Assets.js';
 
 const BUILDINGS = [
   { key: 'inn',     name: '여관',      x: 44,  y: 84 },
@@ -52,10 +52,7 @@ export default class VillageScene extends Phaser.Scene {
     // 바닥
     const legend = { '.': 0, 'T': 1, 'p': 11, '*': 4 };
     const grid = VILLAGE_ROWS.map(r => r.split('').map(c => legend[c] ?? 0));
-    const deco = decorateMap(this, grid, 0, 0);
-    const map = this.make.tilemap({ data: deco.data, tileWidth: TILE * PX, tileHeight: TILE * PX });
-    const tileset = map.addTilesetImage('tiles', 'tiles', TILE * PX, TILE * PX, 0, 0);
-    map.createLayer(0, tileset, 0, 0).setScale(1 / PX);
+    buildTilemap(this, grid, 0, 0);
 
     // 건물
     this.buildings = {};
@@ -87,7 +84,7 @@ export default class VillageScene extends Phaser.Scene {
     // 환영 / 여관에서 깨어남
     if (this.params.wokeAtInn) this.say(Data.dialogues.lose.map(Data.fmt.bind(Data)));
     else if (this.params.welcome) this.say(Data.dialogues.villageWelcome.map(Data.fmt.bind(Data)));
-    else if (this.params.cleared) this.say(Data.dialogues.stageClear.map(Data.fmt.bind(Data)));
+    else if (this.params.cleared) { const st = Data.stage(this.params.cleared); this.say(Data.dialogues.stageClear.map(l => Data.fmt(l, { stage: st ? st.name : '숲' }))); }
   }
 
   refreshHud() {
@@ -216,6 +213,7 @@ export default class VillageScene extends Phaser.Scene {
             if (!owned) { s.stardust -= e.price; s.ownedEquip.push(id); Audio.sfx('chest'); toast(this, `${e.name}을(를) 만들었어요!`); }
             else Audio.sfx('defend');
             s.player.equip[e.slot] = id;
+            if (e.slot === 'weapon') this.hero.setWeapon(id);
             const st = GameState.playerStats(); s.player.hp = Math.min(s.player.hp, st.hp); s.player.mp = Math.min(s.player.mp, st.mp);
             this.updateMoney(); render();
           },
@@ -343,10 +341,13 @@ export default class VillageScene extends Phaser.Scene {
     const s = GameState.s;
     const rows = Data.stageList().map(st => {
       const cleared = !!s.flags.cleared[st.id], locked = st.locked || !st.maps;
+      const prev = st.requires ? Data.stage(st.requires) : null;
+      const needPrev = !!(st.requires && !s.flags.cleared[st.requires]);
       return {
         label: `${st.order}. ${st.name}${cleared ? ' ✓' : ''}`,
-        right: locked ? '준비 중' : cleared ? '깨끗해졌어요' : '가기!', rightColor: locked ? '#8890aa' : cleared ? '#7ee081' : COLORS.yellow,
-        enabled: !locked,
+        right: locked ? '준비 중' : needPrev ? Data.fmt(Data.dialogues.gateLocked, { prev: prev ? prev.name : '' }) : cleared ? '깨끗해졌어요' : '가기!',
+        rightColor: locked || needPrev ? '#8890aa' : cleared ? '#7ee081' : COLORS.yellow,
+        enabled: !locked && !needPrev,
         onTap: async () => {
           this.closePanel();
           this.busy = true;

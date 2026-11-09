@@ -1,18 +1,301 @@
 {
   "_comment": "type: damage(한 명) | damage_all(전체) | heal(한 명) | heal_all(전체) | guard(방어 올리기). mult/power 는 스킬 레벨 1~3 순서.",
-  "attack":      { "name": "공격",        "type": "damage", "target": "enemy", "mult": [1.0, 1.0, 1.0], "mp": 0, "desc": "기본 공격" },
-  "slash":       { "name": "빛의 베기",   "type": "damage", "target": "enemy", "mult": [1.5, 1.8, 2.1], "mp": 3, "desc": "빛으로 세게 베어요", "fx": "slash" },
-  "star_rain":   { "name": "별빛 비",     "type": "damage_all", "target": "enemy", "mult": [1.0, 1.2, 1.4], "mp": 6, "desc": "모두에게 별빛이 내려요", "fx": "star" },
-  "heal":        { "name": "따뜻한 빛",   "type": "heal", "target": "ally", "power": [18, 28, 40], "mp": 4, "desc": "친구 한 명을 치료해요", "fx": "heal" },
-  "heal_all":    { "name": "숲의 노래",   "type": "heal_all", "target": "ally", "power": [12, 20, 30], "mp": 8, "desc": "모두를 조금씩 치료해요", "fx": "heal" },
-  "quick_kick":  { "name": "깡총 발차기", "type": "damage", "target": "enemy", "mult": [1.3, 1.5, 1.7], "mp": 2, "desc": "빠르게 차요", "fx": "slash" },
-  "acorn":       { "name": "도토리 던지기","type": "damage", "target": "enemy", "mult": [1.6, 1.9, 2.2], "mp": 3, "desc": "도토리를 세게 던져요", "fx": "hit" },
-  "acorn_rain":  { "name": "도토리 비",   "type": "damage_all", "target": "enemy", "mult": [1.0, 1.2, 1.4], "mp": 6, "desc": "도토리가 쏟아져요", "fx": "star" },
-  "charge":      { "name": "들이받기",    "type": "damage", "target": "enemy", "mult": [1.7, 2.0, 2.3], "mp": 4, "desc": "힘껏 들이받아요", "fx": "hit" },
-  "stomp":       { "name": "쿵쿵 밟기",   "type": "damage_all", "target": "enemy", "mult": [0.9, 1.1, 1.3], "mp": 6, "desc": "땅을 쿵쿵 밟아요", "fx": "star" },
-  "spore":       { "name": "독 포자",     "type": "damage_all", "target": "enemy", "mult": [0.8, 0.8, 0.8], "mp": 4, "desc": "포자를 뿌려요", "fx": "star" },
-  "whip":        { "name": "덩굴 채찍",   "type": "damage", "target": "enemy", "mult": [1.4, 1.4, 1.4], "mp": 3, "desc": "덩굴로 때려요", "fx": "slash" },
-  "bite":        { "name": "물기",        "type": "damage", "target": "enemy", "mult": [1.3, 1.3, 1.3], "mp": 2, "desc": "콱 물어요", "fx": "hit" },
-  "dark_roar":   { "name": "검은 울음",   "type": "damage_all", "target": "enemy", "mult": [1.0, 1.0, 1.0], "mp": 5, "desc": "무서운 소리를 질러요", "fx": "star" },
-  "big_claw":    { "name": "큰 발톱",     "type": "damage", "target": "enemy", "mult": [1.8, 1.8, 1.8], "mp": 4, "desc": "발톱으로 할퀴어요", "fx": "slash" }
+  "attack": {
+    "name": "공격",
+    "type": "damage",
+    "target": "enemy",
+    "mult": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "mp": 0,
+    "desc": "기본 공격"
+  },
+  "slash": {
+    "name": "빛의 베기",
+    "type": "damage",
+    "target": "enemy",
+    "mult": [
+      1.5,
+      1.8,
+      2.1
+    ],
+    "mp": 3,
+    "desc": "빛으로 세게 베어요",
+    "fx": "slash"
+  },
+  "star_rain": {
+    "name": "별빛 비",
+    "type": "damage_all",
+    "target": "enemy",
+    "mult": [
+      1.0,
+      1.2,
+      1.4
+    ],
+    "mp": 6,
+    "desc": "모두에게 별빛이 내려요",
+    "fx": "star"
+  },
+  "heal": {
+    "name": "따뜻한 빛",
+    "type": "heal",
+    "target": "ally",
+    "power": [
+      18,
+      28,
+      40
+    ],
+    "mp": 4,
+    "desc": "친구 한 명을 치료해요",
+    "fx": "heal"
+  },
+  "heal_all": {
+    "name": "숲의 노래",
+    "type": "heal_all",
+    "target": "ally",
+    "power": [
+      12,
+      20,
+      30
+    ],
+    "mp": 8,
+    "desc": "모두를 조금씩 치료해요",
+    "fx": "heal"
+  },
+  "quick_kick": {
+    "name": "깡총 발차기",
+    "type": "damage",
+    "target": "enemy",
+    "mult": [
+      1.3,
+      1.5,
+      1.7
+    ],
+    "mp": 2,
+    "desc": "빠르게 차요",
+    "fx": "slash"
+  },
+  "acorn": {
+    "name": "도토리 던지기",
+    "type": "damage",
+    "target": "enemy",
+    "mult": [
+      1.6,
+      1.9,
+      2.2
+    ],
+    "mp": 3,
+    "desc": "도토리를 세게 던져요",
+    "fx": "hit"
+  },
+  "acorn_rain": {
+    "name": "도토리 비",
+    "type": "damage_all",
+    "target": "enemy",
+    "mult": [
+      1.0,
+      1.2,
+      1.4
+    ],
+    "mp": 6,
+    "desc": "도토리가 쏟아져요",
+    "fx": "star"
+  },
+  "charge": {
+    "name": "들이받기",
+    "type": "damage",
+    "target": "enemy",
+    "mult": [
+      1.7,
+      2.0,
+      2.3
+    ],
+    "mp": 4,
+    "desc": "힘껏 들이받아요",
+    "fx": "hit"
+  },
+  "stomp": {
+    "name": "쿵쿵 밟기",
+    "type": "damage_all",
+    "target": "enemy",
+    "mult": [
+      0.9,
+      1.1,
+      1.3
+    ],
+    "mp": 6,
+    "desc": "땅을 쿵쿵 밟아요",
+    "fx": "star"
+  },
+  "spore": {
+    "name": "독 포자",
+    "type": "damage_all",
+    "target": "enemy",
+    "mult": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "mp": 4,
+    "desc": "포자를 뿌려요",
+    "fx": "star"
+  },
+  "whip": {
+    "name": "덩굴 채찍",
+    "type": "damage",
+    "target": "enemy",
+    "mult": [
+      1.4,
+      1.4,
+      1.4
+    ],
+    "mp": 3,
+    "desc": "덩굴로 때려요",
+    "fx": "slash"
+  },
+  "bite": {
+    "name": "물기",
+    "type": "damage",
+    "target": "enemy",
+    "mult": [
+      1.3,
+      1.3,
+      1.3
+    ],
+    "mp": 2,
+    "desc": "콱 물어요",
+    "fx": "hit"
+  },
+  "dark_roar": {
+    "name": "검은 울음",
+    "type": "damage_all",
+    "target": "enemy",
+    "mult": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "mp": 5,
+    "desc": "무서운 소리를 질러요",
+    "fx": "star"
+  },
+  "big_claw": {
+    "name": "큰 발톱",
+    "type": "damage",
+    "target": "enemy",
+    "mult": [
+      1.8,
+      1.8,
+      1.8
+    ],
+    "mp": 4,
+    "desc": "발톱으로 할퀴어요",
+    "fx": "slash"
+  },
+  "snowball": {
+    "name": "눈덩이 던지기",
+    "type": "damage",
+    "target": "enemy",
+    "mult": [
+      1.4,
+      1.4,
+      1.4
+    ],
+    "mp": 2,
+    "desc": "눈덩이를 던져요",
+    "fx": "hit"
+  },
+  "ice_breath": {
+    "name": "얼음 숨결",
+    "type": "damage_all",
+    "target": "enemy",
+    "mult": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "mp": 6,
+    "desc": "차가운 숨을 내뿜어요",
+    "fx": "star"
+  },
+  "frost_whip": {
+    "name": "서리 채찍",
+    "type": "damage",
+    "target": "enemy",
+    "mult": [
+      1.5,
+      1.5,
+      1.5
+    ],
+    "mp": 3,
+    "desc": "얼음 덩굴로 때려요",
+    "fx": "slash"
+  },
+  "peck": {
+    "name": "쪼기",
+    "type": "damage",
+    "target": "enemy",
+    "mult": [
+      1.5,
+      1.8,
+      2.1
+    ],
+    "mp": 2,
+    "desc": "부리로 콕콕 쪼아요",
+    "fx": "hit"
+  },
+  "wing_gust": {
+    "name": "날개 바람",
+    "type": "damage_all",
+    "target": "enemy",
+    "mult": [
+      1.0,
+      1.2,
+      1.4
+    ],
+    "mp": 6,
+    "desc": "날개로 바람을 일으켜요",
+    "fx": "star"
+  },
+  "belly_slide": {
+    "name": "배 미끄럼",
+    "type": "damage",
+    "target": "enemy",
+    "mult": [
+      1.6,
+      1.9,
+      2.2
+    ],
+    "mp": 3,
+    "desc": "배로 미끄러져 부딪혀요",
+    "fx": "hit"
+  },
+  "snow_shield": {
+    "name": "눈 방패",
+    "type": "heal_all",
+    "target": "ally",
+    "power": [
+      10,
+      16,
+      24
+    ],
+    "mp": 6,
+    "desc": "모두를 조금 치료해요",
+    "fx": "heal"
+  },
+  "antler": {
+    "name": "뿔 치기",
+    "type": "damage",
+    "target": "enemy",
+    "mult": [
+      1.5,
+      1.8,
+      2.1
+    ],
+    "mp": 3,
+    "desc": "뿔로 밀어요",
+    "fx": "hit"
+  }
 }

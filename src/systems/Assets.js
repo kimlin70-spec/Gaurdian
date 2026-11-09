@@ -1,6 +1,6 @@
 // 임시 도트 그래픽을 코드로 만듭니다.
 // 나중에 진짜 PNG 가 생기면 data/assets.json 의 overrides 에 적으면 됩니다. (같은 키면 여기서 만들지 않음)
-import { TILE, PX, wd } from '../config.js';
+import { TILE, PX, wd, SNOW_FIRST_TILE } from '../config.js';
 
 export const LOOKS = {
   skin: [0xf6d7b8, 0xd8a076, 0x8d5a3a],
@@ -10,7 +10,9 @@ export const LOOKS = {
   hairColorNames: ['갈색', '노랑', '빨강', '검정'],
 };
 
-import { PAL, PLAYER_BODY, PLAYER_CLOTHES, HAIR, TREE, TREE_DARK, BUSH, ROCK, SPRITES, FURNITURE } from './Pixels.js';
+import { PAL, PLAYER_BODY, PLAYER_CLOTHES, HAIR, TREE, TREE_DARK, BUSH, ROCK, SPRITES, FURNITURE, TREE_SNOW, TREE_SNOW_DARK, ROCK_SNOW, WEAPONS, YARD_FURNITURE } from './Pixels.js';
+import Data from './Data.js';
+import GameState from './GameState.js';
 
 // 자리표시자용 알파벳 팔레트 → Phaser generate 형식
 function gen(scene, key, rows, palette = PAL) {
@@ -24,8 +26,8 @@ function rng(seed) { let s = seed; return () => { s = (s * 1664525 + 1013904223)
 // ---- 타일 (16x16 x N) ----
 // 나무/오염 나무/바위/덤불 칸은 바닥만 그리고, 그 위에 TREE/ROCK/BUSH 스프라이트를 얹는다 (FieldScene.decorate)
 const TILE_COUNT = 12;
-export const OVERLAY_TILES = { 1: 'tree', 6: 'tree_dark', 7: 'rock', 10: 'bush' };
-export const BASE_OF = { 1: 0, 6: 5, 7: 0, 10: 0 };
+export const OVERLAY_TILES = { 1: 'tree', 6: 'tree_dark', 7: 'rock', 10: 'bush', 13: 'tree_snow', 16: 'tree_snow_dark', 17: 'rock_snow' };
+export const BASE_OF = { 1: 0, 6: 5, 7: 0, 10: 0, 13: 12, 16: 15, 17: 12 };
 function drawTile(ctx, idx, ox) {
   const r = rng(idx * 7 + 3);
   const fill = (c, x = 0, y = 0, w = TILE, h = TILE) => { ctx.fillStyle = c; ctx.fillRect(ox + x, y, w, h); };
@@ -45,6 +47,31 @@ function drawTile(ctx, idx, ox) {
     case 9: fill('#45425c'); ctx.fillStyle = '#5e5a78'; for (let y = 0; y < 16; y += 4) { const off = (y / 4) % 2 ? 4 : 0; for (let x = off; x < 16; x += 8) ctx.fillRect(ox + x + 1, y + 1, 6, 2); } ctx.fillStyle = '#6f6b8c'; for (let y = 0; y < 16; y += 4) { const off = (y / 4) % 2 ? 4 : 0; for (let x = off; x < 16; x += 8) ctx.fillRect(ox + x + 1, y + 1, 6, 1); } break; // 돌벽
     case 11: fill('#cbae84'); speck('#bb9e74', 12, 2, 1); speck('#dbbe94', 6); break; // 마을 바닥
   }
+}
+
+// 눈 숲 타일 (번호 12~19, 별도 텍스처 tiles_snow, 프레임 = 번호-12)
+const SNOW_TILE_COUNT = 8;
+function drawSnowTile(ctx, idx, ox) {
+  const r = rng(idx * 11 + 5);
+  const fill = (c, x = 0, y = 0, w = TILE, h = TILE) => { ctx.fillStyle = c; ctx.fillRect(ox + x, y, w, h); };
+  const speck = (c, n, w = 1, h = 1) => { ctx.fillStyle = c; for (let i = 0; i < n; i++) ctx.fillRect(ox + Math.floor(r() * (TILE - w + 1)), Math.floor(r() * (TILE - h + 1)), w, h); };
+  const snow = (base, dark, light) => { fill(base); speck(dark, 8, 2, 1); speck(light, 6); };
+  switch (idx) {
+    case 0: case 1: case 5: snow('#eef4fb', '#d6e2f0', '#ffffff'); break;              // 눈
+    case 2: fill('#9fd8f0'); speck('#8ccbe6', 6, 3, 1); ctx.fillStyle = '#e4f7ff'; ctx.fillRect(ox + 2, 3, 6, 1); ctx.fillRect(ox + 8, 10, 5, 1); ctx.fillRect(ox + 3, 13, 3, 1); ctx.fillStyle = '#ffffff'; ctx.fillRect(ox + 3, 3, 2, 1); break; // 얼음
+    case 3: case 4: snow('#8e8aa6', '#7a7694', '#a4a0bc'); break;                      // 오염된 눈
+    case 6: fill('#d9dde6'); speck('#c7ccd8', 10, 2, 1); speck('#eef0f5', 5); break;  // 눈길
+    case 7: snow('#eef4fb', '#d6e2f0', '#ffffff'); fill('#9fd8f0', 3, 4, 3, 3); fill('#ffffff', 4, 5, 1, 1); fill('#c9b6ff', 9, 9, 3, 3); fill('#ffffff', 10, 10, 1, 1); break; // 얼음꽃
+  }
+}
+function genSnowTiles(scene) {
+  if (scene.textures.exists('tiles_snow')) return;
+  const tex = scene.textures.createCanvas('tiles_snow', TILE * SNOW_TILE_COUNT * PX, TILE * PX);
+  const ctx = tex.getContext();
+  ctx.scale(PX, PX);
+  for (let i = 0; i < SNOW_TILE_COUNT; i++) drawSnowTile(ctx, i, i * TILE);
+  tex.refresh();
+  for (let i = 0; i < SNOW_TILE_COUNT; i++) tex.add(i, 0, i * TILE * PX, 0, TILE * PX, TILE * PX);
 }
 
 function genTiles(scene) {
@@ -106,11 +133,15 @@ export function loadOverrides(scene, assetsJson) {
 // ---- 전부 만들기: BootScene.create 에서 호출 ----
 export function generateAll(scene) {
   genTiles(scene);
+  genSnowTiles(scene);
   genBuildings(scene);
   gen(scene, 'player_body', PLAYER_BODY);
   gen(scene, 'player_clothes', PLAYER_CLOTHES);
   HAIR.forEach((rows, i) => gen(scene, 'hair_' + i, rows));
   gen(scene, 'tree', TREE); gen(scene, 'tree_dark', TREE_DARK); gen(scene, 'bush', BUSH); gen(scene, 'rock', ROCK);
+  gen(scene, 'tree_snow', TREE_SNOW); gen(scene, 'tree_snow_dark', TREE_SNOW_DARK); gen(scene, 'rock_snow', ROCK_SNOW);
+  for (const [key, rows] of Object.entries(WEAPONS)) gen(scene, key, rows);
+  for (const [key, rows] of Object.entries(YARD_FURNITURE)) gen(scene, key, rows);
   for (const [key, rows] of Object.entries(SPRITES)) gen(scene, key, rows);
   for (const [key, rows] of Object.entries(FURNITURE)) gen(scene, key, rows);
   // 1x1 흰 점 (파티클/플래시용)
@@ -123,15 +154,23 @@ export function generateAll(scene) {
 export function img(scene, x, y, key, frame) { return scene.add.image(x, y, key, frame).setScale(1 / PX); }
 
 // 주인공 캐릭터(몸+옷+머리) 컨테이너. 24x32, origin 은 발 아래 가운데(0.5, 1).
-export function makeCharacter(scene, x, y, look) {
+export function makeCharacter(scene, x, y, look, opts = {}) {
   const body = img(scene, 0, 0, 'player_body').setOrigin(0.5, 1).setTint(LOOKS.skin[look.skin] ?? LOOKS.skin[0]);
   const clothes = img(scene, 0, 0, 'player_clothes').setOrigin(0.5, 1);
   const hair = img(scene, 0, 0, 'hair_' + (look.hair ?? 0)).setOrigin(0.5, 1).setTint(LOOKS.hairColor[look.hairColor] ?? LOOKS.hairColor[0]);
-  const c = scene.add.container(x, y, [body, clothes, hair]);
+  // 무기: 장착한 무기의 sprite 를 손에 보여준다 (equipment.json 의 sprite)
+  const weapon = img(scene, 0, 0, 'dot').setOrigin(0.5, 1).setVisible(false);
+  const c = scene.add.container(x, y, [body, clothes, hair, weapon]);
   c.setSize(24, 32);
-  c.parts = { body, clothes, hair };
+  c.parts = { body, clothes, hair, weapon };
   c.setLook = (lk) => { body.setTint(LOOKS.skin[lk.skin]); hair.setTexture('hair_' + lk.hair); hair.setTint(LOOKS.hairColor[lk.hairColor]); };
-  c.setFlip = (f) => { body.setFlipX(f); clothes.setFlipX(f); hair.setFlipX(f); };
+  c.setWeapon = (weaponId) => {
+    const e = weaponId ? Data.equip(weaponId) : null;
+    if (e && e.sprite && scene.textures.exists(e.sprite)) { weapon.setTexture(e.sprite).setVisible(true); weapon.setScale(1 / PX); }
+    else weapon.setVisible(false);
+  };
+  c.setFlip = (f) => { body.setFlipX(f); clothes.setFlipX(f); hair.setFlipX(f); weapon.setFlipX(f); };
+  c.setWeapon(opts.weapon !== undefined ? opts.weapon : (GameState.s ? GameState.s.player.equip.weapon : null));
   return c;
 }
 
@@ -146,6 +185,22 @@ export function decorateMap(scene, grid, ox, oy) {
     sprites.push(img(scene, ox + x * TILE + TILE / 2, wy, key).setOrigin(0.5, 1).setDepth(wd(wy - 1)));
   }
   return { data, sprites };
+}
+
+// 타일맵 만들기 (기본 타일 + 눈 타일 두 세트). grid 는 원본 번호.
+export function buildTilemap(scene, grid, ox, oy) {
+  const deco = decorateMap(scene, grid, ox, oy);
+  const tilemap = scene.make.tilemap({ data: deco.data, tileWidth: TILE * PX, tileHeight: TILE * PX });
+  const t1 = tilemap.addTilesetImage('tiles', 'tiles', TILE * PX, TILE * PX, 0, 0, 0);
+  const t2 = tilemap.addTilesetImage('tiles_snow', 'tiles_snow', TILE * PX, TILE * PX, 0, 0, SNOW_FIRST_TILE);
+  const layer = tilemap.createLayer(0, [t1, t2], ox, oy).setDepth(0).setScale(1 / PX);
+  return { tilemap, layer, sprites: deco.sprites };
+}
+
+// 스테이지 테마 (없으면 초록숲)
+export function themeOf(stageId) {
+  const st = Data.stage(stageId);
+  return (st && st.theme) || { tilesKey: 'tiles', base: 0, corrupt: 5, flower: 4, tree: 'tree', treeDark: 'tree_dark', sky: '#3b3357', ground: '#5d5876', bossSky: '#2a2240', bossGround: '#4a4760' };
 }
 
 // 유닛의 sprite 이름으로 전투/필드 스프라이트 만들기 (주인공이면 컨테이너)

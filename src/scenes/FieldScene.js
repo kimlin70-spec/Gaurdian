@@ -4,7 +4,7 @@ import Data from '../systems/Data.js';
 import GameState from '../systems/GameState.js';
 import Audio from '../systems/Audio.js';
 import { txt, Button, panel, UIGroup, DialogBox, confirm, toast, bar, fadeIn, fadeOut, tween, wait, DEPTH, setupCamera, fix } from '../systems/UI.js';
-import { makeCharacter, decorateMap, img } from '../systems/Assets.js';
+import { makeCharacter, buildTilemap, themeOf, img } from '../systems/Assets.js';
 
 const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 const CORRUPT_TINT = 0x9a7fd6;
@@ -32,10 +32,9 @@ export default class FieldScene extends Phaser.Scene {
     const mapW = this.gw * TILE, mapH = this.gh * TILE;
     this.ox = Math.max(0, Math.floor((W - mapW) / 2)); this.oy = Math.max(0, Math.floor((H - mapH) / 2));
     this.add.rectangle(0, 0, Math.max(W, mapW) * 2, Math.max(H, mapH) * 2, 0x0e0f1c).setOrigin(0);
-    const deco = decorateMap(this, this.grid, this.ox, this.oy);
-    const tilemap = this.make.tilemap({ data: deco.data, tileWidth: TILE * PX, tileHeight: TILE * PX });
-    const tileset = tilemap.addTilesetImage('tiles', 'tiles', TILE * PX, TILE * PX, 0, 0);
-    tilemap.createLayer(0, tileset, this.ox, this.oy).setDepth(0).setScale(1 / PX);
+    buildTilemap(this, this.grid, this.ox, this.oy);
+    this.theme = themeOf(stageId);
+    if (this.theme.snow) this.makeSnow();
     this.cameras.main.setBounds(0, 0, Math.max(W, mapW + this.ox * 2), Math.max(H, mapH + this.oy * 2));
 
     // ---- 오브젝트 ----
@@ -79,6 +78,16 @@ export default class FieldScene extends Phaser.Scene {
       const gx = Math.floor((pointer.worldX - this.ox) / TILE), gy = Math.floor((pointer.worldY - this.oy) / TILE);
       this.tapTile(gx, gy);
     });
+  }
+
+  // 눈 내리는 연출 (화면 고정)
+  makeSnow() {
+    for (let i = 0; i < 28; i++) {
+      const f = this.add.rectangle(Phaser.Math.Between(0, W), Phaser.Math.Between(0, H), 2, 2, 0xffffff, Phaser.Math.FloatBetween(0.5, 0.9)).setDepth(DEPTH.WORLD_UI - 1);
+      fix(f);
+      const fall = () => { f.y = FIX_Y - 4; f.x = FIX_X + Phaser.Math.Between(0, W); this.tweens.add({ targets: f, y: FIX_Y + H + 4, x: f.x + Phaser.Math.Between(-20, 20), duration: Phaser.Math.Between(3500, 6500), onComplete: fall }); };
+      this.tweens.add({ targets: f, y: FIX_Y + H + 4, x: f.x + Phaser.Math.Between(-20, 20), duration: Phaser.Math.Between(1500, 6500), onComplete: fall });
+    }
   }
 
   // ---------- 좌표 ----------

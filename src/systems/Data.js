@@ -16,9 +16,10 @@ const Data = {
   },
 
   // {hero} 같은 이름 자리표시자를 strings.json 값으로 바꾼다
-  fmt(text) {
+  fmt(text, extra) {
     if (!text) return '';
     const s = this.strings;
+    if (extra) for (const [k, v] of Object.entries(extra)) text = text.split('{' + k + '}').join(v);
     return text
       .replace(/\{hero\}/g, s.heroName).replace(/\{guide\}/g, s.guideAnimal)
       .replace(/\{world\}/g, s.worldName).replace(/\{king\}/g, s.demonKing)

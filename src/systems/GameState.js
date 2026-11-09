@@ -28,7 +28,7 @@ const GameState = {
       flags: { chests: {}, defeated: {}, cleared: {}, healed: {}, introSeen: false, hintIndex: 0 },
       location: { scene: 'Village' },
       day: 1,                 // 숲에 다녀올 때마다 +1 (놀아주기 하루 1번 기준)
-      home: { placed: [], owned: {} }, // 집 꾸미기: 놓인 가구, 가진 가구
+      home: { placed: [], yard: [], owned: {} }, // 집 꾸미기: 집 안 가구, 마당 가구, 가진 가구
     };
     return this.s;
   },
@@ -43,7 +43,7 @@ const GameState = {
     s.inventory = s.inventory || {}; s.party = s.party || []; s.animals = s.animals || {};
     s.ownedEquip = s.ownedEquip || Object.values(s.player.equip);
     s.flags.healed = s.flags.healed || {}; s.day = s.day || 1;
-    s.home = s.home || { placed: [], owned: {} };
+    s.home = s.home || { placed: [], yard: [], owned: {} }; s.home.yard = s.home.yard || [];
     for (const id of Object.keys(s.animals)) this.fixAnimal(s.animals[id]);
     return true;
   },

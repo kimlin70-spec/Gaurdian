@@ -217,5 +217,183 @@
         "chance": 1.0
       }
     ]
+  },
+  "frost_vine": {
+    "name": "서리 덩굴",
+    "kind": "plant",
+    "sprite": "frost_vine",
+    "stats": {
+      "hp": 62,
+      "mp": 12,
+      "atk": 15,
+      "def": 7,
+      "spd": 4
+    },
+    "skills": [
+      {
+        "id": "attack",
+        "w": 5
+      },
+      {
+        "id": "frost_whip",
+        "w": 5
+      }
+    ],
+    "exp": 18,
+    "stardust": 12,
+    "shards": 0,
+    "drops": [
+      {
+        "item": "twig",
+        "chance": 0.6
+      },
+      {
+        "item": "berry",
+        "chance": 0.3
+      }
+    ]
+  },
+  "snowman_c": {
+    "name": "오염된 눈사람",
+    "kind": "plant",
+    "sprite": "snowman",
+    "stats": {
+      "hp": 55,
+      "mp": 12,
+      "atk": 14,
+      "def": 9,
+      "spd": 3
+    },
+    "skills": [
+      {
+        "id": "attack",
+        "w": 6
+      },
+      {
+        "id": "snowball",
+        "w": 4
+      }
+    ],
+    "exp": 16,
+    "stardust": 11,
+    "shards": 0,
+    "drops": [
+      {
+        "item": "pebble",
+        "chance": 0.6
+      },
+      {
+        "item": "potion_s",
+        "chance": 0.3
+      }
+    ]
+  },
+  "penguin_c": {
+    "name": "오염된 펭귄",
+    "kind": "animal",
+    "animal": "penguin",
+    "sprite": "penguin",
+    "stats": {
+      "hp": 80,
+      "mp": 12,
+      "atk": 15,
+      "def": 10,
+      "spd": 5
+    },
+    "skills": [
+      {
+        "id": "attack",
+        "w": 5
+      },
+      {
+        "id": "belly_slide",
+        "w": 5
+      }
+    ],
+    "exp": 24,
+    "stardust": 14,
+    "shards": 1,
+    "drops": [
+      {
+        "item": "petal",
+        "chance": 0.5
+      }
+    ]
+  },
+  "owl_c": {
+    "name": "오염된 올빼미",
+    "kind": "animal",
+    "animal": "owl",
+    "sprite": "owl",
+    "stats": {
+      "hp": 58,
+      "mp": 14,
+      "atk": 18,
+      "def": 5,
+      "spd": 11
+    },
+    "skills": [
+      {
+        "id": "attack",
+        "w": 5
+      },
+      {
+        "id": "peck",
+        "w": 5
+      }
+    ],
+    "exp": 24,
+    "stardust": 14,
+    "shards": 1,
+    "drops": [
+      {
+        "item": "twig",
+        "chance": 0.6
+      }
+    ]
+  },
+  "wolf_boss": {
+    "name": "오염된 얼음 늑대",
+    "kind": "boss",
+    "sprite": "wolf",
+    "scale": 1.5,
+    "stats": {
+      "hp": 280,
+      "mp": 60,
+      "atk": 22,
+      "def": 11,
+      "spd": 9
+    },
+    "skills": [
+      {
+        "id": "attack",
+        "w": 4
+      },
+      {
+        "id": "bite",
+        "w": 4
+      },
+      {
+        "id": "ice_breath",
+        "w": 2
+      }
+    ],
+    "exp": 120,
+    "stardust": 90,
+    "shards": 4,
+    "drops": [
+      {
+        "item": "honey",
+        "chance": 1.0
+      },
+      {
+        "item": "pebble",
+        "chance": 1.0
+      },
+      {
+        "item": "petal",
+        "chance": 1.0
+      }
+    ]
   }
 }

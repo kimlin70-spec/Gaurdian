@@ -121,5 +121,78 @@
       "bite",
       "star_rain"
     ]
+  },
+  "penguin": {
+    "name": "펭귄",
+    "role": "탱커",
+    "sprite": "penguin",
+    "stage": "stage2",
+    "base": {
+      "hp": 60,
+      "mp": 16,
+      "atk": 12,
+      "def": 9,
+      "spd": 5
+    },
+    "growth": {
+      "hp": 9,
+      "mp": 2,
+      "atk": 2,
+      "def": 2,
+      "spd": 0
+    },
+    "skills": [
+      "belly_slide",
+      "snow_shield"
+    ]
+  },
+  "owl": {
+    "name": "올빼미",
+    "role": "공격",
+    "sprite": "owl",
+    "stage": "stage2",
+    "base": {
+      "hp": 42,
+      "mp": 20,
+      "atk": 15,
+      "def": 4,
+      "spd": 11
+    },
+    "growth": {
+      "hp": 6,
+      "mp": 3,
+      "atk": 3,
+      "def": 1,
+      "spd": 1
+    },
+    "skills": [
+      "peck",
+      "wing_gust"
+    ]
+  },
+  "reindeer": {
+    "name": "순록",
+    "role": "회복",
+    "sprite": "reindeer",
+    "stage": "stage2",
+    "injuredOnly": true,
+    "base": {
+      "hp": 50,
+      "mp": 24,
+      "atk": 11,
+      "def": 7,
+      "spd": 8
+    },
+    "growth": {
+      "hp": 7,
+      "mp": 4,
+      "atk": 2,
+      "def": 1,
+      "spd": 1
+    },
+    "skills": [
+      "heal_all",
+      "antler"
+    ]
   }
 }
