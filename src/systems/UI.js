@@ -1,8 +1,13 @@
 // 터치용 UI 도우미. 버튼은 내부 해상도 기준 최소 16px(실제 화면 48px 이상).
-import { FONT, FONT_BIG, COLORS, W, H } from '../config.js';
+import { FONT, FONT_BIG, COLORS, W, H, PX, FIX_X, FIX_Y } from '../config.js';
 import Audio from './Audio.js';
 
 export const DEPTH = { WORLD_UI: 50, UI: 100, DIALOG: 200, MODAL: 300, TOP: 400 };
+
+// 화면에 고정(scrollFactor 0). 카메라 줌 보정 오프셋을 함께 적용한다.
+export function fix(obj) { obj.setScrollFactor(0); obj.x += FIX_X; obj.y += FIX_Y; return obj; }
+// 장면 카메라 기본 설정: PX 배 줌으로 320x240 논리 좌표를 640x480 캔버스에 꽉 채운다
+export function setupCamera(scene) { const c = scene.cameras.main; c.setZoom(PX); c.centerOn(W / 2, H / 2); c.setRoundPixels(true); return c; }
 
 export function txt(scene, x, y, str, opts = {}) {
   const size = opts.size || 11;
@@ -11,14 +16,14 @@ export function txt(scene, x, y, str, opts = {}) {
     fontSize: size + 'px',
     color: opts.color || COLORS.white,
     align: opts.align || 'left',
-    resolution: 1,
+    resolution: PX,
   };
   if (opts.wrap) style.wordWrap = { width: opts.wrap, useAdvancedWrap: true };
   if (opts.stroke !== false) { style.stroke = opts.strokeColor || '#000000'; style.strokeThickness = opts.strokeThickness ?? 2; }
   if (opts.bold) style.fontStyle = 'bold';
   const t = scene.add.text(x, y, str, style);
   if (opts.origin !== undefined) { Array.isArray(opts.origin) ? t.setOrigin(opts.origin[0], opts.origin[1]) : t.setOrigin(opts.origin); }
-  if (opts.fixed) t.setScrollFactor(0);
+  if (opts.fixed) fix(t);
   t.setDepth(opts.depth ?? DEPTH.UI);
   if (opts.lineSpacing) t.setLineSpacing(opts.lineSpacing);
   return t;
@@ -29,7 +34,7 @@ export function panel(scene, x, y, w, h, opts = {}) {
   g.fillStyle(opts.color ?? COLORS.panel, opts.alpha ?? 0.95);
   g.fillRoundedRect(x, y, w, h, opts.radius ?? 4);
   if (opts.border !== false) { g.lineStyle(1, opts.borderColor ?? COLORS.border, 1); g.strokeRoundedRect(x + 0.5, y + 0.5, w - 1, h - 1, opts.radius ?? 4); }
-  if (opts.fixed) g.setScrollFactor(0);
+  if (opts.fixed) fix(g);
   g.setDepth(opts.depth ?? DEPTH.UI);
   return g;
 }
@@ -42,7 +47,8 @@ export class Button {
     this.glow = scene.add.rectangle(x + w / 2, y + h / 2, w + 4, h + 4, COLORS.gold, 0).setDepth(depth - 1);
     this.bg = scene.add.rectangle(x + w / 2, y + h / 2, w, h, this.color).setStrokeStyle(1, COLORS.border).setDepth(depth);
     this.label = txt(scene, x + w / 2, y + h / 2, label, { size: opts.size || 11, origin: 0.5, depth: depth + 1, color: opts.textColor, align: 'center' });
-    if (opts.fixed) { this.glow.setScrollFactor(0); this.bg.setScrollFactor(0); this.label.setScrollFactor(0); }
+    this.fixed = !!opts.fixed;
+    if (opts.fixed) { fix(this.glow); fix(this.bg); fix(this.label); }
     this.bg.setInteractive({ useHandCursor: true });
     this.bg.on('pointerdown', () => { if (!this.enabled) return; this.bg.setFillStyle(COLORS.buttonDown); this.bg.setScale(0.96); this.label.setScale(0.96); });
     const release = () => { this.bg.setFillStyle(this.enabled ? this.color : COLORS.buttonDisabled); this.bg.setScale(1); this.label.setScale(1); };
@@ -60,7 +66,7 @@ export class Button {
   setLabel(s) { this.label.setText(s); return this; }
   setColor(c) { this.color = c; if (this.enabled) this.bg.setFillStyle(c); return this; }
   setVisible(v) { this.objs.forEach(o => o.setVisible(v)); return this; }
-  setPosition(x, y) { const w = this.bg.width, h = this.bg.height; this.glow.setPosition(x + w / 2, y + h / 2); this.bg.setPosition(x + w / 2, y + h / 2); this.label.setPosition(x + w / 2, y + h / 2); return this; }
+  setPosition(x, y) { const w = this.bg.width, h = this.bg.height, ox = this.fixed ? FIX_X : 0, oy = this.fixed ? FIX_Y : 0; this.glow.setPosition(x + w / 2 + ox, y + h / 2 + oy); this.bg.setPosition(x + w / 2 + ox, y + h / 2 + oy); this.label.setPosition(x + w / 2 + ox, y + h / 2 + oy); return this; }
   destroy() { if (this.glowTween) this.glowTween.stop(); this.objs.forEach(o => o.destroy()); }
 }
 
@@ -90,7 +96,7 @@ export class DialogBox {
       sc.tweens.add({ targets: more, y: more.y + 2, duration: 400, yoyo: true, repeat: -1 });
       // 화면 전체를 덮는 터치 영역
       const zone = g.add(sc.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.001).setDepth(DEPTH.DIALOG - 1).setInteractive());
-      if (this.opts.fixed) zone.setScrollFactor(0);
+      if (this.opts.fixed) fix(zone);
       let idx = 0;
       const render = () => { body.setText(list[idx]); more.setVisible(idx < list.length - 1 || !opts.hold); };
       render();
@@ -115,7 +121,7 @@ export function confirm(scene, message, yesLabel = '네', noLabel = '아니요',
     const done = (v) => { g.destroy(); resolve(v); };
     g.add(new Button(scene, x + 16, y + h - 34, 84, 24, yesLabel, () => done(true), { depth: DEPTH.MODAL + 1, fixed: opts.fixed, color: COLORS.ok }));
     g.add(new Button(scene, x + w - 100, y + h - 34, 84, 24, noLabel, () => done(false), { depth: DEPTH.MODAL + 1, fixed: opts.fixed }));
-    if (opts.fixed) g.items[0].setScrollFactor(0);
+    if (opts.fixed) fix(g.items[0]);
   });
 }
 
@@ -124,7 +130,7 @@ export function toast(scene, message, opts = {}) {
   const y = opts.y ?? 40;
   const t = txt(scene, W / 2, y, message, { size: 11, origin: 0.5, align: 'center', depth: DEPTH.TOP, fixed: opts.fixed !== false, color: opts.color || COLORS.yellow });
   const bg = scene.add.rectangle(W / 2, y, t.width + 16, t.height + 8, 0x000000, 0.7).setDepth(DEPTH.TOP - 1);
-  if (opts.fixed !== false) bg.setScrollFactor(0);
+  if (opts.fixed !== false) fix(bg);
   scene.tweens.add({ targets: [t, bg], y: '-=10', alpha: 0, delay: opts.duration ?? 1200, duration: 400, onComplete: () => { t.destroy(); bg.destroy(); } });
   return t;
 }
@@ -136,7 +142,7 @@ export function bar(scene, x, y, w, h, color, opts = {}) {
   const fg = scene.add.rectangle(x + 1, y, w - 2, h - 2, color).setOrigin(0, 0.5).setDepth(depth + 1);
   let marker = null;
   if (opts.marker !== undefined) marker = scene.add.rectangle(x + 1 + Math.round((w - 2) * opts.marker), y, 1, h, 0xffffff, 0.9).setOrigin(0, 0.5).setDepth(depth + 2);
-  if (opts.fixed) { bg.setScrollFactor(0); fg.setScrollFactor(0); if (marker) marker.setScrollFactor(0); }
+  if (opts.fixed) { fix(bg); fix(fg); if (marker) fix(marker); }
   const api = {
     bg, fg, marker,
     set(ratio, lowColor) {
@@ -144,7 +150,7 @@ export function bar(scene, x, y, w, h, color, opts = {}) {
       fg.width = Math.max(0, Math.round((w - 2) * r));
       if (lowColor !== undefined) fg.setFillStyle(r <= (opts.lowAt ?? 0.25) ? lowColor : color);
     },
-    setPosition(nx, ny) { bg.setPosition(nx, ny); fg.setPosition(nx + 1, ny); if (marker) marker.setPosition(nx + 1 + Math.round((w - 2) * opts.marker), ny); },
+    setPosition(nx, ny) { if (opts.fixed) { nx += FIX_X; ny += FIX_Y; } bg.setPosition(nx, ny); fg.setPosition(nx + 1, ny); if (marker) marker.setPosition(nx + 1 + Math.round((w - 2) * opts.marker), ny); },
     setVisible(v) { bg.setVisible(v); fg.setVisible(v); if (marker) marker.setVisible(v); },
     destroy() { bg.destroy(); fg.destroy(); if (marker) marker.destroy(); },
   };

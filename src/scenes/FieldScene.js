@@ -1,10 +1,10 @@
 // 탐험: 탑뷰 타일맵, 탭한 칸으로 BFS 이동, 배회하는 적, 상자, NPC, 출구
-import { W, H, TILE, TILE_LEGEND, SOLID_TILES, COLORS, wd } from '../config.js';
+import { W, H, TILE, TILE_LEGEND, SOLID_TILES, COLORS, wd, PX, FIX_X, FIX_Y } from '../config.js';
 import Data from '../systems/Data.js';
 import GameState from '../systems/GameState.js';
 import Audio from '../systems/Audio.js';
-import { txt, Button, panel, UIGroup, DialogBox, confirm, toast, bar, fadeIn, fadeOut, tween, wait, DEPTH } from '../systems/UI.js';
-import { makeCharacter, decorateMap } from '../systems/Assets.js';
+import { txt, Button, panel, UIGroup, DialogBox, confirm, toast, bar, fadeIn, fadeOut, tween, wait, DEPTH, setupCamera, fix } from '../systems/UI.js';
+import { makeCharacter, decorateMap, img } from '../systems/Assets.js';
 
 const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 const CORRUPT_TINT = 0x9a7fd6;
@@ -14,6 +14,7 @@ export default class FieldScene extends Phaser.Scene {
   init(data) { this.p = data || {}; }
 
   create() {
+    setupCamera(this);
     const { stageId, mapId } = this.p;
     this.stage = Data.stage(stageId); this.map = Data.map(stageId, mapId);
     if (!this.map) { this.scene.start('Village', {}); return; }
@@ -32,9 +33,9 @@ export default class FieldScene extends Phaser.Scene {
     this.ox = Math.max(0, Math.floor((W - mapW) / 2)); this.oy = Math.max(0, Math.floor((H - mapH) / 2));
     this.add.rectangle(0, 0, Math.max(W, mapW) * 2, Math.max(H, mapH) * 2, 0x0e0f1c).setOrigin(0);
     const deco = decorateMap(this, this.grid, this.ox, this.oy);
-    const tilemap = this.make.tilemap({ data: deco.data, tileWidth: TILE, tileHeight: TILE });
-    const tileset = tilemap.addTilesetImage('tiles', 'tiles', TILE, TILE, 0, 0);
-    tilemap.createLayer(0, tileset, this.ox, this.oy).setDepth(0);
+    const tilemap = this.make.tilemap({ data: deco.data, tileWidth: TILE * PX, tileHeight: TILE * PX });
+    const tileset = tilemap.addTilesetImage('tiles', 'tiles', TILE * PX, TILE * PX, 0, 0);
+    tilemap.createLayer(0, tileset, this.ox, this.oy).setDepth(0).setScale(1 / PX);
     this.cameras.main.setBounds(0, 0, Math.max(W, mapW + this.ox * 2), Math.max(H, mapH + this.oy * 2));
 
     // ---- 오브젝트 ----
@@ -73,7 +74,7 @@ export default class FieldScene extends Phaser.Scene {
     // ---- 입력 ----
     this.input.on('pointerup', (pointer, over) => {
       if (this.busy || this.transitioning) return;
-      if (pointer.getDistance() > 10) return; // 드래그는 무시
+      if (pointer.getDistance() > 10 * PX) return; // 드래그는 무시
       if (over && over.length) return;        // 버튼/오브젝트 위는 각자 처리
       const gx = Math.floor((pointer.worldX - this.ox) / TILE), gy = Math.floor((pointer.worldY - this.oy) / TILE);
       this.tapTile(gx, gy);
@@ -92,11 +93,11 @@ export default class FieldScene extends Phaser.Scene {
     const obj = { ...o, key };
     if (o.type === 'chest') {
       obj.opened = !!s.flags.chests[key];
-      obj.sprite = this.add.image(wp.x, wp.y, obj.opened ? 'chest_open' : 'chest').setDepth(wd(wp.y));
+      obj.sprite = img(this, wp.x, wp.y, obj.opened ? 'chest_open' : 'chest').setDepth(wd(wp.y));
       this.blocked.add(o.x + ',' + o.y);
       this.makeTappable(obj.sprite, () => this.approach(obj));
     } else if (o.type === 'npc') {
-      obj.sprite = this.add.image(wp.x, wp.y + 8, o.sprite || 'guide').setOrigin(0.5, 1).setDepth(wd(wp.y + 8));
+      obj.sprite = img(this, wp.x, wp.y + 8, o.sprite || 'guide').setOrigin(0.5, 1).setDepth(wd(wp.y + 8));
       this.tweens.add({ targets: obj.sprite, y: obj.sprite.y - 2, duration: 700, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
       const bubble = txt(this, wp.x, wp.y - 14, '…', { size: 11, origin: 0.5, color: COLORS.yellow, depth: DEPTH.WORLD_UI });
       this.tweens.add({ targets: bubble, y: bubble.y - 2, duration: 500, yoyo: true, repeat: -1 });
@@ -110,7 +111,7 @@ export default class FieldScene extends Phaser.Scene {
     } else if (o.type === 'injured') {
       if (s.flags.healed[key]) return;
       const a = Data.animal(o.animal);
-      obj.sprite = this.add.image(wp.x, wp.y + 8, a.sprite).setOrigin(0.5, 1).setDepth(wd(wp.y + 8)).setAngle(-12).setAlpha(0.9);
+      obj.sprite = img(this, wp.x, wp.y + 8, a.sprite).setOrigin(0.5, 1).setDepth(wd(wp.y + 8)).setAngle(-12).setAlpha(0.9);
       const bubble = txt(this, wp.x + 10, wp.y - 14, '아야', { size: 11, origin: 0.5, color: '#ff8080', depth: DEPTH.WORLD_UI });
       this.tweens.add({ targets: bubble, y: bubble.y - 2, alpha: 0.5, duration: 600, yoyo: true, repeat: -1 });
       obj.bubble = bubble;
@@ -119,7 +120,7 @@ export default class FieldScene extends Phaser.Scene {
     } else if (o.type === 'boss') {
       if (s.flags.cleared[this.p.stageId]) return;
       const e = Data.enemy(o.enemy);
-      obj.sprite = this.add.image(wp.x, wp.y + 8, e.sprite).setOrigin(0.5, 1).setDepth(wd(wp.y + 8)).setTint(CORRUPT_TINT);
+      obj.sprite = img(this, wp.x, wp.y + 8, e.sprite).setOrigin(0.5, 1).setDepth(wd(wp.y + 8)).setTint(CORRUPT_TINT);
       this.tweens.add({ targets: obj.sprite, scaleX: 1.04, scaleY: 0.96, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
       this.blocked.add(o.x + ',' + o.y);
       this.makeTappable(obj.sprite, () => this.approach(obj));
@@ -128,13 +129,13 @@ export default class FieldScene extends Phaser.Scene {
     this.objects.push(obj);
   }
   makeTappable(sprite, fn) {
-    sprite.setInteractive({ useHandCursor: true, hitArea: new Phaser.Geom.Rectangle(-6, -6, sprite.width + 12, sprite.height + 12), hitAreaCallback: Phaser.Geom.Rectangle.Contains });
-    sprite.on('pointerup', (pointer) => { if (!this.busy && !this.transitioning && pointer.getDistance() <= 10) fn(); });
+    sprite.setInteractive({ useHandCursor: true, hitArea: new Phaser.Geom.Rectangle(-6 * PX, -6 * PX, sprite.width + 12 * PX, sprite.height + 12 * PX), hitAreaCallback: Phaser.Geom.Rectangle.Contains });
+    sprite.on('pointerup', (pointer) => { if (!this.busy && !this.transitioning && pointer.getDistance() <= 10 * PX) fn(); });
   }
 
   spawnEnemy(e, key) {
     const wp = this.tileToWorld(e.x, e.y), data = Data.enemy(e.group[0]);
-    const sprite = this.add.image(wp.x, wp.y + 8, data.sprite).setOrigin(0.5, 1).setDepth(wd(wp.y + 8)).setTint(CORRUPT_TINT);
+    const sprite = img(this, wp.x, wp.y + 8, data.sprite).setOrigin(0.5, 1).setDepth(wd(wp.y + 8)).setTint(CORRUPT_TINT);
     const en = { key, group: e.group, tx: e.x, ty: e.y, sprite, moving: false, timer: Phaser.Math.Between(500, 1500) };
     this.makeTappable(sprite, () => this.tapTile(en.tx, en.ty));
     this.enemies.push(en);
@@ -260,18 +261,18 @@ export default class FieldScene extends Phaser.Scene {
   healMinigame(obj) {
     return new Promise(resolve => {
       const a = Data.animal(obj.animal), g = new UIGroup();
-      g.add(this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.6).setDepth(DEPTH.MODAL - 2).setScrollFactor(0).setInteractive());
+      g.add(fix(this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.6).setDepth(DEPTH.MODAL - 2).setInteractive()));
       g.add(panel(this, 20, 14, W - 40, H - 28, { depth: DEPTH.MODAL - 1, fixed: true }));
       g.add(txt(this, W / 2, 20, `${a.name} 치료하기`, { size: 14, origin: [0.5, 0], color: COLORS.yellow, depth: DEPTH.MODAL, fixed: true }));
       const hint = g.add(txt(this, W / 2, 40, Data.fmt(Data.dialogues.injured.how), { size: 11, origin: [0.5, 0], align: 'center', depth: DEPTH.MODAL, fixed: true, lineSpacing: 3 }));
-      const big = g.add(this.add.image(W / 2, 170, a.sprite).setScale(5).setOrigin(0.5, 1).setDepth(DEPTH.MODAL).setScrollFactor(0));
+      const big = g.add(fix(img(this, W / 2, 170, a.sprite).setScale(5 / PX).setOrigin(0.5, 1).setDepth(DEPTH.MODAL)));
       const spots = [[-12, -58], [16, -40], [-6, -18]]; // 몸 위 상처 위치 (3곳)
       let i = 0;
       const bandages = [];
       const next = () => {
         if (i >= spots.length) { finish(); return; }
         const [dx, dy] = spots[i];
-        const wound = this.add.circle(big.x + dx, big.y + dy, 7, 0xff4d6d, 0.9).setDepth(DEPTH.MODAL + 1).setScrollFactor(0).setStrokeStyle(2, 0xffffff);
+        const wound = this.add.circle(big.x + dx, big.y + dy, 7, 0xff4d6d, 0.9).setDepth(DEPTH.MODAL + 1).setScrollFactor(0).setStrokeStyle(1, 0xffffff);
         const hit = this.add.circle(big.x + dx, big.y + dy, 16, 0xffffff, 0.001).setDepth(DEPTH.MODAL + 2).setScrollFactor(0).setInteractive();
         const tw = this.tweens.add({ targets: wound, scale: 1.4, alpha: 0.5, duration: 400, yoyo: true, repeat: -1 });
         g.add(wound); g.add(hit);
@@ -287,7 +288,7 @@ export default class FieldScene extends Phaser.Scene {
       };
       const finish = async () => {
         Audio.sfx('purify');
-        for (let k = 0; k < 8; k++) { const p = this.add.image(big.x + Phaser.Math.Between(-40, 40), big.y - Phaser.Math.Between(0, 80), 'star').setScale(0.6).setDepth(DEPTH.MODAL + 3).setScrollFactor(0); g.add(p); this.tweens.add({ targets: p, y: p.y - 20, alpha: 0, duration: 700, delay: k * 60 }); }
+        for (let k = 0; k < 8; k++) { const p = img(this, big.x + Phaser.Math.Between(-40, 40), big.y - Phaser.Math.Between(0, 80), 'star').setScale(0.6 / PX).setDepth(DEPTH.MODAL + 3).setScrollFactor(0); g.add(p); this.tweens.add({ targets: p, y: p.y - 20, alpha: 0, duration: 700, delay: k * 60 }); }
         this.tweens.add({ targets: big, y: big.y - 12, duration: 150, yoyo: true, repeat: 2 });
         await wait(this, 900);
         g.destroy();
@@ -361,7 +362,7 @@ export default class FieldScene extends Phaser.Scene {
     if (this.busy || this.transitioning) return;
     this.busy = true; this.path = [];
     const g = new UIGroup(); this.menu = g;
-    g.add(this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.6).setDepth(DEPTH.MODAL - 2).setScrollFactor(0).setInteractive());
+    g.add(fix(this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.6).setDepth(DEPTH.MODAL - 2).setInteractive()));
     g.add(panel(this, 8, 8, W - 16, H - 16, { depth: DEPTH.MODAL - 1, fixed: true }));
     g.add(txt(this, W / 2, 14, '메뉴', { size: 14, origin: [0.5, 0], color: COLORS.yellow, depth: DEPTH.MODAL, fixed: true }));
     this.menuInfo = g.add(txt(this, 16, 34, '', { size: 11, depth: DEPTH.MODAL, fixed: true, color: '#b8c0e0' }));
@@ -384,7 +385,7 @@ export default class FieldScene extends Phaser.Scene {
       const y = 50 + i * 26;
       const lvl = u.kind === 'player' ? s.player.level : s.animals[u.animalId].level;
       const b = this.menuRows.add(new Button(this, 16, y, 150, 22, '', () => this.useItemOn(u), { depth: DEPTH.MODAL, fixed: true, color: this.selectedItem ? 0x2e5a3a : 0x3d4066 }));
-      b.label.setOrigin(0, 0.5).setPosition(22, y + 11).setText(`${u.name} Lv${lvl}`);
+      b.label.setOrigin(0, 0.5).setPosition(22 + FIX_X, y + 11 + FIX_Y).setText(`${u.name} Lv${lvl}`);
       if (!this.selectedItem) b.setEnabled(false);
       this.menuRows.add(txt(this, 172, y + 2, `HP ${u.hp}/${u.maxHp}`, { size: 11, depth: DEPTH.MODAL, fixed: true, strokeThickness: 1 }));
       this.menuRows.add(txt(this, 172, y + 12, `MP ${u.mp}/${u.maxMp}`, { size: 11, depth: DEPTH.MODAL, fixed: true, strokeThickness: 1, color: '#9ecbff' }));

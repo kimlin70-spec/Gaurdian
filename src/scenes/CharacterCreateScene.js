@@ -1,13 +1,14 @@
-import { W, H, COLORS } from '../config.js';
+import { W, H, COLORS, PX } from '../config.js';
 import Data from '../systems/Data.js';
 import GameState from '../systems/GameState.js';
 import Audio from '../systems/Audio.js';
-import { txt, Button, panel, fadeIn, fadeOut, DEPTH } from '../systems/UI.js';
-import { makeCharacter, LOOKS } from '../systems/Assets.js';
+import { txt, Button, panel, fadeIn, fadeOut, DEPTH, setupCamera } from '../systems/UI.js';
+import { makeCharacter, LOOKS, img } from '../systems/Assets.js';
 
 export default class CharacterCreateScene extends Phaser.Scene {
   constructor() { super('CharacterCreate'); }
   create() {
+    setupCamera(this);
     fadeIn(this);
     this.look = { skin: 0, hair: 0, hairColor: 0 };
     this.add.rectangle(W / 2, H / 2, W, H, 0x24314a);

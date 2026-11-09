@@ -1,8 +1,191 @@
 {
-  "_comment": "나중에 진짜 도트 PNG 로 바꿀 때 여기에 적으면 코드 수정 없이 교체됩니다. type: image | spritesheet. 적지 않은 키는 코드가 임시 도트로 만듭니다.",
+  "_comment": "진짜 도트 PNG 목록. 모든 그림은 논리 크기의 2배(PX=2)로 그립니다. 여기 적힌 키는 코드가 임시 도트를 만들지 않고 파일을 읽습니다. type: image | spritesheet.",
   "_example": {
-    "tiles": { "type": "spritesheet", "file": "assets/tiles.png", "frameWidth": 16, "frameHeight": 16 },
-    "rabbit": { "type": "image", "file": "assets/rabbit.png" }
+    "tiles": {
+      "type": "spritesheet",
+      "file": "assets/tiles.png",
+      "frameWidth": 16,
+      "frameHeight": 16
+    },
+    "rabbit": {
+      "type": "image",
+      "file": "assets/rabbit.png"
+    }
   },
-  "overrides": {}
+  "overrides": {
+    "bear": {
+      "type": "image",
+      "file": "assets/bear.png"
+    },
+    "bird": {
+      "type": "image",
+      "file": "assets/bird.png"
+    },
+    "bld_gate": {
+      "type": "image",
+      "file": "assets/bld_gate.png"
+    },
+    "bld_home": {
+      "type": "image",
+      "file": "assets/bld_home.png"
+    },
+    "bld_inn": {
+      "type": "image",
+      "file": "assets/bld_inn.png"
+    },
+    "bld_sage": {
+      "type": "image",
+      "file": "assets/bld_sage.png"
+    },
+    "bld_shelter": {
+      "type": "image",
+      "file": "assets/bld_shelter.png"
+    },
+    "bld_shop": {
+      "type": "image",
+      "file": "assets/bld_shop.png"
+    },
+    "bld_smithy": {
+      "type": "image",
+      "file": "assets/bld_smithy.png"
+    },
+    "boar": {
+      "type": "image",
+      "file": "assets/boar.png"
+    },
+    "bush": {
+      "type": "image",
+      "file": "assets/bush.png"
+    },
+    "chest": {
+      "type": "image",
+      "file": "assets/chest.png"
+    },
+    "chest_open": {
+      "type": "image",
+      "file": "assets/chest_open.png"
+    },
+    "cursor": {
+      "type": "image",
+      "file": "assets/cursor.png"
+    },
+    "deer": {
+      "type": "image",
+      "file": "assets/deer.png"
+    },
+    "f_bed": {
+      "type": "image",
+      "file": "assets/f_bed.png"
+    },
+    "f_chair": {
+      "type": "image",
+      "file": "assets/f_chair.png"
+    },
+    "f_lamp": {
+      "type": "image",
+      "file": "assets/f_lamp.png"
+    },
+    "f_pond": {
+      "type": "image",
+      "file": "assets/f_pond.png"
+    },
+    "f_pot": {
+      "type": "image",
+      "file": "assets/f_pot.png"
+    },
+    "f_rug": {
+      "type": "image",
+      "file": "assets/f_rug.png"
+    },
+    "f_shelf": {
+      "type": "image",
+      "file": "assets/f_shelf.png"
+    },
+    "f_swing": {
+      "type": "image",
+      "file": "assets/f_swing.png"
+    },
+    "f_table": {
+      "type": "image",
+      "file": "assets/f_table.png"
+    },
+    "f_teddy": {
+      "type": "image",
+      "file": "assets/f_teddy.png"
+    },
+    "fox": {
+      "type": "image",
+      "file": "assets/fox.png"
+    },
+    "gem": {
+      "type": "image",
+      "file": "assets/gem.png"
+    },
+    "guide": {
+      "type": "image",
+      "file": "assets/guide.png"
+    },
+    "hair_0": {
+      "type": "image",
+      "file": "assets/hair_0.png"
+    },
+    "hair_1": {
+      "type": "image",
+      "file": "assets/hair_1.png"
+    },
+    "hair_2": {
+      "type": "image",
+      "file": "assets/hair_2.png"
+    },
+    "mushroom": {
+      "type": "image",
+      "file": "assets/mushroom.png"
+    },
+    "player_body": {
+      "type": "image",
+      "file": "assets/player_body.png"
+    },
+    "player_clothes": {
+      "type": "image",
+      "file": "assets/player_clothes.png"
+    },
+    "rabbit": {
+      "type": "image",
+      "file": "assets/rabbit.png"
+    },
+    "rock": {
+      "type": "image",
+      "file": "assets/rock.png"
+    },
+    "squirrel": {
+      "type": "image",
+      "file": "assets/squirrel.png"
+    },
+    "star": {
+      "type": "image",
+      "file": "assets/star.png"
+    },
+    "tiles": {
+      "type": "spritesheet",
+      "file": "assets/tiles.png",
+      "frameWidth": 32,
+      "frameHeight": 32
+    },
+    "tree": {
+      "type": "image",
+      "file": "assets/tree.png"
+    },
+    "tree_dark": {
+      "type": "image",
+      "file": "assets/tree_dark.png"
+    },
+    "tree_face": {
+      "type": "image",
+      "file": "assets/tree_face.png"
+    },
+    "vine": {
+      "type": "image",
+      "file": "assets/vine.png"
+    }
+  }
 }

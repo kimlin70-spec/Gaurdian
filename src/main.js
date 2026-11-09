@@ -1,4 +1,4 @@
-import { W, H } from './config.js';
+import { GAME_W, GAME_H } from './config.js';
 import Audio from './systems/Audio.js';
 import BootScene from './scenes/BootScene.js';
 import TitleScene from './scenes/TitleScene.js';
@@ -13,8 +13,8 @@ import HomeScene from './scenes/HomeScene.js';
 const config = {
   type: Phaser.AUTO,
   parent: 'game',
-  width: W,
-  height: H,
+  width: GAME_W,
+  height: GAME_H,
   backgroundColor: '#1a1b2e',
   pixelArt: true,
   roundPixels: true,

@@ -1,14 +1,16 @@
 // 보스 정화 후: 숲이 회복되는 연출 → 스테이지 클리어
-import { W, H, TILE, COLORS } from '../config.js';
+import { W, H, TILE, COLORS, PX } from '../config.js';
 import Data from '../systems/Data.js';
+import { img } from '../systems/Assets.js';
 import GameState from '../systems/GameState.js';
 import Audio from '../systems/Audio.js';
-import { txt, DialogBox, fadeIn, fadeOut, tween, wait } from '../systems/UI.js';
+import { txt, DialogBox, fadeIn, fadeOut, tween, wait, setupCamera } from '../systems/UI.js';
 
 export default class PurifyScene extends Phaser.Scene {
   constructor() { super('Purify'); }
   init(data) { this.p = data || {}; }
   create() {
+    setupCamera(this);
     fadeIn(this, 400);
     Audio.playBgm('victory');
     const cols = Math.ceil(W / TILE), rows = Math.ceil(H / TILE);
@@ -17,15 +19,15 @@ export default class PurifyScene extends Phaser.Scene {
     for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
       const i = y * cols + x, r = rng(i);
       const tree = r < 0.22 && !(y > 5 && y < 10 && x > 6 && x < 13);
-      this.dark.push(this.add.image(x * TILE, y * TILE, 'tiles', 5).setOrigin(0));
-      this.green.push(this.add.image(x * TILE, y * TILE, 'tiles', r > 0.9 ? 4 : 0).setOrigin(0).setAlpha(0));
+      this.dark.push(img(this, x * TILE, y * TILE, 'tiles', 5).setOrigin(0));
+      this.green.push(img(this, x * TILE, y * TILE, 'tiles', r > 0.9 ? 4 : 0).setOrigin(0).setAlpha(0));
       if (tree) {
-        this.dark.push(this.add.image(x * TILE + 8, (y + 1) * TILE, 'tree_dark').setOrigin(0.5, 1).setDepth(2));
-        this.green.push(this.add.image(x * TILE + 8, (y + 1) * TILE, 'tree').setOrigin(0.5, 1).setDepth(3).setAlpha(0));
+        this.dark.push(img(this, x * TILE + 8, (y + 1) * TILE, 'tree_dark').setOrigin(0.5, 1).setDepth(2));
+        this.green.push(img(this, x * TILE + 8, (y + 1) * TILE, 'tree').setOrigin(0.5, 1).setDepth(3).setAlpha(0));
       }
     }
     const boss = Data.enemy(this.p.bossId);
-    this.bear = this.add.image(W / 2, 150, boss.sprite).setOrigin(0.5, 1).setScale(2).setTint(0x9a7fd6).setDepth(10);
+    this.bear = img(this, W / 2, 150, boss.sprite).setOrigin(0.5, 1).setScale(2 / PX).setTint(0x9a7fd6).setDepth(10);
     this.dialog = new DialogBox(this);
     this.play();
   }
@@ -44,7 +46,7 @@ export default class PurifyScene extends Phaser.Scene {
     await tween(this, { targets: { v: 0 }, v: 100, duration: 1500, onUpdate: (tw) => { const c = Phaser.Display.Color.Interpolate.ColorWithColor(from, to, 100, tw.getValue()); this.bear.setTint(Phaser.Display.Color.GetColor(c.r, c.g, c.b)); } });
     this.bear.clearTint();
     for (let i = 0; i < 12; i++) {
-      const s = this.add.image(Phaser.Math.Between(20, W - 20), Phaser.Math.Between(20, H - 40), 'star').setScale(0.5).setAlpha(0).setDepth(15);
+      const s = img(this, Phaser.Math.Between(20, W - 20), Phaser.Math.Between(20, H - 40), 'star').setScale(0.5 / PX).setAlpha(0).setDepth(15);
       this.tweens.add({ targets: s, alpha: 1, y: s.y - 10, duration: 500, yoyo: true, delay: i * 120, onComplete: () => s.destroy() });
     }
     await wait(this, 600);

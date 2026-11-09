@@ -1,13 +1,14 @@
-import { W, H, COLORS } from '../config.js';
+import { W, H, COLORS, PX } from '../config.js';
 import Data from '../systems/Data.js';
 import GameState from '../systems/GameState.js';
 import Audio from '../systems/Audio.js';
-import { txt, Button, confirm, soundButton, fadeIn, fadeOut } from '../systems/UI.js';
-import { makeCharacter } from '../systems/Assets.js';
+import { txt, Button, confirm, soundButton, fadeIn, fadeOut, setupCamera } from '../systems/UI.js';
+import { makeCharacter, img } from '../systems/Assets.js';
 
 export default class TitleScene extends Phaser.Scene {
   constructor() { super('Title'); }
   create() {
+    setupCamera(this);
     fadeIn(this, 300);
     Audio.playBgm('title');
     // 배경: 밤하늘 + 숲 실루엣
@@ -17,7 +18,7 @@ export default class TitleScene extends Phaser.Scene {
       const s = this.add.rectangle(Phaser.Math.Between(0, W), Phaser.Math.Between(0, 150), 1, 1, 0xffffff, Phaser.Math.FloatBetween(0.3, 1));
       this.tweens.add({ targets: s, alpha: 0.1, duration: Phaser.Math.Between(600, 1800), yoyo: true, repeat: -1, delay: Phaser.Math.Between(0, 1000) });
     }
-    for (let i = 0; i < 14; i++) this.add.image(i * 26 + 4 + (i % 2) * 6, H - 54 + (i % 3) * 4, 'tree').setOrigin(0.5, 1).setScale(1.5).setAlpha(0.7);
+    for (let i = 0; i < 14; i++) img(this, i * 26 + 4 + (i % 2) * 6, H - 54 + (i % 3) * 4, 'tree').setOrigin(0.5, 1).setScale(1.5 / PX).setAlpha(0.7);
 
     const title = txt(this, W / 2, 62, Data.strings.gameTitle, { size: 14, origin: 0.5, color: COLORS.yellow, strokeThickness: 3 }).setScale(2);
     this.tweens.add({ targets: title, y: 66, duration: 1400, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
@@ -28,7 +29,7 @@ export default class TitleScene extends Phaser.Scene {
     if (hasSave) { const s = GameState.load(); if (s) look = GameState.s.player.look; }
     const hero = makeCharacter(this, 52, H - 46, look).setScale(2);
     this.tweens.add({ targets: hero, y: hero.y - 3, duration: 500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-    const guide = this.add.image(W - 56, H - 48, 'guide').setOrigin(0.5, 1).setScale(2);
+    const guide = img(this, W - 56, H - 48, 'guide').setOrigin(0.5, 1).setScale(2 / PX);
     this.tweens.add({ targets: guide, y: guide.y - 4, duration: 700, yoyo: true, repeat: -1, ease: 'Sine.easeInOut', delay: 200 });
 
     const bw = 150, bx = (W - bw) / 2;

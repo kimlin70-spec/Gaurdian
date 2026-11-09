@@ -1,10 +1,10 @@
 // 우리 집: 가구를 놓아 꾸미기 + 제작대 + 가구 가게
-import { W, H, TILE, COLORS, wd } from '../config.js';
+import { W, H, TILE, COLORS, wd, PX } from '../config.js';
 import Data from '../systems/Data.js';
 import GameState from '../systems/GameState.js';
 import Audio from '../systems/Audio.js';
-import { txt, Button, panel, UIGroup, DialogBox, toast, fadeIn, fadeOut, DEPTH } from '../systems/UI.js';
-import { makeCharacter } from '../systems/Assets.js';
+import { txt, Button, panel, UIGroup, DialogBox, toast, fadeIn, fadeOut, DEPTH, setupCamera } from '../systems/UI.js';
+import { makeCharacter, img } from '../systems/Assets.js';
 
 const COLS = 14, ROWS = 8;           // 방 크기 (칸)
 const OX = (W - COLS * TILE) / 2, OY = 30; // 방 위치
@@ -15,6 +15,7 @@ export default class HomeScene extends Phaser.Scene {
   init(data) { this.p = data || {}; }
 
   create() {
+    setupCamera(this);
     fadeIn(this);
     Audio.playBgm('village');
     const s = GameState.s;
@@ -40,8 +41,8 @@ export default class HomeScene extends Phaser.Scene {
     // 바닥 탭 → 가구 놓기
     const floor = this.add.rectangle(OX + COLS * TILE / 2, OY + ROWS * TILE / 2, COLS * TILE, ROWS * TILE, 0xffffff, 0.001).setInteractive();
     floor.on('pointerup', (pointer) => {
-      if (this.busy || pointer.getDistance() > 10) return;
-      const gx = Math.floor((pointer.x - OX) / TILE), gy = Math.floor((pointer.y - OY) / TILE);
+      if (this.busy || pointer.getDistance() > 10 * PX) return;
+      const gx = Math.floor((pointer.worldX - OX) / TILE), gy = Math.floor((pointer.worldY - OY) / TILE);
       this.tapFloor(gx, gy);
     });
     this.ghost = null;
@@ -69,10 +70,10 @@ export default class HomeScene extends Phaser.Scene {
     for (const pl of GameState.s.home.placed) {
       const f = Data.furniture[pl.id]; if (!f) continue;
       const x = OX + pl.x * TILE, y = OY + (pl.y + f.h) * TILE;
-      const img = this.add.image(x, y, f.sprite).setOrigin(0, 1).setDepth(f.floor ? 0.5 : wd(y));
-      img.setInteractive({ useHandCursor: true });
-      img.on('pointerup', (pointer) => { if (this.busy || pointer.getDistance() > 10) return; this.pickUp(pl); });
-      this.placedSprites.push(img);
+      const im = img(this, x, y, f.sprite).setOrigin(0, 1).setDepth(f.floor ? 0.5 : wd(y));
+      im.setInteractive({ useHandCursor: true });
+      im.on('pointerup', (pointer) => { if (this.busy || pointer.getDistance() > 10 * PX) return; this.pickUp(pl); });
+      this.placedSprites.push(im);
     }
   }
   occupied(gx, gy, except) {
@@ -130,8 +131,8 @@ export default class HomeScene extends Phaser.Scene {
       const y = top + i * rowH;
       const b = g.add(new Button(this, 16, y, W - 32, rowH - 4, '', r.onTap, { depth: DEPTH.MODAL, color: r.color ?? 0x3d4066 }));
       const f = Data.furniture[r.id];
-      const icon = g.add(this.add.image(24, y + (rowH - 4) / 2, f.sprite).setDepth(DEPTH.MODAL + 1).setOrigin(0, 0.5));
-      const sc = Math.min(1, 26 / Math.max(icon.width, icon.height)); icon.setScale(sc);
+      const icon = g.add(img(this, 24, y + (rowH - 4) / 2, f.sprite).setDepth(DEPTH.MODAL + 1).setOrigin(0, 0.5));
+      const sc = Math.min(1 / PX, 26 / Math.max(icon.width, icon.height)); icon.setScale(sc);
       b.label.setOrigin(0, 0.5).setPosition(58, y + (rowH - 4) / 2 - (r.sub ? 5 : 0)).setText(r.label);
       if (r.sub) g.add(txt(this, 58, y + 17, r.sub, { size: 11, color: '#b8c0e0', depth: DEPTH.MODAL + 1, strokeThickness: 1 }));
       if (r.right) g.add(txt(this, W - 24, y + (rowH - 4) / 2, r.right, { size: 11, origin: [1, 0.5], color: r.rightColor || COLORS.yellow, depth: DEPTH.MODAL + 1 }));

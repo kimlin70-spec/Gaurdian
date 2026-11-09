@@ -1,10 +1,10 @@
 // 턴제 전투. 아군 전원 명령 → 빠르기 순으로 전원 행동 → 다음 턴.
-import { W, H, COLORS, wd } from '../config.js';
+import { W, H, COLORS, wd, PX } from '../config.js';
 import Data from '../systems/Data.js';
 import GameState from '../systems/GameState.js';
 import Audio from '../systems/Audio.js';
-import { txt, Button, panel, UIGroup, DialogBox, bar, toast, fadeIn, fadeOut, tween, wait, DEPTH } from '../systems/UI.js';
-import { makeUnitSprite } from '../systems/Assets.js';
+import { txt, Button, panel, UIGroup, DialogBox, bar, toast, fadeIn, fadeOut, tween, wait, DEPTH, setupCamera } from '../systems/UI.js';
+import { makeUnitSprite, img } from '../systems/Assets.js';
 
 const CORRUPT_TINT = 0x9a7fd6;
 const ALLY_POS = [[64, 100], [44, 126], [64, 152], [44, 178]];
@@ -16,6 +16,7 @@ export default class BattleScene extends Phaser.Scene {
   init(data) { this.p = data || {}; }
 
   create() {
+    setupCamera(this);
     fadeIn(this, 200);
     this.isBoss = !!this.p.boss;
     Audio.playBgm(this.isBoss ? 'boss' : 'battle');
@@ -64,7 +65,7 @@ export default class BattleScene extends Phaser.Scene {
       u.obj.setFlipX(true).setTint(CORRUPT_TINT);
       u.nameT = txt(this, x, y + 2, u.name, { size: 11, origin: [0.5, 0], color: '#f2c6ff' });
       u.hpBar = bar(this, x - 20, y + 18, 40, 5, COLORS.hp, { marker: this.threshold, lowAt: this.threshold });
-      u.obj.setInteractive({ useHandCursor: true, hitArea: new Phaser.Geom.Rectangle(-10, -10, u.obj.width + 20, u.obj.height + 20), hitAreaCallback: Phaser.Geom.Rectangle.Contains });
+      u.obj.setInteractive({ useHandCursor: true, hitArea: new Phaser.Geom.Rectangle(-10 * PX, -10 * PX, u.obj.width + 20 * PX, u.obj.height + 20 * PX), hitAreaCallback: Phaser.Geom.Rectangle.Contains });
       u.obj.on('pointerup', () => this.onTargetTap(u));
     } else {
       // 아군 스프라이트도 탭 가능(회복 대상)
@@ -207,7 +208,7 @@ export default class BattleScene extends Phaser.Scene {
     this.targeting = { u, cmd, pool };
     this.say(cmd.type === 'purify' ? '누구를 정화할까?' : side === 'enemy' ? '누구를 공격할까?' : '누구에게 쓸까?');
     for (const t of pool) {
-      const c = this.add.image(t.x, t.y - (t.obj.height || 24) * (t.scale || 1) - 8, 'cursor').setDepth(DEPTH.UI);
+      const c = img(this, t.x, t.y - (t.obj.displayHeight || 24) - 8, 'cursor').setDepth(DEPTH.UI);
       this.tweens.add({ targets: c, y: c.y - 4, duration: 300, yoyo: true, repeat: -1 });
       this.cursors.push(c);
     }
@@ -338,7 +339,7 @@ export default class BattleScene extends Phaser.Scene {
     if (!this.canPurify(t)) { this.say(`${t.name}의 HP가 아직 많아요!`); await wait(this, 600); return; }
     this.say(`${a.name}의 정화! ${Data.strings.gemName}이 빛난다!`);
     Audio.sfx('purify');
-    const gem = this.add.image(a.x, a.y - 30, 'gem').setDepth(DEPTH.UI);
+    const gem = img(this, a.x, a.y - 30, 'gem').setDepth(DEPTH.UI);
     this.tweens.add({ targets: gem, scale: 1.5, alpha: 0, duration: 900, onComplete: () => gem.destroy() });
     const beam = this.add.rectangle((a.x + t.x) / 2, t.y - 14, Math.abs(t.x - a.x), 3, 0xff6fd8, 0.9).setDepth(DEPTH.UI);
     this.tweens.add({ targets: beam, alpha: 0, duration: 700, onComplete: () => beam.destroy() });

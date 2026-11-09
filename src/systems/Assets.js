@@ -1,6 +1,6 @@
 // 임시 도트 그래픽을 코드로 만듭니다.
 // 나중에 진짜 PNG 가 생기면 data/assets.json 의 overrides 에 적으면 됩니다. (같은 키면 여기서 만들지 않음)
-import { TILE, wd } from '../config.js';
+import { TILE, PX, wd } from '../config.js';
 
 export const LOOKS = {
   skin: [0xf6d7b8, 0xd8a076, 0x8d5a3a],
@@ -15,7 +15,7 @@ import { PAL, PLAYER_BODY, PLAYER_CLOTHES, HAIR, TREE, TREE_DARK, BUSH, ROCK, SP
 // 자리표시자용 알파벳 팔레트 → Phaser generate 형식
 function gen(scene, key, rows, palette = PAL) {
   if (scene.textures.exists(key)) return;
-  scene.textures.generate(key, { data: rows, palette, pixelWidth: 1, pixelHeight: 1 });
+  scene.textures.generate(key, { data: rows, palette, pixelWidth: PX, pixelHeight: PX });
 }
 
 // 간단한 결정적 난수 (타일 무늬용)
@@ -49,11 +49,12 @@ function drawTile(ctx, idx, ox) {
 
 function genTiles(scene) {
   if (scene.textures.exists('tiles')) return;
-  const tex = scene.textures.createCanvas('tiles', TILE * TILE_COUNT, TILE);
+  const tex = scene.textures.createCanvas('tiles', TILE * TILE_COUNT * PX, TILE * PX);
   const ctx = tex.getContext();
+  ctx.scale(PX, PX);
   for (let i = 0; i < TILE_COUNT; i++) drawTile(ctx, i, i * TILE);
   tex.refresh();
-  for (let i = 0; i < TILE_COUNT; i++) tex.add(i, 0, i * TILE, 0, TILE, TILE);
+  for (let i = 0; i < TILE_COUNT; i++) tex.add(i, 0, i * TILE * PX, 0, TILE * PX, TILE * PX);
 }
 
 // ---- 건물 (40x36) ----
@@ -71,8 +72,9 @@ function genBuildings(scene) {
     const tkey = 'bld_' + key;
     if (scene.textures.exists(tkey)) continue;
     const w = 40, h = 36;
-    const tex = scene.textures.createCanvas(tkey, w, h);
+    const tex = scene.textures.createCanvas(tkey, w * PX, h * PX);
     const ctx = tex.getContext();
+    ctx.scale(PX, PX);
     if (key === 'gate') {
       ctx.fillStyle = '#2e7d32'; ctx.fillRect(0, 4, 12, 28); ctx.fillRect(28, 4, 12, 28);
       ctx.fillStyle = '#1b5e20'; ctx.fillRect(2, 8, 8, 20); ctx.fillRect(30, 8, 8, 20);
@@ -113,15 +115,18 @@ export function generateAll(scene) {
   for (const [key, rows] of Object.entries(FURNITURE)) gen(scene, key, rows);
   // 1x1 흰 점 (파티클/플래시용)
   if (!scene.textures.exists('dot')) {
-    const t = scene.textures.createCanvas('dot', 2, 2); t.getContext().fillStyle = '#fff'; t.getContext().fillRect(0, 0, 2, 2); t.refresh();
+    const t = scene.textures.createCanvas('dot', 2 * PX, 2 * PX); t.getContext().fillStyle = '#fff'; t.getContext().fillRect(0, 0, 2 * PX, 2 * PX); t.refresh();
   }
 }
 
+// 그림 만들기: 모든 텍스처는 PX 배 밀도이므로 1/PX 로 줄여서 논리 크기로 보여준다.
+export function img(scene, x, y, key, frame) { return scene.add.image(x, y, key, frame).setScale(1 / PX); }
+
 // 주인공 캐릭터(몸+옷+머리) 컨테이너. 24x32, origin 은 발 아래 가운데(0.5, 1).
 export function makeCharacter(scene, x, y, look) {
-  const body = scene.add.image(0, 0, 'player_body').setOrigin(0.5, 1).setTint(LOOKS.skin[look.skin] ?? LOOKS.skin[0]);
-  const clothes = scene.add.image(0, 0, 'player_clothes').setOrigin(0.5, 1);
-  const hair = scene.add.image(0, 0, 'hair_' + (look.hair ?? 0)).setOrigin(0.5, 1).setTint(LOOKS.hairColor[look.hairColor] ?? LOOKS.hairColor[0]);
+  const body = img(scene, 0, 0, 'player_body').setOrigin(0.5, 1).setTint(LOOKS.skin[look.skin] ?? LOOKS.skin[0]);
+  const clothes = img(scene, 0, 0, 'player_clothes').setOrigin(0.5, 1);
+  const hair = img(scene, 0, 0, 'hair_' + (look.hair ?? 0)).setOrigin(0.5, 1).setTint(LOOKS.hairColor[look.hairColor] ?? LOOKS.hairColor[0]);
   const c = scene.add.container(x, y, [body, clothes, hair]);
   c.setSize(24, 32);
   c.parts = { body, clothes, hair };
@@ -138,7 +143,7 @@ export function decorateMap(scene, grid, ox, oy) {
     const key = OVERLAY_TILES[grid[y][x]];
     if (!key) continue;
     const wy = oy + (y + 1) * TILE;
-    sprites.push(scene.add.image(ox + x * TILE + TILE / 2, wy, key).setOrigin(0.5, 1).setDepth(wd(wy - 1)));
+    sprites.push(img(scene, ox + x * TILE + TILE / 2, wy, key).setOrigin(0.5, 1).setDepth(wd(wy - 1)));
   }
   return { data, sprites };
 }
@@ -146,9 +151,9 @@ export function decorateMap(scene, grid, ox, oy) {
 // 유닛의 sprite 이름으로 전투/필드 스프라이트 만들기 (주인공이면 컨테이너)
 export function makeUnitSprite(scene, unit, x, y, look) {
   if (unit.sprite === 'player') return makeCharacter(scene, x, y, look);
-  const img = scene.add.image(x, y, unit.sprite).setOrigin(0.5, 1);
-  if (unit.scale && unit.scale !== 1) img.setScale(unit.scale);
-  return img;
+  const im = img(scene, x, y, unit.sprite).setOrigin(0.5, 1);
+  if (unit.scale && unit.scale !== 1) im.setScale(unit.scale / PX);
+  return im;
 }
 
 export const SPRITE_KEYS = Object.keys(SPRITES);
