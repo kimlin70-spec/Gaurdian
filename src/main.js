@@ -9,6 +9,7 @@ import FieldScene from './scenes/FieldScene.js';
 import BattleScene from './scenes/BattleScene.js';
 import PurifyScene from './scenes/PurifyScene.js';
 import HomeScene from './scenes/HomeScene.js';
+import MiniGameScene from './scenes/MiniGameScene.js';
 
 const config = {
   type: Phaser.AUTO,
@@ -21,7 +22,7 @@ const config = {
   antialias: false,
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
   input: { activePointers: 2 },
-  scene: [BootScene, TitleScene, CharacterCreateScene, StoryIntroScene, VillageScene, FieldScene, BattleScene, PurifyScene, HomeScene],
+  scene: [BootScene, TitleScene, CharacterCreateScene, StoryIntroScene, VillageScene, FieldScene, BattleScene, PurifyScene, HomeScene, MiniGameScene],
 };
 
 async function start() {

@@ -1,5 +1,5 @@
 {
-  "_comment": "rows 의 글자는 src/config.js 의 TILE_LEGEND 참고. objects type: chest | npc | exit | village_exit | boss. enemies 의 group 은 1~3마리. injured 는 다친 동물(치료하면 친구).",
+  "_comment": "rows 의 글자는 src/config.js 의 TILE_LEGEND 참고. objects type: chest | npc | exit | village_exit | boss. enemies 의 group 은 1~3마리. injured 는 다친 동물(치료하면 친구). bossGate 는 보스방 문을 여는 데 필요한 '정화한 무리 수'(없으면 잠금 없음).",
   "stage1": {
     "name": "초록숲",
     "order": 1,
@@ -341,7 +341,8 @@
       "ground": "#5d5876",
       "bossSky": "#2a2240",
       "bossGround": "#4a4760"
-    }
+    },
+    "bossGate": 8
   },
   "stage2": {
     "name": "눈 내린 숲",
@@ -680,7 +681,8 @@
         ],
         "enemies": []
       }
-    }
+    },
+    "bossGate": 8
   },
   "stage3": {
     "name": "안개 늪",

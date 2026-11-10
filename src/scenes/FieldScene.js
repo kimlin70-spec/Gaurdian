@@ -69,6 +69,14 @@ export default class FieldScene extends Phaser.Scene {
     this.menuBtn = new Button(this, W - 54, 4, 50, 20, '메뉴', () => this.openMenu(), { fixed: true, color: 0x333355, depth: DEPTH.TOP });
     this.hpText = txt(this, 6, H - 16, '', { size: 11, fixed: true });
     this.refreshHp();
+    this.gateText = txt(this, W - 6, H - 16, '', { size: 11, fixed: true, origin: [1, 0] });
+    this.refreshGate();
+    // 문이 방금 열렸으면 한 번 알려준다
+    if (GameState.gateNeed(stageId) > 0 && GameState.gateOpen(stageId) && !s.flags.cleared[stageId] && !s.flags.gateOpen[stageId]) {
+      s.flags.gateOpen[stageId] = true; GameState.save();
+      this.busy = true; Audio.sfx('purify');
+      this.time.delayedCall(400, () => this.dialog.show(Data.dialogues.gate.opened.map(l => Data.fmt(l))).then(() => { this.busy = false; }));
+    }
 
     // ---- 입력 ----
     this.input.on('pointerup', (pointer, over) => {
@@ -112,6 +120,15 @@ export default class FieldScene extends Phaser.Scene {
       this.tweens.add({ targets: bubble, y: bubble.y - 2, duration: 500, yoyo: true, repeat: -1 });
       this.blocked.add(o.x + ',' + o.y);
       this.makeTappable(obj.sprite, () => this.approach(obj));
+    } else if (o.type === 'exit' && this.isBossDoor(o) && !GameState.gateOpen(this.p.stageId)) {
+      // 잠긴 보스 문: 지나갈 수 없고, 탭하면 얼마나 더 정화해야 하는지 알려준다
+      obj.type = 'gate';
+      obj.sprite = this.add.rectangle(wp.x, wp.y, TILE, TILE, 0xff6fd8, 0.55).setStrokeStyle(1, 0xffffff).setDepth(wd(wp.y + 8));
+      this.tweens.add({ targets: obj.sprite, alpha: 0.9, duration: 700, yoyo: true, repeat: -1 });
+      txt(this, wp.x, wp.y - 12, '잠김', { size: 11, origin: 0.5, depth: DEPTH.WORLD_UI, color: '#ffb3ec' });
+      this.blocked.add(o.x + ',' + o.y);
+      obj.sprite.setInteractive({ useHandCursor: true });
+      obj.sprite.on('pointerup', (pointer) => { if (!this.busy && !this.transitioning && pointer.getDistance() <= 10 * PX) this.approach(obj); });
     } else if (o.type === 'exit' || o.type === 'village_exit') {
       const g = this.add.rectangle(wp.x, wp.y, TILE - 2, TILE - 2, o.type === 'village_exit' ? 0x5aa9ff : COLORS.gold, 0.35).setDepth(0.5);
       this.tweens.add({ targets: g, alpha: 0.75, duration: 600, yoyo: true, repeat: -1 });
@@ -136,6 +153,18 @@ export default class FieldScene extends Phaser.Scene {
       this.boss = obj;
     }
     this.objects.push(obj);
+  }
+  // 이 출구가 보스방(보스 오브젝트가 있는 맵)으로 가는 문인지
+  isBossDoor(o) {
+    const target = Data.map(this.p.stageId, o.to);
+    return !!(target && (target.objects || []).some(x => x.type === 'boss')) && GameState.gateNeed(this.p.stageId) > 0;
+  }
+  refreshGate() {
+    const need = GameState.gateNeed(this.p.stageId);
+    if (!need || !this.gateText) return;
+    const n = Math.min(need, GameState.gateCount(this.p.stageId));
+    const open = GameState.gateOpen(this.p.stageId);
+    this.gateText.setText(open ? '◆ 보스 문 열림!' : `◆ 정화 ${n}/${need}`).setColor(open ? '#7ee081' : '#ffb3ec');
   }
   makeTappable(sprite, fn) {
     sprite.setInteractive({ useHandCursor: true, hitArea: new Phaser.Geom.Rectangle(-6 * PX, -6 * PX, sprite.width + 12 * PX, sprite.height + 12 * PX), hitAreaCallback: Phaser.Geom.Rectangle.Contains });
@@ -251,6 +280,12 @@ export default class FieldScene extends Phaser.Scene {
       const lines = (Data.dialogues.npc[obj.text] || ['...']).map(l => Data.fmt(l));
       this.hero.setFlip(obj.x < this.tx);
       await this.dialog.show(lines);
+      this.busy = false;
+    } else if (obj.type === 'gate') {
+      this.busy = true;
+      const left = Math.max(1, GameState.gateNeed(this.p.stageId) - GameState.gateCount(this.p.stageId));
+      Audio.sfx('error');
+      await this.dialog.show([Data.fmt(Data.dialogues.gate.locked, { n: left })]);
       this.busy = false;
     } else if (obj.type === 'injured') {
       this.busy = true;

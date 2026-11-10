@@ -10,7 +10,7 @@ export const LOOKS = {
   hairColorNames: ['갈색', '노랑', '빨강', '검정'],
 };
 
-import { PAL, PLAYER_BODY, PLAYER_CLOTHES, HAIR, TREE, TREE_DARK, BUSH, ROCK, SPRITES, FURNITURE, TREE_SNOW, TREE_SNOW_DARK, ROCK_SNOW, WEAPONS, YARD_FURNITURE } from './Pixels.js';
+import { PAL, PLAYER_BODY, PLAYER_CLOTHES, HAIR, TREE, TREE_DARK, BUSH, ROCK, SPRITES, FURNITURE, TREE_SNOW, TREE_SNOW_DARK, ROCK_SNOW, WEAPONS, YARD_FURNITURE, MINIGAME } from './Pixels.js';
 import Data from './Data.js';
 import GameState from './GameState.js';
 
@@ -142,6 +142,7 @@ export function generateAll(scene) {
   gen(scene, 'tree_snow', TREE_SNOW); gen(scene, 'tree_snow_dark', TREE_SNOW_DARK); gen(scene, 'rock_snow', ROCK_SNOW);
   for (const [key, rows] of Object.entries(WEAPONS)) gen(scene, key, rows);
   for (const [key, rows] of Object.entries(YARD_FURNITURE)) gen(scene, key, rows);
+  for (const [key, rows] of Object.entries(MINIGAME)) gen(scene, key, rows);
   for (const [key, rows] of Object.entries(SPRITES)) gen(scene, key, rows);
   for (const [key, rows] of Object.entries(FURNITURE)) gen(scene, key, rows);
   // 1x1 흰 점 (파티클/플래시용)

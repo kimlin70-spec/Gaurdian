@@ -405,6 +405,7 @@ export default class BattleScene extends Phaser.Scene {
   markDefeated() {
     if (this.p.enemyKey) {
       const f = GameState.s.flags.defeated; f[this.p.stageId] = f[this.p.stageId] || {}; f[this.p.stageId][this.p.enemyKey] = true;
+      GameState.addGate(this.p.stageId, this.p.enemyKey); // 보스 문 게이지 (마을에 다녀와도 유지)
     }
   }
   async onWin() {

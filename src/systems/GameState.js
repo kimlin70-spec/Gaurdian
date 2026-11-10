@@ -25,7 +25,7 @@ const GameState = {
       stardust: p.startStardust || 0,
       shards: 0,
       skillLevels: {},        // ownerId → { skillId: level }
-      flags: { chests: {}, defeated: {}, cleared: {}, healed: {}, introSeen: false, hintIndex: 0 },
+      flags: { chests: {}, defeated: {}, cleared: {}, healed: {}, gate: {}, gateOpen: {}, introSeen: false, hintIndex: 0 },
       location: { scene: 'Village' },
       day: 1,                 // 숲에 다녀올 때마다 +1 (놀아주기 하루 1번 기준)
       home: { placed: [], yard: [], owned: {} }, // 집 꾸미기: 집 안 가구, 마당 가구, 가진 가구
@@ -43,6 +43,9 @@ const GameState = {
     s.inventory = s.inventory || {}; s.party = s.party || []; s.animals = s.animals || {};
     s.ownedEquip = s.ownedEquip || Object.values(s.player.equip);
     s.flags.healed = s.flags.healed || {}; s.day = s.day || 1;
+    s.flags.gate = s.flags.gate || {}; s.flags.gateOpen = s.flags.gateOpen || {};
+    // 예전 저장: 이미 정화한 무리를 보스 문 게이지에 반영
+    for (const [sid, keys] of Object.entries(s.flags.defeated)) { s.flags.gate[sid] = s.flags.gate[sid] || {}; for (const k of Object.keys(keys)) s.flags.gate[sid][k] = true; }
     s.home = s.home || { placed: [], yard: [], owned: {} }; s.home.yard = s.home.yard || [];
     for (const id of Object.keys(s.animals)) this.fixAnimal(s.animals[id]);
     return true;
@@ -176,6 +179,29 @@ const GameState = {
   },
   leaveParty(id) { const i = this.s.party.indexOf(id); if (i >= 0) this.s.party.splice(i, 1); },
   canPlay(id) { return this.s.animals[id].lastPlayDay < this.s.day; },
+  // 미니게임 결과 반영. grade: 0(아쉬움) 1(좋음) 2(최고). 돌려주는 값: { reward, event('sulk'|'back'|null), free }
+  playResult(id, type, grade, score) {
+    const r = this.s.animals[id];
+    r.best = r.best || {}; r.best[type] = Math.max(r.best[type] || 0, score);
+    if (!this.canPlay(id)) return { reward: 0, event: null, free: true };
+    r.lastPlayDay = this.s.day;
+    const reward = [8, 15, 22][grade];
+    return { reward, event: this.addFriend(id, reward), free: false };
+  },
+  // 샤워 결과. grade: 0(실패: 절반만 깨끗, 하트 -5) 1(성공: 깨끗) 2(완벽: 깨끗 + 하트 +5)
+  showerResult(id, grade, score) {
+    const r = this.s.animals[id];
+    r.best = r.best || {}; r.best.shower = Math.max(r.best.shower || 0, score);
+    if (grade === 0) { r.dirt = Math.ceil(r.dirt / 2); return { reward: -5, event: this.addFriend(id, -5) }; }
+    r.dirt = 0;
+    if (grade === 2) return { reward: 5, event: this.addFriend(id, 5) };
+    return { reward: 0, event: null };
+  },
+  // ---------- 보스 문 (정화 게이지) ----------
+  gateCount(stageId) { return Object.keys(this.s.flags.gate[stageId] || {}).length; },
+  gateNeed(stageId) { const st = Data.stage(stageId); return (st && st.bossGate) || 0; },
+  gateOpen(stageId) { return !!this.s.flags.cleared[stageId] || this.gateCount(stageId) >= this.gateNeed(stageId); },
+  addGate(stageId, key) { const g = this.s.flags.gate; g[stageId] = g[stageId] || {}; g[stageId][key] = true; },
   play(id) { const r = this.s.animals[id]; r.lastPlayDay = this.s.day; return this.addFriend(id, 15); },
   shower(id) { const r = this.s.animals[id]; r.dirt = 0; return this.addFriend(id, -5); },
   snack(id) { if (!this.useItem('snack')) return false; this.addFriend(id, Data.item('snack').power); return true; },

@@ -42,7 +42,7 @@ export default class VillageScene extends Phaser.Scene {
     setupCamera(this);
     fadeIn(this);
     // 씬 인스턴스가 재사용되므로 상태 초기화
-    this.busy = false; this.panelGroup = null; this.listGroup = null; this.moneyText = null;
+    this.busy = false; this.panelGroup = null; this.listGroup = null; this.moneyText = null; this.leaving = false;
     Audio.playBgm('village');
     const s = GameState.s;
     GameState.setLocation({ scene: 'Village' });
@@ -81,6 +81,11 @@ export default class VillageScene extends Phaser.Scene {
     this.busy = false;
     this.refreshHud();
 
+    // 미니게임에서 돌아왔으면 쉼터 앞에 서서 그 동물 화면을 다시 연다
+    if (this.params.openAnimal && s.animals[this.params.openAnimal]) {
+      const sh = this.buildings.shelter; this.hero.setPosition(sh.x, sh.y + 10); this.hero.setDepth(wd(this.hero.y));
+      this.openAnimalDetail(this.params.openAnimal);
+    }
     // 환영 / 여관에서 깨어남
     if (this.params.wokeAtInn) this.say(Data.dialogues.lose.map(Data.fmt.bind(Data)));
     else if (this.params.welcome) this.say(Data.dialogues.villageWelcome.map(Data.fmt.bind(Data)));
@@ -273,6 +278,7 @@ export default class VillageScene extends Phaser.Scene {
     const sprite = g.add(img(this, 60, 118, a.sprite).setScale(3 / PX).setDepth(DEPTH.MODAL));
     this.tweens.add({ targets: sprite, y: 114, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     const info = g.add(txt(this, 112, 36, '', { size: 11, depth: DEPTH.MODAL, lineSpacing: 4 }));
+    const best = g.add(txt(this, 16, 142, '', { size: 11, depth: DEPTH.MODAL, lineSpacing: 2, color: '#b8c0e0', strokeThickness: 1 }));
     const btns = new UIGroup(); g.add(btns);
     const say = (m) => toast(this, m, { y: 120, duration: 1500 });
     const render = () => {
@@ -282,8 +288,9 @@ export default class VillageScene extends Phaser.Scene {
         `Lv${rec.level}  ${a.role}   HP ${rec.hp}/${stats.hp}`,
         `친구 레벨 ${'♥'.repeat(h)}${'♡'.repeat(5 - h)}${rec.friend >= 80 ? '  힘이 나요!' : ''}`,
         `상태: ${st.text}${rec.dirt >= 5 && !rec.sick ? ' (샤워해 주세요)' : ''}`,
-        inParty ? '지금 함께 모험 중이에요' : '쉼터에서 쉬고 있어요',
       ].join('\n'));
+      const bs = rec.best || {};
+      best.setText(`최고 기록\n간식 ${bs.catch || 0}개\n숨바꼭질 ${bs.hide || 0}/3\n헹구기 ${bs.shower || 0}/10`);
       btns.destroy(); btns.items = [];
       const B = (i, label, fn, opts = {}) => {
         const col = i % 2, row = Math.floor(i / 2);
@@ -295,19 +302,8 @@ export default class VillageScene extends Phaser.Scene {
         if (r === 'full') { Audio.sfx('error'); say('3마리까지만 데려갈 수 있어요!'); }
         render();
       }, { color: inParty ? 0x555577 : COLORS.ok }).setEnabled(inParty || canGo);
-      B(1, GameState.canPlay(id) ? '놀아주기 ♥' : '오늘은 놀았어요', () => {
-        if (!GameState.canPlay(id)) { say(Data.fmt(Data.dialogues.care.playDone).replace(/\{name\}/g, a.name)); return; }
-        const res = GameState.play(id); Audio.sfx('heal'); this.hop(sprite);
-        say(Data.fmt(Data.dialogues.care.play).replace(/\{name\}/g, a.name));
-        if (res === 'back') this.dialog.show([`${a.name}이(가) 기분이 풀려서 돌아왔어요!`]);
-        render();
-      }, { color: 0xd6679a }).setEnabled(GameState.canPlay(id) && !rec.sick);
-      B(2, rec.dirt >= 5 ? '샤워 (필요!)' : '샤워', () => {
-        const res = GameState.shower(id); Audio.sfx('star');
-        say(Data.fmt(Data.dialogues.care.shower).replace(/\{name\}/g, a.name));
-        if (res === 'sulk') this.dialog.show([Data.fmt(Data.dialogues.care.sulk).replace(/\{name\}/g, a.name)]);
-        render();
-      }, { color: 0x4a90e2 }).setEnabled(rec.dirt > 0 && !rec.sick);
+      B(1, GameState.canPlay(id) ? '놀아주기 ♥' : '그냥 놀기', () => this.choosePlay(id), { color: 0xd6679a }).setEnabled(!rec.sick);
+      B(2, rec.dirt >= 5 ? '샤워 (필요!)' : '샤워', () => this.startMiniGame(id, 'shower'), { color: 0x4a90e2 }).setEnabled(rec.dirt > 0 && !rec.sick);
       const snacks = s.inventory.snack || 0, meds = s.inventory.medicine || 0;
       B(3, `간식 주기 (${snacks})`, () => {
         if (!GameState.snack(id)) return;
@@ -327,6 +323,23 @@ export default class VillageScene extends Phaser.Scene {
     render();
   }
   hop(obj) { this.tweens.add({ targets: obj, y: obj.y - 10, duration: 120, yoyo: true, repeat: 1 }); }
+  // 놀이 고르기
+  choosePlay(id) {
+    const a = Data.animal(id), g = new UIGroup(), w = 220, h = 124, x = (W - w) / 2, y = (H - h) / 2, d = DEPTH.MODAL + 10;
+    g.add(this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.5).setDepth(d - 1).setInteractive());
+    g.add(panel(this, x, y, w, h, { depth: d }));
+    g.add(txt(this, W / 2, y + 8, `${a.name}와(과) 뭐 하고 놀까요?`, { size: 11, origin: [0.5, 0], color: COLORS.yellow, depth: d + 1 }));
+    g.add(txt(this, W / 2, y + 22, GameState.canPlay(id) ? '잘하면 하트가 더 많이 올라요!' : '오늘은 하트 없이 그냥 놀아요', { size: 11, origin: [0.5, 0], color: '#b8c0e0', depth: d + 1, strokeThickness: 1 }));
+    g.add(new Button(this, x + 14, y + 40, w - 28, 24, '간식 받아먹기', () => { g.destroy(); this.startMiniGame(id, 'catch'); }, { depth: d + 1, color: 0xe08a3c }));
+    g.add(new Button(this, x + 14, y + 68, w - 28, 24, '숨바꼭질', () => { g.destroy(); this.startMiniGame(id, 'hide'); }, { depth: d + 1, color: 0x3fa34d }));
+    g.add(new Button(this, x + w - 74, y + 96, 60, 22, '취소', () => g.destroy(), { depth: d + 1, color: 0x555577 }));
+  }
+  async startMiniGame(id, type) {
+    if (this.leaving) return; this.leaving = true;
+    GameState.save();
+    await fadeOut(this, 200);
+    this.scene.start('MiniGame', { animalId: id, type });
+  }
 
   // ---------- 우리 집 ----------
   async goHome() {
