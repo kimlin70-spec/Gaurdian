@@ -346,7 +346,7 @@ export default class FieldScene extends Phaser.Scene {
         GameState.s.flags.healed[obj.key] = true;
         GameState.save();
         if (obj.bubble) obj.bubble.destroy();
-        await this.dialog.show([Data.fmt(Data.dialogues.injured.done).replace(/\{name\}/g, a.name)]);
+        await this.dialog.show([Data.fmt(Data.dialogues.injured.done, { name: a.name })]);
         // 친구가 되어 뛰어감
         obj.sprite.setAngle(0).setAlpha(1); face(obj.sprite, 1, 0); setPose(obj.sprite, 'move');
         this.blocked.delete(obj.x + ',' + obj.y);

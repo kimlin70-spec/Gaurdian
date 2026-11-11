@@ -1,5 +1,5 @@
 {
-  "_comment": "{hero} {guide} {world} {king} {cage} {gem} 는 strings.json 의 이름으로 바뀝니다. 한 줄은 짧게!",
+  "_comment": "{hero} {guide} {world} {king} {cage} {gem} 는 strings.json 의 이름으로 바뀝니다. 이름 뒤 조사는 이(가) 은(는) 을(를) 와(과) 아(야) (으)로 처럼 둘 다 쓰면 받침에 맞는 하나만 보여요 (밀꾸가, 곰이). 한 줄은 짧게!",
   "intro": [
     {
       "bg": "real",

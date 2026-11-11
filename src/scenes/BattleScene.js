@@ -1,6 +1,6 @@
 // 턴제 전투. 아군 전원 명령 → 빠르기 순으로 전원 행동 → 다음 턴.
 import { W, H, COLORS, wd, PX } from '../config.js';
-import Data from '../systems/Data.js';
+import Data, { josa } from '../systems/Data.js';
 import GameState from '../systems/GameState.js';
 import Audio from '../systems/Audio.js';
 import { txt, Button, panel, UIGroup, DialogBox, bar, toast, fadeIn, fadeOut, tween, wait, DEPTH, setupCamera } from '../systems/UI.js';
@@ -103,7 +103,7 @@ export default class BattleScene extends Phaser.Scene {
     u.auto = !u.auto; GameState.s.auto[u.animalId] = u.auto; this.refreshUnit(u); Audio.sfx('tap');
     toast(this, `${u.name}: 자동 ${u.auto ? '켬' : '끔'}`, { y: 60 });
   }
-  say(text) { this.msg.setText(text); }
+  say(text) { this.msg.setText(josa(text)); }
 
   // ---------- 메인 루프 ----------
   async run() {

@@ -1,6 +1,6 @@
 // 우리 집: 집 안 + 마당. 가구를 놓아 꾸미기, 제작대, 가구 가게
 import { W, H, TILE, COLORS, wd, PX } from '../config.js';
-import Data from '../systems/Data.js';
+import Data, { josa } from '../systems/Data.js';
 import GameState from '../systems/GameState.js';
 import Audio from '../systems/Audio.js';
 import { txt, Button, panel, UIGroup, DialogBox, toast, fadeIn, fadeOut, wait, DEPTH, setupCamera } from '../systems/UI.js';
@@ -98,7 +98,7 @@ export default class HomeScene extends Phaser.Scene {
   }
 
   setHint() {
-    if (this.selected) { const f = Data.furniture[this.selected]; this.hint.setText(`${f.name} 을(를) 놓을 자리를 탭하세요`); }
+    if (this.selected) { const f = Data.furniture[this.selected]; this.hint.setText(josa(`${f.name}을(를) 놓을 자리를 탭하세요`)); }
     else this.hint.setText(this.area === 'yard' ? '마당이에요. 가구를 탭하면 다시 들어요.' : '가구를 탭하면 다시 들어요. 아래에서 가구를 고르세요.');
   }
 

@@ -351,13 +351,13 @@ export default class VillageScene extends Phaser.Scene {
       const snacks = s.inventory.snack || 0, meds = s.inventory.medicine || 0;
       B(3, `간식 주기 (${snacks})`, () => {
         if (!GameState.snack(id)) return;
-        Audio.sfx('heal'); this.hop(sprite); say(Data.fmt(Data.dialogues.care.snack).replace(/\{name\}/g, a.name));
+        Audio.sfx('heal'); this.hop(sprite); say(Data.fmt(Data.dialogues.care.snack, { name: a.name }));
         if (!s.animals[id].sulk && rec.sulk === false) { /* 상태 갱신은 render 에서 */ }
         render();
       }, { color: 0xe08a3c }).setEnabled(snacks > 0 && rec.friend < GameState.FRIEND_MAX);
       B(4, `감기약 주기 (${meds})`, () => {
         if (!GameState.cure(id)) return;
-        Audio.sfx('levelup'); this.hop(sprite); say(Data.fmt(Data.dialogues.care.cure).replace(/\{name\}/g, a.name)); render();
+        Audio.sfx('levelup'); this.hop(sprite); say(Data.fmt(Data.dialogues.care.cure, { name: a.name })); render();
       }, { color: 0x3fa34d }).setEnabled(rec.sick && meds > 0);
       B(5, '목록으로', () => this.openShelter(), { color: 0x555577 });
       this.updateMoney();

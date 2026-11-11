@@ -85,7 +85,7 @@ src/
   config.js           해상도·색·타일 범례 등 상수
   scenes/             Boot → Title → CharacterCreate → StoryIntro → Village ⇄ Field ⇄ Battle → Purify, Village ⇄ Home, Village ⇄ MiniGame
   systems/
-    Data.js           JSON 데이터 접근 + {hero} 같은 이름 치환
+    Data.js           JSON 데이터 접근 + {hero} 같은 이름 치환 + 조사 고르기 (josa: 밀꾸이(가) → 밀꾸가)
     GameState.js      진행 상태, 능력치 계산, 경험치/레벨, 구조/파티
     Save.js           localStorage 저장/불러오기
     Assets.js         임시 도트 그래픽 생성 (나중에 PNG 로 교체)
@@ -101,7 +101,7 @@ vendor/               phaser.min.js (3.87.0 고정), Galmuri 폰트 (OFL)
 | 파일 | 내용 |
 |---|---|
 | `data/strings.json` | 게임 제목, 주인공/안내 동물/세계/마왕/가방 **이름**. 임시 이름을 여기서만 바꾸면 전체 반영 |
-| `data/dialogues.json` | 인트로·엔딩·NPC·보스 대사. `{hero}` `{guide}` `{world}` `{king}` `{cage}` `{gem}` 자리표시자 사용 가능 |
+| `data/dialogues.json` | 인트로·엔딩·NPC·보스 대사. `{hero}` `{guide}` `{world}` `{king}` `{cage}` `{gem}` 자리표시자 사용 가능. 이름 뒤 조사는 `이(가)` `은(는)` `을(를)` `와(과)` `아(야)` `(으)로` 처럼 둘 다 쓰면 앞 글자 받침에 맞는 하나만 보여요 (`{name}이(가)` → 밀꾸가 / 곰이). 앞 글자가 숫자·영어면 둘 다 그대로 보여요 |
 | `data/player.json` | 그레이스 능력치, 시작 장비/아이템/별가루 |
 | `data/animals.json` | 구조 동물 (이름, 역할, 능력치, 성장, 스킬 2개) |
 | `data/enemies.json` | 적 (`kind`: plant / animal / boss, 스킬 가중치, 보상, 드롭) |
