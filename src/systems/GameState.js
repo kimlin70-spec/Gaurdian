@@ -244,9 +244,9 @@ const GameState = {
       r.dirt = Math.min(10, r.dirt + (tr.dirtRate || 1));
       const name = this.animalName(u.animalId); // 더러워진 뒤의 이름 (밀크 → 밀꾸)
       if (wasClean && !this.isClean(u.animalId) && tr.dirtyAgain) msgs.push(Data.fmt(tr.dirtyAgain));
-      else if (before < 5 && r.dirt >= 5) msgs.push(Data.fmt(Data.dialogues.care.dirty).replace(/\{name\}/g, name));
-      if (r.dirt >= 8 && !r.sick && !tr.noCold) { r.sick = true; this.leaveParty(u.animalId); msgs.push(Data.fmt(Data.dialogues.care.sick).replace(/\{name\}/g, name)); }
-      if (u.hp <= 0) { const res = this.addFriend(u.animalId, -10); if (res === 'sulk') msgs.push(Data.fmt(Data.dialogues.care.sulk).replace(/\{name\}/g, name)); }
+      else if (before < 5 && r.dirt >= 5) msgs.push(Data.fmt(Data.dialogues.care.dirty, { name }));
+      if (r.dirt >= 8 && !r.sick && !tr.noCold) { r.sick = true; this.leaveParty(u.animalId); msgs.push(Data.fmt(Data.dialogues.care.sick, { name })); }
+      if (u.hp <= 0) { const res = this.addFriend(u.animalId, -10); if (res === 'sulk') msgs.push(Data.fmt(Data.dialogues.care.sulk, { name })); }
     }
     return msgs;
   },

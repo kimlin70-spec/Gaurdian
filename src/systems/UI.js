@@ -1,6 +1,7 @@
 // 터치용 UI 도우미. 버튼은 내부 해상도 기준 최소 16px(실제 화면 48px 이상).
 import { FONT, FONT_BIG, COLORS, W, H, PX, FIX_X, FIX_Y } from '../config.js';
 import Audio from './Audio.js';
+import { josa } from './Data.js';
 
 export const DEPTH = { WORLD_UI: 50, UI: 100, DIALOG: 200, MODAL: 300, TOP: 400 };
 
@@ -9,6 +10,7 @@ export function fix(obj) { obj.setScrollFactor(0); obj.x += FIX_X; obj.y += FIX_
 // 장면 카메라 기본 설정: PX 배 줌으로 320x240 논리 좌표를 640x480 캔버스에 꽉 채운다
 export function setupCamera(scene) { const c = scene.cameras.main; c.setZoom(PX); c.centerOn(W / 2, H / 2); c.setRoundPixels(true); return c; }
 
+// 글자 만들기. '이(가)' 같은 두 모양 조사는 앞 글자에 맞게 하나로 바꿔서 보여 준다 (toast 도 이걸 쓴다).
 export function txt(scene, x, y, str, opts = {}) {
   const size = opts.size || 11;
   const style = {
@@ -21,7 +23,7 @@ export function txt(scene, x, y, str, opts = {}) {
   if (opts.wrap) style.wordWrap = { width: opts.wrap, useAdvancedWrap: true };
   if (opts.stroke !== false) { style.stroke = opts.strokeColor || '#000000'; style.strokeThickness = opts.strokeThickness ?? 2; }
   if (opts.bold) style.fontStyle = 'bold';
-  const t = scene.add.text(x, y, str, style);
+  const t = scene.add.text(x, y, josa(str), style);
   if (opts.origin !== undefined) { Array.isArray(opts.origin) ? t.setOrigin(opts.origin[0], opts.origin[1]) : t.setOrigin(opts.origin); }
   if (opts.fixed) fix(t);
   t.setDepth(opts.depth ?? DEPTH.UI);
@@ -84,7 +86,7 @@ export class DialogBox {
     this.scene = scene; this.opts = opts; this.open = false; this.group = null;
   }
   show(lines, opts = {}) {
-    const list = Array.isArray(lines) ? lines.slice() : [lines];
+    const list = (Array.isArray(lines) ? lines : [lines]).map(l => josa(l));
     return new Promise(resolve => {
       this.hide();
       this.open = true;
