@@ -4,7 +4,7 @@ import Data from '../systems/Data.js';
 import GameState from '../systems/GameState.js';
 import Audio from '../systems/Audio.js';
 import { txt, Button, panel, fadeIn, fadeOut, DEPTH, setupCamera } from '../systems/UI.js';
-import { makeCharacter, img, unit } from '../systems/Assets.js';
+import { makeCharacter, img, unit, setView } from '../systems/Assets.js';
 
 const BG = {
   real:   { sky: 0x87ceeb, ground: 0x6ab04c },
@@ -31,7 +31,8 @@ export default class StoryIntroScene extends Phaser.Scene {
     }
     const look = GameState.s ? GameState.s.player.look : { skin: 0, hair: 0, hairColor: 0 };
     this.hero = makeCharacter(this, 110, 164, look).setScale(2.5);
-    this.guide = unit(this, 200, 164, 'guide').setOrigin(0.5, 1).setScale(2.5 / PX).setFlipX(true);
+    this.guide = unit(this, 200, 164, 'guide').setOrigin(0.5, 1).setScale(2.5 / PX);
+    setView(this.guide, 'side', true); // 왼쪽의 그레이스를 본다
     this.gem = img(this, 200, 128, 'gem').setScale(1.5 / PX).setVisible(false);
     this.tweens.add({ targets: this.gem, y: 122, alpha: { from: 1, to: 0.5 }, duration: 500, yoyo: true, repeat: -1 });
 

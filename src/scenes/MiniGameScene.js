@@ -169,9 +169,10 @@ export default class MiniGameScene extends Phaser.Scene {
     this.phase = 0; this.running = false; if (this.wiggle) this.wiggle.stop(); setPose(this.pet, 'idle');
     const perfect = this.hits >= 9 && this.scrubbed >= this.spots.length;
     const grade = perfect ? 2 : this.hits >= 6 ? 1 : 0;
+    const wasClean = GameState.isClean(this.id);
     const res = GameState.showerResult(this.id, grade, this.hits);
-    // 깨끗한 그림이 따로 있는 동물(밀꾸)은 씻으면 하얗게 바뀐다
-    const clean = Data.animal(this.id).cleanSprite, becameClean = !!clean && GameState.isClean(this.id);
+    // 깨끗한 그림이 따로 있는 동물(밀꾸)은 씻으면 하얗게 바뀐다 (이미 하얀 밀크였으면 그대로)
+    const clean = Data.animal(this.id).cleanSprite, becameClean = !!clean && !wasClean && GameState.isClean(this.id);
     if (becameClean) {
       retexture(this.pet, clean); this.a.name = GameState.animalName(this.id);
       fx(this, 'fx_star_anim', this.pet.x, this.pet.y - 40, 3, 10); this.splash(this.pet.x, this.pet.y - 40, 0xffffff, 14);

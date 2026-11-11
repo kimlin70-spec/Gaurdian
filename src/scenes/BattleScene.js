@@ -11,6 +11,7 @@ const ALLY_POS = [[64, 100], [44, 126], [64, 152], [44, 178]];
 const ENEMY_POS = { 1: [[252, 140]], 2: [[238, 112], [278, 150]], 3: [[236, 100], [282, 128], [244, 156]] };
 const PANEL_Y = 182;
 const CRIT_RATE = 0.12; // 아군 공격이 '아주 세게' 들어갈 확률 (적은 없음)
+const REACT_POSES = new Set(['hurt', 'knockback', 'guard']); // 맞고 나서 잠깐 보이는 자세
 
 export default class BattleScene extends Phaser.Scene {
   constructor() { super('Battle'); }
@@ -113,7 +114,7 @@ export default class BattleScene extends Phaser.Scene {
     while (true) {
       turn++;
       const cmds = [];
-      for (const u of this.units) if (u.defending) { u.defending = false; if (u.alive) setPose(u.obj, 'idle'); }
+      for (const u of this.units) if (u.defending) { u.defending = false; this.dropShield(u); if (u.alive) setPose(u.obj, 'idle'); }
       for (const u of this.allies) {
         if (!u.alive) continue;
         const c = (u.kind === 'animal' && u.auto) ? this.aiAlly(u) : await this.chooseCommand(u);
@@ -145,7 +146,7 @@ export default class BattleScene extends Phaser.Scene {
       this.statusRows.forEach(r => r.pointer.setVisible(false));
       u.row.pointer.setVisible(true);
       this.say(`${u.name}의 차례!`);
-      this.bounce(u.obj);
+      this.bounce(u);
       this.showMainMenu(u);
     });
   }
@@ -277,11 +278,13 @@ export default class BattleScene extends Phaser.Scene {
   }
   async execute(c) {
     const a = c.actor;
+    this.settle(a); // 아직 밀려나 있거나 폴짝 중이면 제자리에 선 뒤 행동
     if (c.type === 'defend') {
       a.defending = true; this.say(`${a.name}은(는) 방어 자세!`); Audio.sfx('defend');
       setPose(a.obj, 'guard'); // 다음 차례까지 방어 자세
       const sh = this.add.rectangle(a.x, a.y - 12, 24, 30, 0x5aa9ff, 0.35).setStrokeStyle(1, 0x9ecbff).setDepth(wd(a.y) + 0.001);
       await tween(this, { targets: sh, alpha: 0, duration: 600 }); sh.destroy();
+      this.raiseShield(a); // 방어하는 동안 옅은 방패 빛이 남는다 (맞은 자세와 헷갈리지 않게)
       return;
     }
     if (c.type === 'purify') return this.purify(a, c.target);
@@ -301,7 +304,8 @@ export default class BattleScene extends Phaser.Scene {
   async strike(a, targets, sk, lv) {
     const o = a.obj, dir = a.side === 'ally' ? 1 : -1, t0 = targets[0];
     const single = targets.length === 1 && sk.type === 'damage';
-    setPose(o, 'attack_ready'); if (o.isHero) o.setSwing(-20);
+    // 옆모습 준비 프레임은 이미 칼을 들고 있어 정면일 때만 더 젖힌다
+    setPose(o, 'attack_ready'); if (o.isHero && o.curView === 'front') o.setSwing(-20);
     await wait(this, 170);
     const gap = (bodyWidth(o) + bodyWidth(t0.obj)) / 2 + 3;
     const dest = single ? { x: t0.x - dir * gap, y: t0.y } : { x: a.x + 18 * dir, y: a.y };
@@ -310,7 +314,11 @@ export default class BattleScene extends Phaser.Scene {
     await tween(this, { targets: o, x: dest.x, y: dest.y, duration: single ? 240 : 130, ease: 'Quad.easeIn' });
     // 타격
     setPose(o, 'attack');
-    if (o.isHero) { const sw = { v: -45 }; o.setSwing(-45); this.tweens.add({ targets: sw, v: 0, duration: 90, onUpdate: () => o.setSwing(sw.v) }); }
+    if (o.isHero) {
+      // 칼을 위에서 앞으로 휘두른다 (옆모습은 더 크게)
+      const sw = { v: o.curView === 'side' ? -65 : -45 }; o.setSwing(sw.v);
+      this.tweens.add({ targets: sw, v: 0, duration: 90, onUpdate: () => o.setSwing(sw.v) });
+    }
     Audio.sfx(sk.fx === 'slash' ? 'slash' : sk.fx === 'star' ? 'star' : 'hit');
     let anyCrit = false;
     for (const t of targets) {
@@ -347,15 +355,30 @@ export default class BattleScene extends Phaser.Scene {
   // 맞은 쪽이 뒤로 밀렸다가 돌아온다 (보스는 조금만, 방어 중이면 거의 안 밀림)
   knockback(t, dir, crit) {
     const o = t.obj; if (!o.active) return;
+    this.settle(t);
     const dist = t.enemyKind === 'boss' ? 3 : t.defending ? 2 : crit ? 14 : 8;
     if (t.hp > 0 && !t.defending) setPose(o, 'knockback');
-    this.tweens.add({ targets: o, x: t.x + dir * dist, duration: 90, ease: 'Quad.easeOut',
-      onComplete: () => this.tweens.add({ targets: o, x: t.x, duration: 230, delay: 140, ease: 'Sine.easeInOut',
-        onComplete: () => { if (t.alive && t.hp > 0) setPose(o, t.defending ? 'guard' : 'idle'); } }) });
+    // 돌아온 뒤에는, 그 사이 다른 동작(다음 행동·정화)을 시작하지 않았을 때만 서 있는 자세로
+    const done = () => { t.kb = null; if (t.alive && t.hp > 0 && REACT_POSES.has(o.curPose)) setPose(o, t.defending ? 'guard' : 'idle'); };
+    t.kb = this.tweens.add({ targets: o, x: t.x + dir * dist, duration: 90, ease: 'Quad.easeOut',
+      onComplete: () => { t.kb = this.tweens.add({ targets: o, x: t.x, duration: 230, delay: 140, ease: 'Sine.easeInOut', onComplete: done }); } });
   }
+  // 남은 밀림·폴짝을 멈추고 제자리에 세운다 (새 행동을 시작할 때)
+  settle(u) {
+    for (const k of ['kb', 'bounceTw']) if (u[k]) { u[k].stop(); u[k] = null; }
+    if (u.obj && u.obj.active && u.alive !== false) u.obj.setPosition(u.x, u.y);
+  }
+  // 방어하는 동안 남는 옅은 방패 빛
+  raiseShield(u) {
+    this.dropShield(u);
+    if (!u.alive) return;
+    u.shield = this.add.ellipse(u.x, u.y - 13, 26, 32, 0x5aa9ff, 0.18).setStrokeStyle(1, 0x9ecbff, 0.9).setDepth(wd(u.y) + 0.001);
+    this.tweens.add({ targets: u.shield, alpha: 0.55, duration: 650, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+  }
+  dropShield(u) { if (u.shield) { this.tweens.killTweensOf(u.shield); u.shield.destroy(); u.shield = null; } }
   async castHeal(a, targets, sk, lv) {
     const o = a.obj;
-    setPose(o, 'happy'); this.bounce(o);
+    setPose(o, 'happy'); this.bounce(a);
     await wait(this, 240);
     for (const t of targets) {
       const heal = (sk.power[lv] ?? sk.power[0]) + Math.floor(a.stats.atk / 2);
@@ -370,20 +393,27 @@ export default class BattleScene extends Phaser.Scene {
   }
   async useItem(a, c) {
     const it = Data.item(c.item);
+    // 고른 친구가 그 사이 쓰러졌거나(물약) 일어났으면(깃털) 다른 친구에게. 아무도 없으면 아이템을 아낀다.
+    const ok = it.type === 'revive' ? (x => !x.alive) : (x => x.alive);
+    let targets = c.targets === 'allies' ? this.allies.filter(ok) : [c.target].filter(t => t && ok(t));
+    if (!targets.length && c.targets !== 'allies') {
+      const pool = this.allies.filter(ok).sort((p, q) => p.hp / p.maxHp - q.hp / q.maxHp);
+      if (pool.length) targets = [pool[0]];
+    }
+    if (!targets.length) { this.say(`${it.name}을(를) 쓸 친구가 없어요.`); await wait(this, 600); return; }
     if (!GameState.useItem(c.item)) return;
-    const targets = c.targets === 'allies' ? this.allies.filter(x => x.alive) : [c.target];
     this.say(`${a.name}은(는) ${it.name}을(를) 썼다!`);
     for (const t of targets) {
-      if (it.type === 'heal' || it.type === 'heal_all') { if (!t.alive) continue; t.hp = Math.min(t.maxHp, t.hp + it.power); this.floatNumber(t, `+${it.power}`, '#7ee081'); }
+      if (it.type === 'heal' || it.type === 'heal_all') { t.hp = Math.min(t.maxHp, t.hp + it.power); this.floatNumber(t, `+${it.power}`, '#7ee081'); }
       else if (it.type === 'mp') { t.mp = Math.min(t.maxMp, t.mp + it.power); this.floatNumber(t, `MP+${it.power}`, '#9ecbff'); }
-      else if (it.type === 'revive') { if (t.alive) continue; t.alive = true; t.hp = Math.min(t.maxHp, it.power); t.obj.setAlpha(1).setAngle(0); setPose(t.obj, 'idle'); this.floatNumber(t, '일어났다!', '#ffe066'); }
+      else if (it.type === 'revive') { t.alive = true; t.hp = Math.min(t.maxHp, it.power); t.obj.setAlpha(1).setAngle(0).setPosition(t.x, t.y); setPose(t.obj, 'idle'); this.floatNumber(t, '일어났다!', '#ffe066'); }
       this.sparkle(t.x, t.y - 12, 0x7ee081); this.refreshUnit(t);
     }
     Audio.sfx('heal');
     await wait(this, 500);
   }
   async die(t) {
-    t.alive = false;
+    t.alive = false; t.defending = false; this.dropShield(t);
     setPose(t.obj, 'down');
     if (t.side === 'enemy') {
       this.say(`${t.name}은(는) 힘이 다했다...`);
@@ -403,9 +433,10 @@ export default class BattleScene extends Phaser.Scene {
     if (!this.canPurify(t)) { this.say(`${t.name}의 HP가 아직 많아요!`); await wait(this, 600); return; }
     this.say(`${a.name}의 정화! ${Data.strings.gemName}이 빛난다!`);
     Audio.sfx('purify');
+    this.settle(t); // 아직 밀려나 있으면 제자리로 (밀림이 끝나며 자세를 덮어쓰지 않게)
     setPose(a.obj, 'attack_ready'); setPose(t.obj, 'hurt');
     const gem = img(this, a.x, a.y - 30, 'gem').setDepth(DEPTH.UI);
-    this.tweens.add({ targets: gem, scale: 1.5, alpha: 0, duration: 900, onComplete: () => gem.destroy() });
+    this.tweens.add({ targets: gem, scale: gem.scaleX * 1.5, alpha: 0, duration: 900, onComplete: () => gem.destroy() });
     const beam = this.add.rectangle((a.x + t.x) / 2, t.y - 14, Math.abs(t.x - a.x), 3, 0xff6fd8, 0.9).setDepth(DEPTH.UI);
     this.tweens.add({ targets: beam, alpha: 0, duration: 700, onComplete: () => beam.destroy() });
     fx(this, 'fx_purify_anim', t.x, t.y - 16, t.enemyKind === 'boss' ? 2 : 1.3);
@@ -415,11 +446,12 @@ export default class BattleScene extends Phaser.Scene {
     await tween(this, { targets: { v: 0 }, v: 100, duration: 700, onUpdate: (tw) => { const v = tw.getValue(); const c = Phaser.Display.Color.Interpolate.ColorWithColor(from, to, 100, v); t.obj.setTint(Phaser.Display.Color.GetColor(c.r, c.g, c.b)); } });
     t.obj.clearTint();
     t.alive = false; t.purified = true;
-    setPose(a.obj, 'happy'); this.time.delayedCall(700, () => { if (a.alive) setPose(a.obj, 'idle'); });
+    setPose(a.obj, 'happy'); this.time.delayedCall(700, () => { if (a.alive && !this.bossPurified) setPose(a.obj, 'idle'); });
     t.hpBar.setVisible(false); t.nameT.setVisible(false);
     if (t.enemyKind === 'boss') {
       this.bossPurified = true;
       this.say(`${t.name}이(가) 정화되었다!`);
+      setPose(t.obj, 'happy'); // 원래 모습으로 돌아와 기뻐한다
       await wait(this, 600);
       return;
     }
@@ -436,13 +468,28 @@ export default class BattleScene extends Phaser.Scene {
     } else {
       this.purifiedPlants++;
       this.say(`${t.name}이(가) 맑아져 사라졌다!`);
-      await tween(this, { targets: t.obj, alpha: 0, scale: 0.2, duration: 500 });
+      await tween(this, { targets: t.obj, alpha: 0, scale: t.obj.scaleX * 0.2, duration: 500 });
     }
     await wait(this, 300);
   }
 
   // ---------- 연출 ----------
-  bounce(obj) { this.tweens.add({ targets: obj, y: obj.y - 6, duration: 100, yoyo: true }); }
+  // 제자리(u.y) 기준으로 폴짝. 겹쳐 눌러도 위로 조금씩 떠오르지 않는다.
+  bounce(u) {
+    const o = u.obj; if (!o || !o.active) return;
+    if (u.bounceTw) u.bounceTw.stop();
+    o.y = u.y;
+    u.bounceTw = this.tweens.add({ targets: o, y: u.y - 6, duration: 100, yoyo: true, onComplete: () => { u.bounceTw = null; } });
+  }
+  // 이겼을 때: 살아 있는 친구들이 기뻐하며 폴짝
+  celebrate() {
+    for (const a of this.allies) {
+      if (!a.alive) continue;
+      this.settle(a); this.dropShield(a); a.defending = false;
+      setPose(a.obj, 'happy');
+      this.tweens.add({ targets: a.obj, y: a.y - 8, duration: 150, yoyo: true, repeat: 2 });
+    }
+  }
   bodyHeight(t) { return t.obj.isHero ? 30 : Math.max(10, t.obj.displayHeight || 16); }
   flashWhite(t) {
     const o = t.obj;
@@ -495,7 +542,7 @@ export default class BattleScene extends Phaser.Scene {
   async onWin() {
     Audio.playBgm('victory'); Audio.sfx('win');
     this.say('이겼다!');
-    this.allies.filter(a => a.alive).forEach(a => { this.tweens.add({ targets: a.obj, y: a.y - 8, duration: 150, yoyo: true, repeat: 2 }); setPose(a.obj, 'happy'); });
+    this.celebrate();
     const lines = ['이겼다!'];
     let exp = 0, money = 0, shards = 0; const drops = [];
     for (const e of this.enemies) {
@@ -546,6 +593,7 @@ export default class BattleScene extends Phaser.Scene {
   }
   async onBossPurified() {
     Audio.playBgm('victory');
+    this.celebrate();
     const boss = this.enemies.find(e => e.enemyKind === 'boss');
     const lines = (Data.dialogues.bossPurified[boss.enemyId] || []).map(l => Data.fmt(l));
     // 보상
@@ -554,12 +602,13 @@ export default class BattleScene extends Phaser.Scene {
     for (const dr of d.drops || []) if (Math.random() < dr.chance) { GameState.addItem(dr.item, 1); lines.push(`${Data.item(dr.item).name}을(를) 얻었어요!`); }
     lines.push(`경험치 +${d.exp}  ★${d.stardust}  ◆${d.shards || 0}`);
     GameState.syncFromBattle(this.allies);
-    lines.push(...GameState.afterBattle(this.allies));
+    const careMsgs = GameState.afterBattle(this.allies);
     for (const a of this.allies) {
       if (!a.alive) continue;
       const rec = a.kind === 'player' ? s.player : s.animals[a.animalId];
       if (GameState.gainExp(rec, d.exp) > 0) { const st = a.kind === 'player' ? GameState.playerStats() : GameState.animalStats(a.animalId); rec.hp = st.hp; rec.mp = st.mp; lines.push(`${a.name} 레벨 업! Lv${rec.level}`); }
     }
+    lines.push(...careMsgs); // 이긴 판(onWin)과 같은 순서: 레벨 업 → 돌봄 소식
     GameState.save();
     await wait(this, 400);
     await this.dialog.show(lines);

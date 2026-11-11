@@ -3,7 +3,7 @@ import { W, H, TILE, COLORS, wd, PX } from '../config.js';
 import Data from '../systems/Data.js';
 import GameState from '../systems/GameState.js';
 import Audio from '../systems/Audio.js';
-import { txt, Button, panel, UIGroup, DialogBox, toast, fadeIn, fadeOut, DEPTH, setupCamera } from '../systems/UI.js';
+import { txt, Button, panel, UIGroup, DialogBox, toast, fadeIn, fadeOut, wait, DEPTH, setupCamera } from '../systems/UI.js';
 import { makeCharacter, img, unit, setPose, face, fx } from '../systems/Assets.js';
 
 const COLS = 14, ROWS = 8;           // 방/마당 크기 (칸)
@@ -20,7 +20,7 @@ export default class HomeScene extends Phaser.Scene {
     Audio.playBgm('village');
     const s = GameState.s;
     this.selected = null; this.busy = false; this.pg = null; this.lg = null;
-    this.milkkuObjs = []; this.milkkuOut = false; this.milkkuTimer = null;
+    this.milkkuObjs = []; this.milkkuOut = false; this.milkkuTimer = null; this.milkkuDog = null;
     this.area = this.p.area || 'indoor';
     this.bg = new UIGroup(); this.placedSprites = []; this.animalSprites = [];
     this.add.rectangle(W / 2, H / 2, W, H, 0x2a2238);
@@ -50,7 +50,7 @@ export default class HomeScene extends Phaser.Scene {
 
   list() { return this.area === 'yard' ? GameState.s.home.yard : GameState.s.home.placed; }
   canPlaceHere(f) { const p = f.place || 'indoor'; return p === 'both' || p === (this.area === 'yard' ? 'outdoor' : 'indoor'); }
-  toggleArea() { this.area = this.area === 'yard' ? 'indoor' : 'yard'; this.selected = null; this.renderArea(); }
+  toggleArea() { if (this.busy) return; this.area = this.area === 'yard' ? 'indoor' : 'yard'; this.selected = null; this.renderArea(); }
 
   // ---------- 배경 ----------
   renderArea() {
@@ -138,7 +138,8 @@ export default class HomeScene extends Phaser.Scene {
   }
   pickUp(pl) {
     const s = GameState.s;
-    const under = pl.id === 'bed' && this.area === 'indoor' && this.milkkuUnderBed();
+    // 꼬리가 보이는 그 침대(첫 번째 침대)를 들었을 때만 밀꾸가 나온다
+    const under = pl.id === 'bed' && this.area === 'indoor' && pl === this.milkkuBed() && this.milkkuUnderBed();
     const found = !!s.animals.milkku;
     if (this.area === 'yard') s.home.yard = s.home.yard.filter(p => p !== pl); else s.home.placed = s.home.placed.filter(p => p !== pl);
     GameState.addFurniture(pl.id);
@@ -157,22 +158,32 @@ export default class HomeScene extends Phaser.Scene {
     if (!s.animals.milkku) return GameState.milkkuHiding();
     return !s.party.includes('milkku');
   }
+  // 밀꾸가 숨는 침대: 집 안에 처음 놓은 침대
+  milkkuBed() { return GameState.s.home.placed.find(p => p.id === 'bed'); }
   clearMilkku() {
     this.milkkuObjs.forEach(o => { this.tweens.killTweensOf(o); o.destroy(); }); this.milkkuObjs = [];
+    this.milkkuDog = null;
     if (this.milkkuTimer) { this.milkkuTimer.remove(false); this.milkkuTimer = null; }
   }
   renderMilkku() {
     this.clearMilkku();
     if (this.area !== 'indoor') return;
     const s = GameState.s, found = !!s.animals.milkku;
-    const bed = s.home.placed.find(p => p.id === 'bed');
+    const bed = this.milkkuBed();
     if (bed && this.milkkuUnderBed()) {
-      // 침대 아래로 삐져나온 엉덩이와 꼬리. 살랑살랑.
-      const f = Data.furniture.bed, bx = OX + bed.x * TILE + f.w * TILE * 0.66, by = OY + (bed.y + f.h) * TILE + 3;
-      const tail = img(this, bx, by, 'milkku_hide').setOrigin(0.5, 1).setDepth(wd(by) + 0.0002);
+      // 침대 발치 아래로 삐져나온 엉덩이와 꼬리. 살랑살랑.
+      // 침대 그림은 2x2칸 아래쪽 9픽셀이 비어 있어, 칸 바닥에서 9픽셀 위가 침대 다리 끝이다.
+      const f = Data.furniture.bed, foot = OY + (bed.y + f.h) * TILE, bedDepth = wd(foot);
+      const bx = OX + bed.x * TILE + f.w * TILE * 0.66, by = foot - 3;
+      // 침대 밑 그늘: 아래가 어두운 틈이라는 느낌
+      const shade = this.add.ellipse(OX + (bed.x + f.w / 2) * TILE, foot - 9, f.w * TILE - 8, 6, 0x2a1a10, 0.4).setDepth(bedDepth - 0.0004);
+      this.milkkuObjs.push(shade);
+      // 침대보다 뒤에 그려서 윗부분은 침대 발판에 가려진다
+      const tail = img(this, bx, by, 'milkku_hide').setOrigin(0.5, 1).setDepth(bedDepth - 0.0002);
+      if (!GameState.isClean('milkku')) tail.setTint(0xd8ccb6); // 꾀죄죄한 털
       tail.setInteractive({ useHandCursor: true });
       tail.on('pointerup', (pointer) => { if (this.busy || pointer.getDistance() > 10 * PX) return; this.pickUp(bed); });
-      this.tweens.add({ targets: tail, angle: { from: -7, to: 7 }, duration: found ? 900 : 280, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+      this.tweens.add({ targets: tail, angle: { from: -4, to: 4 }, duration: found ? 900 : 280, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
       this.milkkuObjs.push(tail);
       const say = txt(this, bx + 6, by - 14, found ? Data.dialogues.milkku.nap : Data.dialogues.milkku.sniff, { size: 11, origin: 0.5, color: '#fff4d6', depth: DEPTH.WORLD_UI }).setAlpha(0);
       this.tweens.add({ targets: say, alpha: 1, y: say.y - 3, duration: 600, yoyo: true, hold: 900, repeat: -1, repeatDelay: 1800 });
@@ -185,9 +196,10 @@ export default class HomeScene extends Phaser.Scene {
       const dog = unit(this, x0, y0, GameState.animalSprite('milkku')).setOrigin(0.5, 1).setDepth(wd(y0));
       dog.setInteractive({ useHandCursor: true });
       dog.on('pointerup', () => this.milkkuBark(dog));
-      this.milkkuObjs.push(dog);
+      this.milkkuObjs.push(dog); this.milkkuDog = dog;
       const roam = () => {
-        if (!dog.active || this.busy) return;
+        // 아직 걷는 중이면(먼 곳) 이번에는 쉬어 간다 — 걷기가 겹치면 서 있는 자세로 미끄러진다
+        if (!dog.active || this.busy || this.tweens.isTweening(dog)) return;
         const tx = OX + Phaser.Math.Between(1, COLS - 2) * TILE + 8, ty = OY + Phaser.Math.Between(2, ROWS - 1) * TILE;
         face(dog, tx - dog.x, ty - dog.y); setPose(dog, 'move');
         this.tweens.add({ targets: dog, x: tx, y: ty, duration: Phaser.Math.Distance.Between(dog.x, dog.y, tx, ty) * 22, ease: 'Linear',
@@ -196,35 +208,39 @@ export default class HomeScene extends Phaser.Scene {
       this.milkkuTimer = this.time.addEvent({ delay: 2600, loop: true, callback: roam });
     }
   }
-  milkkuBark(dog) {
+  milkkuBark(dog, hop = true) {
     if (!dog.active) return;
     Audio.sfx('tap');
     const t = txt(this, dog.x, dog.y - 20, Data.dialogues.milkku.bark, { size: 11, origin: 0.5, color: '#ffffff', depth: DEPTH.WORLD_UI });
     this.tweens.add({ targets: t, y: t.y - 10, alpha: 0, duration: 700, onComplete: () => t.destroy() });
-    this.tweens.add({ targets: dog, y: dog.y - 6, duration: 110, yoyo: true });
+    if (hop && !this.tweens.isTweening(dog)) this.tweens.add({ targets: dog, y: dog.y - 6, duration: 110, yoyo: true }); // 걷는 중엔 폴짝 생략
   }
   // 침대를 들었더니 밀꾸가! 처음이면 친구가 되고, 이미 친구면 낮잠 자다 깬다.
   async milkkuPopOut(bed, first) {
-    const dog = this.milkkuObjs.find(o => o.animKey);
-    if (!dog) return;
+    const dog = this.milkkuDog;
+    if (!dog || !dog.active) return;
     const f = Data.furniture.bed, cx = OX + (bed.x + f.w / 2) * TILE, cy = OY + (bed.y + f.h) * TILE - 2;
-    dog.setPosition(cx, cy).setDepth(wd(cy));
     this.busy = true;
-    Audio.sfx('star');
-    this.milkkuBark(dog);
-    await new Promise(r => this.tweens.add({ targets: dog, y: cy - 10, duration: 140, yoyo: true, repeat: 1, onComplete: r }));
-    if (first) {
-      await this.dialog.show(Data.dialogues.milkku.found.map(l => Data.fmt(l)));
-      GameState.findMilkku(); GameState.save();
-      fx(this, 'fx_heal_anim', dog.x, dog.y - 8, 1.6, wd(dog.y) + 0.001);
-      Audio.sfx('levelup');
-      setPose(dog, 'happy');
-      await this.dialog.show([Data.fmt(Data.dialogues.milkku.foundTip)]);
-      setPose(dog, 'idle');
-    } else {
-      await this.dialog.show([Data.fmt(Data.dialogues.milkku.popOut)]);
+    try {
+      this.tweens.killTweensOf(dog);
+      dog.setPosition(cx, cy).setDepth(wd(cy));
+      Audio.sfx('star');
+      this.milkkuBark(dog, false);
+      this.tweens.add({ targets: dog, y: cy - 10, duration: 140, yoyo: true, repeat: 1 });
+      await wait(this, 600); // 폴짝폴짝 (트윈이 지워져도 기다림이 끝나도록 시간으로 기다린다)
+      if (first) {
+        await this.dialog.show(Data.dialogues.milkku.found.map(l => Data.fmt(l)));
+        GameState.findMilkku(); GameState.save();
+        if (dog.active) { fx(this, 'fx_heal_anim', dog.x, dog.y - 8, 1.6, wd(dog.y) + 0.001); setPose(dog, 'happy'); }
+        Audio.sfx('levelup');
+        await this.dialog.show([Data.fmt(Data.dialogues.milkku.foundTip)]);
+        setPose(dog, 'idle');
+      } else {
+        await this.dialog.show([Data.fmt(Data.dialogues.milkku.popOut, { name: GameState.animalName('milkku') })]);
+      }
+    } finally {
+      this.busy = false;
     }
-    this.busy = false;
   }
 
   // ---------- 패널 ----------
@@ -269,6 +285,7 @@ export default class HomeScene extends Phaser.Scene {
   }
 
   openInventory() {
+    if (this.busy) return;
     this.openPanel('가진 가구');
     const s = GameState.s;
     const rows = Object.entries(s.home.owned).filter(([, n]) => n > 0).map(([id, n]) => { const f = Data.furniture[id]; const ok = this.canPlaceHere(f); return { id, label: `${f.name} ×${n}`, sub: `${f.w}×${f.h}칸 · ${this.placeLabel(f)}`, right: ok ? '놓기' : (this.area === 'yard' ? '집 안용' : '마당용'), rightColor: ok ? COLORS.yellow : '#8890aa', enabled: ok, onTap: () => { this.selected = id; this.closePanel(); } }; });
@@ -276,6 +293,7 @@ export default class HomeScene extends Phaser.Scene {
     this.renderList(rows);
   }
   openCraft() {
+    if (this.busy) return;
     this.openPanel('제작대');
     const render = () => {
       const rows = Object.entries(Data.furniture).filter(([, f]) => f.craft).sort((a, b) => Number(this.canPlaceHere(b[1])) - Number(this.canPlaceHere(a[1]))).map(([id, f]) => ({
@@ -289,6 +307,7 @@ export default class HomeScene extends Phaser.Scene {
     render();
   }
   openShop() {
+    if (this.busy) return;
     this.openPanel('가구 가게');
     const render = () => {
       const s = GameState.s;

@@ -182,25 +182,32 @@ export function registerAnims(scene) {
   }
 }
 
+// 정면 그림이 원래 왼쪽을 보고 있는 캐릭터 (data/anim_tweaks.json 의 facesLeft)
+const facesLeft = (key) => !!(Data.anim && Array.isArray(Data.anim.facesLeft) && Data.anim.facesLeft.includes(key));
+
 // 동물/적/주민 그림. 애니메이션 시트가 있으면 움직이는 스프라이트, 없으면 정지 그림.
 export function unit(scene, x, y, key) {
   if (scene.textures.exists(key + '_anim') && scene.anims.exists(key + '_idle')) {
     const sp = scene.add.sprite(x, y, key + '_anim', 0).setScale(1 / PX);
     sp.animKey = key; sp.curView = 'front'; sp.curPose = 'idle';
     sp.hasSide = SIDE_VIEWS && scene.anims.exists(key + '_side_idle');
+    sp.facesLeft = facesLeft(key);
     sp.play({ key: key + '_idle', startFrame: Math.floor(Math.random() * 5) });
     return sp;
   }
-  return img(scene, x, y, key);
+  const im = img(scene, x, y, key);
+  im.facesLeft = facesLeft(key);
+  return im;
 }
 
 // 보는 방향: 'front' | 'side'. flip=true 면 왼쪽을 본다. 옆모습이 없으면 정면을 좌우로 뒤집는다.
+// 정면 그림이 원래 왼쪽을 보고 있으면(facesLeft) 반대로 뒤집어야 그 방향을 본다.
 export function setView(obj, view, flip) {
   if (!obj || !obj.active) return;
   if (obj.isHero) { obj.setView(view, flip); return; }
-  if (flip !== undefined) obj.setFlipX(!!flip);
-  if (!obj.animKey) return;
   const v = view === 'side' && obj.hasSide ? 'side' : 'front';
+  if (flip !== undefined) obj.setFlipX(view === 'side' && v === 'front' && obj.facesLeft ? !flip : !!flip);
+  if (!obj.animKey) return;
   if (obj.curView === v) return;
   obj.curView = v;
   obj.anims.stop();
@@ -228,9 +235,9 @@ export function setPose(obj, pose, force) {
 export function retexture(obj, key) {
   if (!obj || !obj.active || obj.isHero) return;
   const sc = obj.scene;
-  if (!obj.animKey) { if (sc.textures.exists(key)) obj.setTexture(key); return; }
+  if (!obj.animKey) { if (sc.textures.exists(key)) { obj.setTexture(key); obj.facesLeft = facesLeft(key); } return; }
   if (!sc.textures.exists(key + '_anim') || !sc.anims.exists(key + '_idle')) return;
-  obj.animKey = key; obj.hasSide = SIDE_VIEWS && sc.anims.exists(key + '_side_idle');
+  obj.animKey = key; obj.hasSide = SIDE_VIEWS && sc.anims.exists(key + '_side_idle'); obj.facesLeft = facesLeft(key);
   if (obj.curView === 'side' && !obj.hasSide) obj.curView = 'front';
   obj.anims.stop();
   obj.setTexture(key + (obj.curView === 'side' ? '_side_anim' : '_anim'), 0);
@@ -257,17 +264,21 @@ export function makeCharacter(scene, x, y, look, opts = {}) {
   const weapon = img(scene, 0, 0, 'dot').setOrigin(0.5, 1).setVisible(false);
   const c = scene.add.container(x, y, [body, clothes, hair, weapon]);
   c.setSize(24, 32);
-  c.isHero = true; c.hasSide = sideOK;
+  c.isHero = true;
   c.parts = { body, clothes, hair, weapon };
   c.curView = 'front'; c.curPose = null;
-  let lk = { skin: 0, hair: 0, hairColor: 0, ...look }, flip = false, frame = 0, extra = 0, wKey = null, timer = null;
+  let lk = { skin: 0, hair: 0, hairColor: 0, ...look }, flip = false, frame = 0, extra = 0, wKey = null, timer = null, want = 'front';
+  // 옆모습 머리 그림이 아직 어색한 머리 모양(anim_tweaks.json heroSideHairOff)이면 정면만 쓴다
+  const sideFor = () => sideOK && T.exists('hair_' + (lk.hair ?? 0) + '_side') && !(Array.isArray(AN.heroSideHairOff) && AN.heroSideHairOff.includes(lk.hair ?? 0));
+  c.hasSide = sideFor();
   const D = () => (c.curView === 'side' ? HS : HF) || {};
   const layout = () => {
     const d = D(), FW = (d.frame || [48, 64])[0], FH = (d.frame || [48, 64])[1], k = 24 / FW, sx = flip ? -1 : 1;
     const ho = (d.hairOffset && d.hairOffset[frame]) || [0, 0];
     hair.setPosition(sx * ho[0] * k, ho[1] * k);
     if (wKey) {
-      const g = (d.grip && d.grip[wKey]) || [FW / 2, FH], h = (d.hand && d.hand[frame]) || g;
+      // 옆모습 손잡이 값이 없으면 정면 값을 쓴다 (같은 48x64 무기 그림)
+      const g = (d.grip && d.grip[wKey]) || (HF && HF.grip && HF.grip[wKey]) || [FW / 2, FH], h = (d.hand && d.hand[frame]) || g;
       const ang = ((d.angle && d.angle[frame]) || 0) + extra;
       weapon.setOrigin(flip ? 1 - g[0] / FW : g[0] / FW, g[1] / FH);          // 손잡이를 회전축으로
       weapon.setPosition(sx * (h[0] - FW / 2) * k, (h[1] - FH) * k);
@@ -308,7 +319,8 @@ export function makeCharacter(scene, x, y, look, opts = {}) {
   // 방향: 'front' | 'side' (+ flip=true 면 왼쪽)
   c.setView = (v, f) => {
     if (f !== undefined) flip = !!f;
-    const nv = v === 'side' && sideOK ? 'side' : 'front';
+    want = v;
+    const nv = v === 'side' && c.hasSide ? 'side' : 'front';
     [body, clothes, hair, weapon].forEach(o => o.setFlipX(flip));
     if (nv !== c.curView) {
       c.curView = nv;
@@ -320,7 +332,12 @@ export function makeCharacter(scene, x, y, look, opts = {}) {
   c.setFlip = (f) => c.setView(c.curView, f);
   // 휘두르기 연출용 추가 각도 (프레임 각도에 더해짐)
   c.setSwing = (a) => { extra = a; layout(); };
-  c.setLook = (l) => { lk = { ...lk, ...l }; applyTextures(); layout(); };
+  c.setLook = (l) => {
+    lk = { ...lk, ...l };
+    const had = c.hasSide; c.hasSide = sideFor();
+    applyTextures(); layout();
+    if (had !== c.hasSide) c.setView(want); // 머리 모양에 따라 옆모습을 켜고 끈다
+  };
   c.setWeapon = (weaponId) => {
     const e = weaponId ? Data.equip(weaponId) : null;
     if (e && e.sprite && T.exists(e.sprite)) { wKey = e.sprite; weapon.setTexture(e.sprite).setVisible(true).setScale(1 / PX); }

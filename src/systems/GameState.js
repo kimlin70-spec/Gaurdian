@@ -214,7 +214,13 @@ const GameState = {
   showerResult(id, grade, score) {
     const r = this.s.animals[id];
     r.best = r.best || {}; r.best.shower = Math.max(r.best.shower || 0, score);
-    if (grade === 0) { r.dirt = Math.ceil(r.dirt / 2); return { reward: -5, event: this.addFriend(id, -5) }; }
+    if (grade === 0) {
+      const wasClean = this.isClean(id);
+      r.dirt = Math.ceil(r.dirt / 2);
+      // 밀꾸는 샤워에 성공해야 하얀 밀크가 된다: 실패하면 반만 씻기고 꾀죄죄한 채로
+      if (!wasClean && Data.animal(id).cleanSprite) r.dirt = Math.max(r.dirt, this.traits(id).cleanBelow || 2);
+      return { reward: -5, event: this.addFriend(id, -5) };
+    }
     r.dirt = 0;
     if (grade === 2) return { reward: 5, event: this.addFriend(id, 5) };
     return { reward: 0, event: null };
@@ -233,9 +239,10 @@ const GameState = {
     const msgs = [];
     for (const u of units) {
       if (u.kind !== 'animal') continue;
-      const r = this.s.animals[u.animalId], name = u.name, tr = this.traits(u.animalId); if (!r) continue;
+      const r = this.s.animals[u.animalId], tr = this.traits(u.animalId); if (!r) continue;
       const before = r.dirt, wasClean = this.isClean(u.animalId);
       r.dirt = Math.min(10, r.dirt + (tr.dirtRate || 1));
+      const name = this.animalName(u.animalId); // 더러워진 뒤의 이름 (밀크 → 밀꾸)
       if (wasClean && !this.isClean(u.animalId) && tr.dirtyAgain) msgs.push(Data.fmt(tr.dirtyAgain));
       else if (before < 5 && r.dirt >= 5) msgs.push(Data.fmt(Data.dialogues.care.dirty).replace(/\{name\}/g, name));
       if (r.dirt >= 8 && !r.sick && !tr.noCold) { r.sick = true; this.leaveParty(u.animalId); msgs.push(Data.fmt(Data.dialogues.care.sick).replace(/\{name\}/g, name)); }

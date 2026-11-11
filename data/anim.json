@@ -1,131 +1,5 @@
 {
- "_comment": "그림 묶음에서 자동으로 만든 파일 (tools/build_assets.py). 직접 고치지 마세요.",
- "sheets": {
-  "rabbit_anim": [
-   64,
-   64
-  ],
-  "squirrel_anim": [
-   64,
-   64
-  ],
-  "boar_anim": [
-   64,
-   64
-  ],
-  "deer_anim": [
-   64,
-   64
-  ],
-  "fox_anim": [
-   64,
-   64
-  ],
-  "penguin_anim": [
-   64,
-   64
-  ],
-  "owl_anim": [
-   64,
-   64
-  ],
-  "reindeer_anim": [
-   64,
-   64
-  ],
-  "guide_anim": [
-   64,
-   64
-  ],
-  "bird_anim": [
-   64,
-   64
-  ],
-  "tree_face_anim": [
-   64,
-   64
-  ],
-  "mushroom_anim": [
-   64,
-   64
-  ],
-  "vine_anim": [
-   64,
-   64
-  ],
-  "snowman_anim": [
-   64,
-   64
-  ],
-  "frost_vine_anim": [
-   64,
-   64
-  ],
-  "bear_anim": [
-   96,
-   96
-  ],
-  "wolf_anim": [
-   96,
-   96
-  ],
-  "player_body_anim": [
-   96,
-   128
-  ],
-  "player_clothes_anim": [
-   96,
-   128
-  ],
-  "tiles_water_anim": [
-   64,
-   64
-  ],
-  "tiles_ice_anim": [
-   64,
-   64
-  ],
-  "fx_hit_anim": [
-   64,
-   64
-  ],
-  "fx_heal_anim": [
-   64,
-   64
-  ],
-  "fx_purify_anim": [
-   128,
-   128
-  ],
-  "fx_star_anim": [
-   64,
-   64
-  ],
-  "rabbit_side_anim": [
-   64,
-   64
-  ],
-  "mushroom_side_anim": [
-   64,
-   64
-  ],
-  "player_body_side_anim": [
-   96,
-   128
-  ],
-  "player_clothes_side_anim": [
-   96,
-   128
-  ],
-  "milkku_clean_anim": [
-   64,
-   64
-  ],
-  "milkku_anim": [
-   64,
-   64
-  ]
- },
+ "_comment": "그림 묶음에서 자동으로 만든 파일 (tools/build_assets.py). 직접 고치지 말고 손질 값은 data/anim_tweaks.json 에.",
  "hero": {
   "frame": [
    48,
@@ -276,44 +150,6 @@
    "happy": 9
   }
  },
- "unitSide": {
-  "seq": {
-   "idle": [
-    0,
-    1
-   ],
-   "move": [
-    2,
-    3,
-    4,
-    5
-   ]
-  },
-  "poses": {
-   "attack_ready": 6,
-   "attack": 7,
-   "attack_end": 8,
-   "hurt": 9,
-   "knockback": 10,
-   "guard": 11,
-   "down": 12,
-   "happy": 13
-  }
- },
- "hit": {
-  "rabbit": [
-   30,
-   22
-  ],
-  "mushroom": [
-   30,
-   13
-  ],
-  "player": [
-   61,
-   30
-  ]
- },
  "heroSide": {
   "frame": [
    48,
@@ -451,6 +287,42 @@
    100,
    10
   ],
+  "sideGrip": {
+   "w_stick": [
+    37,
+    41
+   ],
+   "w_wood_sword": [
+    37,
+    41
+   ],
+   "w_light_sword": [
+    37,
+    41
+   ]
+  },
+  "seq": {
+   "idle": [
+    0,
+    1
+   ],
+   "walk": [
+    2,
+    3,
+    4,
+    5
+   ]
+  },
+  "poses": {
+   "attack_ready": 6,
+   "attack": 7,
+   "attack_end": 8,
+   "hurt": 9,
+   "knockback": 10,
+   "guard": 11,
+   "down": 12,
+   "happy": 13
+  },
   "grip": {
    "w_stick": [
     37,
@@ -476,13 +348,155 @@
     37,
     41
    ]
-  },
+  }
+ },
+ "hit": {
+  "rabbit": [
+   30,
+   22
+  ],
+  "mushroom": [
+   30,
+   13
+  ],
+  "player": [
+   61,
+   30
+  ]
+ },
+ "sheets": {
+  "bear_anim": [
+   96,
+   96
+  ],
+  "bird_anim": [
+   64,
+   64
+  ],
+  "boar_anim": [
+   64,
+   64
+  ],
+  "deer_anim": [
+   64,
+   64
+  ],
+  "fox_anim": [
+   64,
+   64
+  ],
+  "frost_vine_anim": [
+   64,
+   64
+  ],
+  "fx_heal_anim": [
+   64,
+   64
+  ],
+  "fx_hit_anim": [
+   64,
+   64
+  ],
+  "fx_purify_anim": [
+   128,
+   128
+  ],
+  "fx_star_anim": [
+   64,
+   64
+  ],
+  "guide_anim": [
+   64,
+   64
+  ],
+  "milkku_anim": [
+   64,
+   64
+  ],
+  "milkku_clean_anim": [
+   64,
+   64
+  ],
+  "mushroom_anim": [
+   64,
+   64
+  ],
+  "mushroom_side_anim": [
+   64,
+   64
+  ],
+  "owl_anim": [
+   64,
+   64
+  ],
+  "penguin_anim": [
+   64,
+   64
+  ],
+  "player_body_anim": [
+   96,
+   128
+  ],
+  "player_body_side_anim": [
+   96,
+   128
+  ],
+  "player_clothes_anim": [
+   96,
+   128
+  ],
+  "player_clothes_side_anim": [
+   96,
+   128
+  ],
+  "rabbit_anim": [
+   64,
+   64
+  ],
+  "rabbit_side_anim": [
+   64,
+   64
+  ],
+  "reindeer_anim": [
+   64,
+   64
+  ],
+  "snowman_anim": [
+   64,
+   64
+  ],
+  "squirrel_anim": [
+   64,
+   64
+  ],
+  "tiles_ice_anim": [
+   64,
+   64
+  ],
+  "tiles_water_anim": [
+   64,
+   64
+  ],
+  "tree_face_anim": [
+   64,
+   64
+  ],
+  "vine_anim": [
+   64,
+   64
+  ],
+  "wolf_anim": [
+   96,
+   96
+  ]
+ },
+ "unitSide": {
   "seq": {
    "idle": [
     0,
     1
    ],
-   "walk": [
+   "move": [
     2,
     3,
     4,

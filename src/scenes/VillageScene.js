@@ -4,7 +4,7 @@ import Data from '../systems/Data.js';
 import GameState from '../systems/GameState.js';
 import Audio from '../systems/Audio.js';
 import { txt, Button, panel, UIGroup, DialogBox, confirm, toast, soundButton, fadeIn, fadeOut, tween, DEPTH, setupCamera } from '../systems/UI.js';
-import { makeCharacter, buildTilemap, img, unit, setPose, face } from '../systems/Assets.js';
+import { makeCharacter, buildTilemap, img, unit, setPose, face, retexture } from '../systems/Assets.js';
 
 const BUILDINGS = [
   { key: 'inn',     name: '여관',      x: 44,  y: 84 },
@@ -68,11 +68,7 @@ export default class VillageScene extends Phaser.Scene {
     this.hero = makeCharacter(this, 160, 150, s.player.look); this.hero.setDepth(wd(150));
     // 밀꾸가 함께 다니면 마을에서 그레이스 뒤를 졸졸 따라온다
     this.dog = null;
-    if (s.animals.milkku && s.party.includes('milkku')) {
-      this.dog = unit(this, 146, 152, GameState.animalSprite('milkku')).setOrigin(0.5, 1).setDepth(wd(152));
-      this.dog.setInteractive({ useHandCursor: true, hitArea: new Phaser.Geom.Rectangle(-6 * PX, -6 * PX, 28 * PX, 28 * PX), hitAreaCallback: Phaser.Geom.Rectangle.Contains });
-      this.dog.on('pointerup', () => this.dogBark());
-    }
+    this.refreshDog();
     // 안내 동물 (힌트)
     this.guide = unit(this, 216, 214, 'guide').setOrigin(0.5, 1).setDepth(wd(196)).setInteractive({ useHandCursor: true, hitArea: new Phaser.Geom.Rectangle(-8 * PX, -8 * PX, 32 * PX, 32 * PX), hitAreaCallback: Phaser.Geom.Rectangle.Contains });
     this.tweens.add({ targets: this.guide, y: this.guide.y - 3, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
@@ -108,13 +104,27 @@ export default class VillageScene extends Phaser.Scene {
   async guideHint() {
     if (this.busy) return;
     const s = GameState.s, M = Data.dialogues.milkku;
-    const hints = Data.dialogues.guideHints; const i = s.flags.hintIndex || 0;
-    s.flags.hintIndex = (i + 1) % hints.length;
     // 밀꾸가 침대 밑에 숨어 있으면 그 힌트부터
     if (GameState.milkkuHiding()) return this.say([Data.fmt(M.hintHiding)]);
-    // 아직 침대를 놓은 적이 없으면 가끔 침대를 권한다
-    if (!s.animals.milkku && !s.flags.milkkuBedDay && s.day >= 3 && i % 2 === 0) return this.say([Data.fmt(M.hintBed)]);
+    // 집에 침대가 없으면 세 번에 한 번 침대를 권한다 (보통 힌트 차례는 건너뛰지 않음)
+    if (!s.animals.milkku && !GameState.hasBed() && s.day >= 3) {
+      s.flags.bedHint = ((s.flags.bedHint || 0) + 1) % 3;
+      if (s.flags.bedHint === 1) return this.say([Data.fmt(M.hintBed)]);
+    }
+    const hints = Data.dialogues.guideHints; const i = (s.flags.hintIndex || 0) % hints.length;
+    s.flags.hintIndex = (i + 1) % hints.length;
     await this.say([Data.fmt(hints[i])]);
+  }
+  // 밀꾸가 함께 다니면 그레이스 곁에 나타나고, 쉼터에서 쉬게 하면 사라진다. 씻어서 하얘지면 그림도 바뀐다.
+  refreshDog() {
+    const s = GameState.s, want = !!(s.animals.milkku && s.party.includes('milkku'));
+    if (!want) { if (this.dog) { this.tweens.killTweensOf(this.dog); this.dog.destroy(); this.dog = null; } return; }
+    const key = GameState.animalSprite('milkku');
+    if (this.dog) { if (this.dog.animKey !== key) retexture(this.dog, key); return; }
+    const x = this.hero.x - 14, y = this.hero.y + 2;
+    this.dog = unit(this, x, y, key).setOrigin(0.5, 1).setDepth(wd(y));
+    this.dog.setInteractive({ useHandCursor: true, hitArea: new Phaser.Geom.Rectangle(-6 * PX, -6 * PX, 28 * PX, 28 * PX), hitAreaCallback: Phaser.Geom.Rectangle.Contains });
+    this.dog.on('pointerup', () => this.dogBark());
   }
   dogBark() {
     if (!this.dog || this.busy) return;
@@ -168,6 +178,7 @@ export default class VillageScene extends Phaser.Scene {
   closePanel() {
     if (this.listGroup) this.listGroup.destroy(); if (this.panelGroup) this.panelGroup.destroy();
     this.listGroup = null; this.panelGroup = null; this.busy = false; GameState.save();
+    this.refreshDog(); // 쉼터에서 함께 가기/쉬게 하기를 바꿨을 수 있다
   }
   // rows: [{label, right, sub, onTap, enabled, color}] 5줄씩 페이지
   renderList(rows, perPage = 5) {
@@ -268,7 +279,7 @@ export default class VillageScene extends Phaser.Scene {
     const render = () => {
       const s = GameState.s;
       const owners = [{ id: 'player', name: s.player.name, skills: Data.player.skills }];
-      for (const id of Object.keys(s.animals)) owners.push({ id, name: Data.animal(id).name, skills: Data.animal(id).skills });
+      for (const id of Object.keys(s.animals)) owners.push({ id, name: GameState.animalName(id), skills: Data.animal(id).skills });
       const rows = [];
       for (const o of owners) for (const sk of o.skills) {
         const lv = GameState.skillLevel(o.id, sk), data = Data.skill(sk), cost = lv; // 1→2: 1개, 2→3: 2개

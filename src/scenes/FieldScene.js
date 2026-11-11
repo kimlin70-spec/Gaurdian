@@ -148,7 +148,8 @@ export default class FieldScene extends Phaser.Scene {
       if (s.flags.cleared[this.p.stageId]) return;
       const e = Data.enemy(o.enemy);
       obj.sprite = unit(this, wp.x, wp.y + 8, e.sprite).setOrigin(0.5, 1).setDepth(wd(wp.y + 8)).setTint(CORRUPT_TINT);
-      this.tweens.add({ targets: obj.sprite, scaleX: 1.04, scaleY: 0.96, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+      // 숨쉬기 (그림 크기가 1/PX 이므로 지금 크기 기준으로 조금만)
+      this.tweens.add({ targets: obj.sprite, scaleX: obj.sprite.scaleX * 1.04, scaleY: obj.sprite.scaleY * 0.96, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
       this.blocked.add(o.x + ',' + o.y);
       this.makeTappable(obj.sprite, () => this.approach(obj));
       this.boss = obj;
@@ -347,7 +348,7 @@ export default class FieldScene extends Phaser.Scene {
         if (obj.bubble) obj.bubble.destroy();
         await this.dialog.show([Data.fmt(Data.dialogues.injured.done).replace(/\{name\}/g, a.name)]);
         // 친구가 되어 뛰어감
-        obj.sprite.setAngle(0).setAlpha(1); setPose(obj.sprite, 'move');
+        obj.sprite.setAngle(0).setAlpha(1); face(obj.sprite, 1, 0); setPose(obj.sprite, 'move');
         this.blocked.delete(obj.x + ',' + obj.y);
         this.objects = this.objects.filter(o => o !== obj);
         await tween(this, { targets: obj.sprite, x: obj.sprite.x + 40, y: obj.sprite.y - 6, alpha: 0, duration: 600 });
