@@ -1,191 +1,669 @@
 {
-  "_comment": "진짜 도트 PNG 목록. 모든 그림은 논리 크기의 2배(PX=2)로 그립니다. 여기 적힌 키는 코드가 임시 도트를 만들지 않고 파일을 읽습니다. type: image | spritesheet.",
-  "_example": {
-    "tiles": {
-      "type": "spritesheet",
-      "file": "assets/tiles.png",
-      "frameWidth": 16,
-      "frameHeight": 16
-    },
-    "rabbit": {
-      "type": "image",
-      "file": "assets/rabbit.png"
-    }
+ "_comment": "진짜 그림 목록. 모든 그림은 논리 크기의 4배(PX=4)입니다 (타일 64x64, 동물 64x64, 주인공 96x128, 전투 배경 1280x960). 여기 적힌 키는 코드가 임시 도트를 만들지 않고 파일을 읽습니다.",
+ "overrides": {
+  "ash_sprite": {
+   "type": "image",
+   "file": "assets/ash_sprite.png"
   },
-  "overrides": {
-    "bear": {
-      "type": "image",
-      "file": "assets/bear.png"
-    },
-    "bird": {
-      "type": "image",
-      "file": "assets/bird.png"
-    },
-    "bld_gate": {
-      "type": "image",
-      "file": "assets/bld_gate.png"
-    },
-    "bld_home": {
-      "type": "image",
-      "file": "assets/bld_home.png"
-    },
-    "bld_inn": {
-      "type": "image",
-      "file": "assets/bld_inn.png"
-    },
-    "bld_sage": {
-      "type": "image",
-      "file": "assets/bld_sage.png"
-    },
-    "bld_shelter": {
-      "type": "image",
-      "file": "assets/bld_shelter.png"
-    },
-    "bld_shop": {
-      "type": "image",
-      "file": "assets/bld_shop.png"
-    },
-    "bld_smithy": {
-      "type": "image",
-      "file": "assets/bld_smithy.png"
-    },
-    "boar": {
-      "type": "image",
-      "file": "assets/boar.png"
-    },
-    "bush": {
-      "type": "image",
-      "file": "assets/bush.png"
-    },
-    "chest": {
-      "type": "image",
-      "file": "assets/chest.png"
-    },
-    "chest_open": {
-      "type": "image",
-      "file": "assets/chest_open.png"
-    },
-    "cursor": {
-      "type": "image",
-      "file": "assets/cursor.png"
-    },
-    "deer": {
-      "type": "image",
-      "file": "assets/deer.png"
-    },
-    "f_bed": {
-      "type": "image",
-      "file": "assets/f_bed.png"
-    },
-    "f_chair": {
-      "type": "image",
-      "file": "assets/f_chair.png"
-    },
-    "f_lamp": {
-      "type": "image",
-      "file": "assets/f_lamp.png"
-    },
-    "f_pond": {
-      "type": "image",
-      "file": "assets/f_pond.png"
-    },
-    "f_pot": {
-      "type": "image",
-      "file": "assets/f_pot.png"
-    },
-    "f_rug": {
-      "type": "image",
-      "file": "assets/f_rug.png"
-    },
-    "f_shelf": {
-      "type": "image",
-      "file": "assets/f_shelf.png"
-    },
-    "f_swing": {
-      "type": "image",
-      "file": "assets/f_swing.png"
-    },
-    "f_table": {
-      "type": "image",
-      "file": "assets/f_table.png"
-    },
-    "f_teddy": {
-      "type": "image",
-      "file": "assets/f_teddy.png"
-    },
-    "fox": {
-      "type": "image",
-      "file": "assets/fox.png"
-    },
-    "gem": {
-      "type": "image",
-      "file": "assets/gem.png"
-    },
-    "guide": {
-      "type": "image",
-      "file": "assets/guide.png"
-    },
-    "hair_0": {
-      "type": "image",
-      "file": "assets/hair_0.png"
-    },
-    "hair_1": {
-      "type": "image",
-      "file": "assets/hair_1.png"
-    },
-    "hair_2": {
-      "type": "image",
-      "file": "assets/hair_2.png"
-    },
-    "mushroom": {
-      "type": "image",
-      "file": "assets/mushroom.png"
-    },
-    "player_body": {
-      "type": "image",
-      "file": "assets/player_body.png"
-    },
-    "player_clothes": {
-      "type": "image",
-      "file": "assets/player_clothes.png"
-    },
-    "rabbit": {
-      "type": "image",
-      "file": "assets/rabbit.png"
-    },
-    "rock": {
-      "type": "image",
-      "file": "assets/rock.png"
-    },
-    "squirrel": {
-      "type": "image",
-      "file": "assets/squirrel.png"
-    },
-    "star": {
-      "type": "image",
-      "file": "assets/star.png"
-    },
-    "tiles": {
-      "type": "spritesheet",
-      "file": "assets/tiles.png",
-      "frameWidth": 32,
-      "frameHeight": 32
-    },
-    "tree": {
-      "type": "image",
-      "file": "assets/tree.png"
-    },
-    "tree_dark": {
-      "type": "image",
-      "file": "assets/tree_dark.png"
-    },
-    "tree_face": {
-      "type": "image",
-      "file": "assets/tree_face.png"
-    },
-    "vine": {
-      "type": "image",
-      "file": "assets/vine.png"
-    }
+  "bat": {
+   "type": "image",
+   "file": "assets/bat.png"
+  },
+  "bear": {
+   "type": "image",
+   "file": "assets/bear.png"
+  },
+  "bear_anim": {
+   "type": "spritesheet",
+   "file": "assets/bear_anim.png",
+   "frameWidth": 96,
+   "frameHeight": 96
+  },
+  "bg_battle_castle": {
+   "type": "image",
+   "file": "assets/bg_battle_castle.png"
+  },
+  "bg_battle_fire": {
+   "type": "image",
+   "file": "assets/bg_battle_fire.png"
+  },
+  "bg_battle_green": {
+   "type": "image",
+   "file": "assets/bg_battle_green.png"
+  },
+  "bg_battle_snow": {
+   "type": "image",
+   "file": "assets/bg_battle_snow.png"
+  },
+  "bg_battle_swamp": {
+   "type": "image",
+   "file": "assets/bg_battle_swamp.png"
+  },
+  "bird": {
+   "type": "image",
+   "file": "assets/bird.png"
+  },
+  "bird_anim": {
+   "type": "spritesheet",
+   "file": "assets/bird_anim.png",
+   "frameWidth": 64,
+   "frameHeight": 64
+  },
+  "bld_gate": {
+   "type": "image",
+   "file": "assets/bld_gate.png"
+  },
+  "bld_home": {
+   "type": "image",
+   "file": "assets/bld_home.png"
+  },
+  "bld_inn": {
+   "type": "image",
+   "file": "assets/bld_inn.png"
+  },
+  "bld_sage": {
+   "type": "image",
+   "file": "assets/bld_sage.png"
+  },
+  "bld_shelter": {
+   "type": "image",
+   "file": "assets/bld_shelter.png"
+  },
+  "bld_shop": {
+   "type": "image",
+   "file": "assets/bld_shop.png"
+  },
+  "bld_smithy": {
+   "type": "image",
+   "file": "assets/bld_smithy.png"
+  },
+  "boar": {
+   "type": "image",
+   "file": "assets/boar.png"
+  },
+  "boar_anim": {
+   "type": "spritesheet",
+   "file": "assets/boar_anim.png",
+   "frameWidth": 64,
+   "frameHeight": 64
+  },
+  "bush": {
+   "type": "image",
+   "file": "assets/bush.png"
+  },
+  "candle_ghost": {
+   "type": "image",
+   "file": "assets/candle_ghost.png"
+  },
+  "cat": {
+   "type": "image",
+   "file": "assets/cat.png"
+  },
+  "chest": {
+   "type": "image",
+   "file": "assets/chest.png"
+  },
+  "chest_open": {
+   "type": "image",
+   "file": "assets/chest_open.png"
+  },
+  "croc": {
+   "type": "image",
+   "file": "assets/croc.png"
+  },
+  "crow": {
+   "type": "image",
+   "file": "assets/crow.png"
+  },
+  "cursor": {
+   "type": "image",
+   "file": "assets/cursor.png"
+  },
+  "deer": {
+   "type": "image",
+   "file": "assets/deer.png"
+  },
+  "deer_anim": {
+   "type": "spritesheet",
+   "file": "assets/deer_anim.png",
+   "frameWidth": 64,
+   "frameHeight": 64
+  },
+  "dragon": {
+   "type": "image",
+   "file": "assets/dragon.png"
+  },
+  "ember_flower": {
+   "type": "image",
+   "file": "assets/ember_flower.png"
+  },
+  "emote_heart": {
+   "type": "image",
+   "file": "assets/emote_heart.png"
+  },
+  "emote_leaf": {
+   "type": "image",
+   "file": "assets/emote_leaf.png"
+  },
+  "emote_moon": {
+   "type": "image",
+   "file": "assets/emote_moon.png"
+  },
+  "emote_music": {
+   "type": "image",
+   "file": "assets/emote_music.png"
+  },
+  "emote_sparkle": {
+   "type": "image",
+   "file": "assets/emote_sparkle.png"
+  },
+  "emote_sun": {
+   "type": "image",
+   "file": "assets/emote_sun.png"
+  },
+  "emote_tear": {
+   "type": "image",
+   "file": "assets/emote_tear.png"
+  },
+  "emote_thought": {
+   "type": "image",
+   "file": "assets/emote_thought.png"
+  },
+  "f_bed": {
+   "type": "image",
+   "file": "assets/f_bed.png"
+  },
+  "f_bench": {
+   "type": "image",
+   "file": "assets/f_bench.png"
+  },
+  "f_birdhouse": {
+   "type": "image",
+   "file": "assets/f_birdhouse.png"
+  },
+  "f_chair": {
+   "type": "image",
+   "file": "assets/f_chair.png"
+  },
+  "f_flowerbed": {
+   "type": "image",
+   "file": "assets/f_flowerbed.png"
+  },
+  "f_lamp": {
+   "type": "image",
+   "file": "assets/f_lamp.png"
+  },
+  "f_pond": {
+   "type": "image",
+   "file": "assets/f_pond.png"
+  },
+  "f_pot": {
+   "type": "image",
+   "file": "assets/f_pot.png"
+  },
+  "f_rug": {
+   "type": "image",
+   "file": "assets/f_rug.png"
+  },
+  "f_shelf": {
+   "type": "image",
+   "file": "assets/f_shelf.png"
+  },
+  "f_stonepath": {
+   "type": "image",
+   "file": "assets/f_stonepath.png"
+  },
+  "f_swing": {
+   "type": "image",
+   "file": "assets/f_swing.png"
+  },
+  "f_table": {
+   "type": "image",
+   "file": "assets/f_table.png"
+  },
+  "f_teddy": {
+   "type": "image",
+   "file": "assets/f_teddy.png"
+  },
+  "f_tree_small": {
+   "type": "image",
+   "file": "assets/f_tree_small.png"
+  },
+  "firefly": {
+   "type": "image",
+   "file": "assets/firefly.png"
+  },
+  "flytrap": {
+   "type": "image",
+   "file": "assets/flytrap.png"
+  },
+  "fox": {
+   "type": "image",
+   "file": "assets/fox.png"
+  },
+  "fox_anim": {
+   "type": "spritesheet",
+   "file": "assets/fox_anim.png",
+   "frameWidth": 64,
+   "frameHeight": 64
+  },
+  "frog": {
+   "type": "image",
+   "file": "assets/frog.png"
+  },
+  "frost_vine": {
+   "type": "image",
+   "file": "assets/frost_vine.png"
+  },
+  "frost_vine_anim": {
+   "type": "spritesheet",
+   "file": "assets/frost_vine_anim.png",
+   "frameWidth": 64,
+   "frameHeight": 64
+  },
+  "fx_heal_anim": {
+   "type": "spritesheet",
+   "file": "assets/fx_heal_anim.png",
+   "frameWidth": 64,
+   "frameHeight": 64
+  },
+  "fx_hit_anim": {
+   "type": "spritesheet",
+   "file": "assets/fx_hit_anim.png",
+   "frameWidth": 64,
+   "frameHeight": 64
+  },
+  "fx_purify_anim": {
+   "type": "spritesheet",
+   "file": "assets/fx_purify_anim.png",
+   "frameWidth": 128,
+   "frameHeight": 128
+  },
+  "fx_star_anim": {
+   "type": "spritesheet",
+   "file": "assets/fx_star_anim.png",
+   "frameWidth": 64,
+   "frameHeight": 64
+  },
+  "gem": {
+   "type": "image",
+   "file": "assets/gem.png"
+  },
+  "goat": {
+   "type": "image",
+   "file": "assets/goat.png"
+  },
+  "golem": {
+   "type": "image",
+   "file": "assets/golem.png"
+  },
+  "guide": {
+   "type": "image",
+   "file": "assets/guide.png"
+  },
+  "guide_anim": {
+   "type": "spritesheet",
+   "file": "assets/guide_anim.png",
+   "frameWidth": 64,
+   "frameHeight": 64
+  },
+  "hair_0": {
+   "type": "image",
+   "file": "assets/hair_0.png"
+  },
+  "hair_1": {
+   "type": "image",
+   "file": "assets/hair_1.png"
+  },
+  "hair_2": {
+   "type": "image",
+   "file": "assets/hair_2.png"
+  },
+  "item_bandage": {
+   "type": "image",
+   "file": "assets/item_bandage.png"
+  },
+  "item_book": {
+   "type": "image",
+   "file": "assets/item_book.png"
+  },
+  "item_bracelet": {
+   "type": "image",
+   "file": "assets/item_bracelet.png"
+  },
+  "item_compass": {
+   "type": "image",
+   "file": "assets/item_compass.png"
+  },
+  "item_gem": {
+   "type": "image",
+   "file": "assets/item_gem.png"
+  },
+  "item_heal_potion": {
+   "type": "image",
+   "file": "assets/item_heal_potion.png"
+  },
+  "item_herb": {
+   "type": "image",
+   "file": "assets/item_herb.png"
+  },
+  "item_key": {
+   "type": "image",
+   "file": "assets/item_key.png"
+  },
+  "item_lantern": {
+   "type": "image",
+   "file": "assets/item_lantern.png"
+  },
+  "item_scroll": {
+   "type": "image",
+   "file": "assets/item_scroll.png"
+  },
+  "item_seed": {
+   "type": "image",
+   "file": "assets/item_seed.png"
+  },
+  "item_star_fragment": {
+   "type": "image",
+   "file": "assets/item_star_fragment.png"
+  },
+  "king": {
+   "type": "image",
+   "file": "assets/king.png"
+  },
+  "king_pure": {
+   "type": "image",
+   "file": "assets/king_pure.png"
+  },
+  "mg_acorn": {
+   "type": "image",
+   "file": "assets/mg_acorn.png"
+  },
+  "mg_carrot": {
+   "type": "image",
+   "file": "assets/mg_carrot.png"
+  },
+  "mg_mud": {
+   "type": "image",
+   "file": "assets/mg_mud.png"
+  },
+  "mist_wisp": {
+   "type": "image",
+   "file": "assets/mist_wisp.png"
+  },
+  "mud_blob": {
+   "type": "image",
+   "file": "assets/mud_blob.png"
+  },
+  "mushroom": {
+   "type": "image",
+   "file": "assets/mushroom.png"
+  },
+  "mushroom_anim": {
+   "type": "spritesheet",
+   "file": "assets/mushroom_anim.png",
+   "frameWidth": 64,
+   "frameHeight": 64
+  },
+  "otter": {
+   "type": "image",
+   "file": "assets/otter.png"
+  },
+  "owl": {
+   "type": "image",
+   "file": "assets/owl.png"
+  },
+  "owl_anim": {
+   "type": "spritesheet",
+   "file": "assets/owl_anim.png",
+   "frameWidth": 64,
+   "frameHeight": 64
+  },
+  "penguin": {
+   "type": "image",
+   "file": "assets/penguin.png"
+  },
+  "penguin_anim": {
+   "type": "spritesheet",
+   "file": "assets/penguin_anim.png",
+   "frameWidth": 64,
+   "frameHeight": 64
+  },
+  "pillar_castle": {
+   "type": "image",
+   "file": "assets/pillar_castle.png"
+  },
+  "pillar_castle_dark": {
+   "type": "image",
+   "file": "assets/pillar_castle_dark.png"
+  },
+  "player_body": {
+   "type": "image",
+   "file": "assets/player_body.png"
+  },
+  "player_body_anim": {
+   "type": "spritesheet",
+   "file": "assets/player_body_anim.png",
+   "frameWidth": 96,
+   "frameHeight": 128
+  },
+  "player_clothes": {
+   "type": "image",
+   "file": "assets/player_clothes.png"
+  },
+  "player_clothes_anim": {
+   "type": "spritesheet",
+   "file": "assets/player_clothes_anim.png",
+   "frameWidth": 96,
+   "frameHeight": 128
+  },
+  "rabbit": {
+   "type": "image",
+   "file": "assets/rabbit.png"
+  },
+  "rabbit_anim": {
+   "type": "spritesheet",
+   "file": "assets/rabbit_anim.png",
+   "frameWidth": 64,
+   "frameHeight": 64
+  },
+  "red_panda": {
+   "type": "image",
+   "file": "assets/red_panda.png"
+  },
+  "reindeer": {
+   "type": "image",
+   "file": "assets/reindeer.png"
+  },
+  "reindeer_anim": {
+   "type": "spritesheet",
+   "file": "assets/reindeer_anim.png",
+   "frameWidth": 64,
+   "frameHeight": 64
+  },
+  "rock": {
+   "type": "image",
+   "file": "assets/rock.png"
+  },
+  "rock_fire": {
+   "type": "image",
+   "file": "assets/rock_fire.png"
+  },
+  "rock_snow": {
+   "type": "image",
+   "file": "assets/rock_snow.png"
+  },
+  "rock_swamp": {
+   "type": "image",
+   "file": "assets/rock_swamp.png"
+  },
+  "rubble_castle": {
+   "type": "image",
+   "file": "assets/rubble_castle.png"
+  },
+  "salamander": {
+   "type": "image",
+   "file": "assets/salamander.png"
+  },
+  "shadow_vine": {
+   "type": "image",
+   "file": "assets/shadow_vine.png"
+  },
+  "snowman": {
+   "type": "image",
+   "file": "assets/snowman.png"
+  },
+  "snowman_anim": {
+   "type": "spritesheet",
+   "file": "assets/snowman_anim.png",
+   "frameWidth": 64,
+   "frameHeight": 64
+  },
+  "squirrel": {
+   "type": "image",
+   "file": "assets/squirrel.png"
+  },
+  "squirrel_anim": {
+   "type": "spritesheet",
+   "file": "assets/squirrel_anim.png",
+   "frameWidth": 64,
+   "frameHeight": 64
+  },
+  "star": {
+   "type": "image",
+   "file": "assets/star.png"
+  },
+  "tiles": {
+   "type": "spritesheet",
+   "file": "assets/tiles.png",
+   "frameWidth": 64,
+   "frameHeight": 64
+  },
+  "tiles_castle": {
+   "type": "spritesheet",
+   "file": "assets/tiles_castle.png",
+   "frameWidth": 64,
+   "frameHeight": 64
+  },
+  "tiles_fire": {
+   "type": "spritesheet",
+   "file": "assets/tiles_fire.png",
+   "frameWidth": 64,
+   "frameHeight": 64
+  },
+  "tiles_ice_anim": {
+   "type": "spritesheet",
+   "file": "assets/tiles_ice_anim.png",
+   "frameWidth": 64,
+   "frameHeight": 64
+  },
+  "tiles_snow": {
+   "type": "spritesheet",
+   "file": "assets/tiles_snow.png",
+   "frameWidth": 64,
+   "frameHeight": 64
+  },
+  "tiles_swamp": {
+   "type": "spritesheet",
+   "file": "assets/tiles_swamp.png",
+   "frameWidth": 64,
+   "frameHeight": 64
+  },
+  "tiles_water_anim": {
+   "type": "spritesheet",
+   "file": "assets/tiles_water_anim.png",
+   "frameWidth": 64,
+   "frameHeight": 64
+  },
+  "tree": {
+   "type": "image",
+   "file": "assets/tree.png"
+  },
+  "tree_dark": {
+   "type": "image",
+   "file": "assets/tree_dark.png"
+  },
+  "tree_face": {
+   "type": "image",
+   "file": "assets/tree_face.png"
+  },
+  "tree_face_anim": {
+   "type": "spritesheet",
+   "file": "assets/tree_face_anim.png",
+   "frameWidth": 64,
+   "frameHeight": 64
+  },
+  "tree_fire": {
+   "type": "image",
+   "file": "assets/tree_fire.png"
+  },
+  "tree_fire_dark": {
+   "type": "image",
+   "file": "assets/tree_fire_dark.png"
+  },
+  "tree_snow": {
+   "type": "image",
+   "file": "assets/tree_snow.png"
+  },
+  "tree_snow_dark": {
+   "type": "image",
+   "file": "assets/tree_snow_dark.png"
+  },
+  "tree_swamp": {
+   "type": "image",
+   "file": "assets/tree_swamp.png"
+  },
+  "tree_swamp_dark": {
+   "type": "image",
+   "file": "assets/tree_swamp_dark.png"
+  },
+  "turtle": {
+   "type": "image",
+   "file": "assets/turtle.png"
+  },
+  "vine": {
+   "type": "image",
+   "file": "assets/vine.png"
+  },
+  "vine_anim": {
+   "type": "spritesheet",
+   "file": "assets/vine_anim.png",
+   "frameWidth": 64,
+   "frameHeight": 64
+  },
+  "w_flame_sword": {
+   "type": "image",
+   "file": "assets/w_flame_sword.png"
+  },
+  "w_frost_sword": {
+   "type": "image",
+   "file": "assets/w_frost_sword.png"
+  },
+  "w_light_sword": {
+   "type": "image",
+   "file": "assets/w_light_sword.png"
+  },
+  "w_star_staff": {
+   "type": "image",
+   "file": "assets/w_star_staff.png"
+  },
+  "w_stick": {
+   "type": "image",
+   "file": "assets/w_stick.png"
+  },
+  "w_wood_sword": {
+   "type": "image",
+   "file": "assets/w_wood_sword.png"
+  },
+  "wolf": {
+   "type": "image",
+   "file": "assets/wolf.png"
+  },
+  "wolf_anim": {
+   "type": "spritesheet",
+   "file": "assets/wolf_anim.png",
+   "frameWidth": 96,
+   "frameHeight": 96
   }
+ }
 }

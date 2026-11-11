@@ -4,7 +4,7 @@ import Data from '../systems/Data.js';
 import GameState from '../systems/GameState.js';
 import Audio from '../systems/Audio.js';
 import { txt, Button, panel, UIGroup, DialogBox, bar, toast, fadeIn, fadeOut, tween, wait, DEPTH, setupCamera } from '../systems/UI.js';
-import { makeUnitSprite, themeOf, img } from '../systems/Assets.js';
+import { makeUnitSprite, themeOf, img, setPose, fx } from '../systems/Assets.js';
 
 const CORRUPT_TINT = 0x9a7fd6;
 const ALLY_POS = [[64, 100], [44, 126], [64, 152], [44, 178]];
@@ -25,15 +25,16 @@ export default class BattleScene extends Phaser.Scene {
     // 배경 (스테이지 테마 색)
     const th = themeOf(this.p.stageId);
     const col = (hex) => Phaser.Display.Color.HexStringToColor(hex).color;
-    this.add.rectangle(W / 2, H / 2, W, H, col(this.isBoss ? th.bossSky : th.sky));
-    this.add.rectangle(W / 2, 150, W, 90, col(this.isBoss ? th.bossGround : th.ground));
-    // 멀리 보이는 나무/돌벽 실루엣
-    for (let i = 0; i < 14; i++) {
-      const h = 30 + ((i * 37) % 26), x = i * 24 + 8;
-      if (this.isBoss) this.add.rectangle(x, 105, 20, h, 0x3a3652).setOrigin(0.5, 1);
-      else { this.add.rectangle(x, 105, 14, h, 0x2a2440).setOrigin(0.5, 1); this.add.rectangle(x, 105 - h, 20, 14, 0x332c4f).setOrigin(0.5, 0.5); }
+    const bgKey = 'bg_battle_' + (th.name || 'green');
+    if (this.textures.exists(bgKey)) {
+      // 그림 배경 (보스전은 조금 어둡게)
+      const bg = img(this, W / 2, H / 2, bgKey);
+      if (this.isBoss) bg.setTint(0xb0a8d0);
+    } else {
+      this.add.rectangle(W / 2, H / 2, W, H, col(this.isBoss ? th.bossSky : th.sky));
+      this.add.rectangle(W / 2, 150, W, 90, col(this.isBoss ? th.bossGround : th.ground));
+      this.add.rectangle(W / 2, 106, W, 2, 0x6a6490);
     }
-    this.add.rectangle(W / 2, 106, W, 2, 0x6a6490);
     this.add.rectangle(W / 2, 12, W, 24, 0x000000, 0.55);
     this.msg = txt(this, W / 2, 12, '', { size: 11, origin: 0.5, align: 'center', depth: DEPTH.UI });
 
@@ -290,19 +291,19 @@ export default class BattleScene extends Phaser.Scene {
     if (!targets.length) return;
     this.say(c.skill === 'attack' ? `${a.name}의 공격!` : `${a.name}의 ${sk.name}!`);
     const dir = a.side === 'ally' ? 1 : -1;
-    await tween(this, { targets: a.obj, x: a.x + 14 * dir, duration: 120, yoyo: true, ease: 'Quad.easeOut' });
-    const fx = [];
+    await this.attackMotion(a, dir);
     for (const t of targets) {
       if (sk.type === 'damage' || sk.type === 'damage_all') {
         const d = this.damage(a, t, sk.mult[lv] ?? sk.mult[0]);
         t.hp = Math.max(0, t.hp - d);
         Audio.sfx(sk.fx === 'slash' ? 'slash' : sk.fx === 'star' ? 'star' : 'hit');
         this.flash(t); this.floatNumber(t, `${d}`, '#ffffff');
+        fx(this, sk.fx === 'star' ? 'fx_star_anim' : 'fx_hit_anim', t.x, t.y - 12, sk.fx === 'star' ? 1.6 : 1.3);
         if (sk.fx === 'star') this.sparkle(t.x, t.y - 12, 0xffd93b);
       } else {
         const heal = (sk.power[lv] ?? sk.power[0]) + Math.floor(a.stats.atk / 2);
         t.hp = Math.min(t.maxHp, t.hp + heal);
-        Audio.sfx('heal'); this.sparkle(t.x, t.y - 12, 0x7ee081); this.floatNumber(t, `+${heal}`, '#7ee081');
+        Audio.sfx('heal'); this.sparkle(t.x, t.y - 12, 0x7ee081); fx(this, 'fx_heal_anim', t.x, t.y - 14, 1.4); this.floatNumber(t, `+${heal}`, '#7ee081');
       }
       this.refreshUnit(t);
     }
@@ -325,6 +326,7 @@ export default class BattleScene extends Phaser.Scene {
   }
   async die(t) {
     t.alive = false;
+    if (t.obj.parts) t.obj.pose('hurt'); else setPose(t.obj, 'hurt');
     if (t.side === 'enemy') {
       this.say(`${t.name}은(는) 힘이 다했다...`);
       await tween(this, { targets: t.obj, alpha: 0, y: t.y + 6, duration: 400 });
@@ -345,6 +347,7 @@ export default class BattleScene extends Phaser.Scene {
     this.tweens.add({ targets: gem, scale: 1.5, alpha: 0, duration: 900, onComplete: () => gem.destroy() });
     const beam = this.add.rectangle((a.x + t.x) / 2, t.y - 14, Math.abs(t.x - a.x), 3, 0xff6fd8, 0.9).setDepth(DEPTH.UI);
     this.tweens.add({ targets: beam, alpha: 0, duration: 700, onComplete: () => beam.destroy() });
+    fx(this, 'fx_purify_anim', t.x, t.y - 16, t.enemyKind === 'boss' ? 2 : 1.3);
     for (let i = 0; i < 4; i++) { this.sparkle(t.x + Phaser.Math.Between(-10, 10), t.y - 12 + Phaser.Math.Between(-12, 8), 0xff6fd8); await wait(this, 120); }
     // 보라색 → 원래 색
     const from = Phaser.Display.Color.ValueToColor(CORRUPT_TINT), to = Phaser.Display.Color.ValueToColor(0xffffff);
@@ -376,7 +379,30 @@ export default class BattleScene extends Phaser.Scene {
 
   // ---------- 연출 ----------
   bounce(obj) { this.tweens.add({ targets: obj, y: obj.y - 6, duration: 100, yoyo: true }); }
+  // 공격 동작: 앞으로 내딛으며 공격 자세 (주인공은 무기를 휘두름)
+  async attackMotion(a, dir) {
+    const o = a.obj;
+    if (o.parts) {
+      o.pose('attack', 0); o.setWeaponAngle(-35);
+      await tween(this, { targets: o, x: a.x + 8 * dir, duration: 110, ease: 'Quad.easeOut' });
+      o.pose('attack', 1);
+      const sw = { v: -35 };
+      this.tweens.add({ targets: sw, v: 70, duration: 110, onUpdate: () => o.setWeaponAngle(sw.v) });
+      await tween(this, { targets: o, x: a.x + 16 * dir, duration: 110 });
+      await tween(this, { targets: o, x: a.x, duration: 140 });
+      o.setWeaponAngle(0); if (a.alive !== false) o.play('idle');
+    } else {
+      setPose(o, 'attack');
+      await tween(this, { targets: o, x: a.x + 14 * dir, duration: 130, yoyo: true, ease: 'Quad.easeOut' });
+      if (a.alive !== false) setPose(o, 'idle');
+    }
+  }
+  hurtPose(t) {
+    if (t.obj.parts) { t.obj.pose('hurt'); this.time.delayedCall(380, () => { if (t.alive && t.obj.active) t.obj.play('idle'); }); }
+    else { setPose(t.obj, 'hurt'); this.time.delayedCall(380, () => { if (t.alive) setPose(t.obj, 'idle'); }); }
+  }
   flash(t) {
+    this.hurtPose(t);
     const isC = !!t.obj.parts;
     const targets = isC ? [t.obj.parts.body, t.obj.parts.clothes, t.obj.parts.hair, t.obj.parts.weapon] : [t.obj];
     const orig = isC ? null : t.obj.tintTopLeft;
@@ -411,7 +437,7 @@ export default class BattleScene extends Phaser.Scene {
   async onWin() {
     Audio.playBgm('victory'); Audio.sfx('win');
     this.say('이겼다!');
-    this.allies.filter(a => a.alive).forEach(a => this.tweens.add({ targets: a.obj, y: a.y - 8, duration: 150, yoyo: true, repeat: 2 }));
+    this.allies.filter(a => a.alive).forEach(a => { this.tweens.add({ targets: a.obj, y: a.y - 8, duration: 150, yoyo: true, repeat: 2 }); if (a.obj.parts) a.obj.pose('happy'); else setPose(a.obj, 'move'); });
     const lines = ['이겼다!'];
     let exp = 0, money = 0, shards = 0; const drops = [];
     for (const e of this.enemies) {

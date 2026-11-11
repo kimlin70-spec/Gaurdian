@@ -154,24 +154,94 @@ export function generateAll(scene) {
 // 그림 만들기: 모든 텍스처는 PX 배 밀도이므로 1/PX 로 줄여서 논리 크기로 보여준다.
 export function img(scene, x, y, key, frame) { return scene.add.image(x, y, key, frame).setScale(1 / PX); }
 
-// 주인공 캐릭터(몸+옷+머리) 컨테이너. 24x32, origin 은 발 아래 가운데(0.5, 1).
+// ---------------- 애니메이션 ----------------
+// _anim 시트 규칙: 동물/적/보스는 6프레임 [서기A, 서기B, 움직이기A, 움직이기B, 공격, 아파함]
+export const POSE = { attack: 4, hurt: 5 };
+export function registerAnims(scene) {
+  const A = scene.anims, T = scene.textures;
+  for (const key of T.getTextureKeys()) {
+    if (!key.endsWith('_anim')) continue;
+    const base = key.slice(0, -5), n = T.get(key).frameTotal - 1; // __BASE 제외
+    if (key.startsWith('fx_')) { if (!A.exists(key)) A.create({ key, frames: A.generateFrameNumbers(key, { start: 0, end: n - 1 }), frameRate: 14, repeat: 0 }); continue; }
+    if (key.startsWith('tiles_')) { if (!A.exists(key)) A.create({ key, frames: A.generateFrameNumbers(key, { start: 0, end: n - 1 }), frameRate: n > 2 ? 4 : 1.2, repeat: -1 }); continue; }
+    if (key.startsWith('player_') || n < 6) continue;
+    if (!A.exists(base + '_idle')) A.create({ key: base + '_idle', frames: A.generateFrameNumbers(key, { frames: [0, 0, 0, 0, 0, 1] }), frameRate: 3, repeat: -1 }); // 가끔 깜빡/숨쉬기
+    if (!A.exists(base + '_move')) A.create({ key: base + '_move', frames: A.generateFrameNumbers(key, { frames: [2, 3] }), frameRate: 5, repeat: -1 });
+  }
+}
+// 동물/적/주민 그림. 애니메이션 시트가 있으면 움직이는 스프라이트, 없으면 정지 그림.
+export function unit(scene, x, y, key) {
+  if (scene.textures.exists(key + '_anim') && scene.anims.exists(key + '_idle')) {
+    const sp = scene.add.sprite(x, y, key + '_anim', 0).setScale(1 / PX);
+    sp.animKey = key;
+    sp.play({ key: key + '_idle', startFrame: Math.floor(Math.random() * 5) });
+    return sp;
+  }
+  return img(scene, x, y, key);
+}
+// 자세 바꾸기: 'idle' | 'move' 는 반복 재생, 'attack' | 'hurt' 는 한 장면으로 멈춤
+export function setPose(obj, pose) {
+  if (!obj || !obj.animKey || !obj.active) return;
+  if (pose === 'idle' || pose === 'move') obj.play(obj.animKey + '_' + pose, true);
+  else { obj.anims.stop(); obj.setFrame(POSE[pose] ?? 0); }
+}
+// 한 번 재생하고 사라지는 효과 (fx_hit_anim 등). 시트가 없으면 아무것도 안 함.
+export function fx(scene, key, x, y, scale = 1, depth = 150) {
+  if (!scene.anims.exists(key)) return null;
+  const sp = scene.add.sprite(x, y, key, 0).setScale(scale / PX).setDepth(depth);
+  sp.play(key); sp.once('animationcomplete', () => sp.destroy());
+  return sp;
+}
+
+// 주인공 캐릭터(몸+옷+머리+무기) 컨테이너. 24x32, origin 은 발 아래 가운데(0.5, 1).
+// 몸/옷은 10프레임 시트, 머리카락과 무기는 정지 그림을 프레임에 맞춰 옮긴다 (data/heroanim.json).
 export function makeCharacter(scene, x, y, look, opts = {}) {
-  const body = img(scene, 0, 0, 'player_body').setOrigin(0.5, 1).setTint(LOOKS.skin[look.skin] ?? LOOKS.skin[0]);
-  const clothes = img(scene, 0, 0, 'player_clothes').setOrigin(0.5, 1);
+  const HA = Data.heroanim || {}, animated = scene.textures.exists('player_body_anim') && scene.textures.exists('player_clothes_anim') && HA.seq;
+  const mk = (key) => (animated ? scene.add.sprite(0, 0, key + '_anim', 0) : scene.add.image(0, 0, key)).setScale(1 / PX).setOrigin(0.5, 1);
+  const body = mk('player_body').setTint(LOOKS.skin[look.skin] ?? LOOKS.skin[0]);
+  const clothes = mk('player_clothes');
   const hair = img(scene, 0, 0, 'hair_' + (look.hair ?? 0)).setOrigin(0.5, 1).setTint(LOOKS.hairColor[look.hairColor] ?? LOOKS.hairColor[0]);
-  // 무기: 장착한 무기의 sprite 를 손에 보여준다 (equipment.json 의 sprite)
   const weapon = img(scene, 0, 0, 'dot').setOrigin(0.5, 1).setVisible(false);
   const c = scene.add.container(x, y, [body, clothes, hair, weapon]);
   c.setSize(24, 32);
   c.parts = { body, clothes, hair, weapon };
+  let frame = 0, flip = false, wAngle = 0, wKey = null, timer = null;
+  const FW = (HA.frame || [48, 64])[0], FH = (HA.frame || [48, 64])[1], K = 24 / FW; // 시트 픽셀 → 논리 픽셀
+  const layout = () => {
+    const ho = (HA.hairOffset && HA.hairOffset[frame]) || [0, 0];
+    hair.setPosition((flip ? -1 : 1) * ho[0] * K, ho[1] * K);
+    if (wKey) {
+      const g = (HA.grip && HA.grip[wKey]) || [FW / 2, FH], h = (HA.hand && HA.hand[frame]) || g;
+      weapon.setOrigin(flip ? 1 - g[0] / FW : g[0] / FW, g[1] / FH);            // 손잡이를 회전축으로
+      weapon.setPosition((flip ? -1 : 1) * (h[0] - FW / 2) * K, (h[1] - FH) * K);
+      weapon.setAngle(flip ? -wAngle : wAngle);
+    }
+  };
+  c.setFrame = (i) => { frame = i; if (animated) { body.setFrame(i); clothes.setFrame(i); } layout(); };
+  const stop = () => { if (timer) { timer.remove(false); timer = null; } };
+  // 반복 동작: 'idle' | 'walk'
+  c.play = (name) => {
+    if (!animated || c.playing === name) return;
+    stop(); c.playing = name; wAngle = 0;
+    const base = HA.seq[name] || [0]; let k = 0;
+    const seq = name === 'idle' && base.length > 1 ? [base[0], base[0], base[0], base[0], base[0], base[1]] : base; // 가끔만 깜빡
+    c.setFrame(seq[0]);
+    if (seq.length > 1) timer = scene.time.addEvent({ delay: name === 'walk' ? 110 : 330, loop: true, callback: () => { k = (k + 1) % seq.length; c.setFrame(seq[k]); } });
+  };
+  // 한 장면: pose('attack', 0|1) | pose('hurt') | pose('happy')
+  c.pose = (name, idx = 0) => { if (!animated) return; stop(); c.playing = null; const seq = HA.seq[name] || [0]; c.setFrame(seq[Math.min(idx, seq.length - 1)]); };
+  c.setWeaponAngle = (a) => { wAngle = a; layout(); };
   c.setLook = (lk) => { body.setTint(LOOKS.skin[lk.skin]); hair.setTexture('hair_' + lk.hair); hair.setTint(LOOKS.hairColor[lk.hairColor]); };
   c.setWeapon = (weaponId) => {
     const e = weaponId ? Data.equip(weaponId) : null;
-    if (e && e.sprite && scene.textures.exists(e.sprite)) { weapon.setTexture(e.sprite).setVisible(true); weapon.setScale(1 / PX); }
-    else weapon.setVisible(false);
+    if (e && e.sprite && scene.textures.exists(e.sprite)) { wKey = e.sprite; weapon.setTexture(e.sprite).setVisible(true).setScale(1 / PX); }
+    else { wKey = null; weapon.setVisible(false); }
+    layout();
   };
-  c.setFlip = (f) => { body.setFlipX(f); clothes.setFlipX(f); hair.setFlipX(f); weapon.setFlipX(f); };
+  c.setFlip = (f) => { flip = f; body.setFlipX(f); clothes.setFlipX(f); hair.setFlipX(f); weapon.setFlipX(f); layout(); };
+  c.once('destroy', stop);
   c.setWeapon(opts.weapon !== undefined ? opts.weapon : (GameState.s ? GameState.s.player.equip.weapon : null));
+  if (opts.idle !== false) c.play('idle');
   return c;
 }
 
@@ -195,6 +265,12 @@ export function buildTilemap(scene, grid, ox, oy) {
   const t1 = tilemap.addTilesetImage('tiles', 'tiles', TILE * PX, TILE * PX, 0, 0, 0);
   const t2 = tilemap.addTilesetImage('tiles_snow', 'tiles_snow', TILE * PX, TILE * PX, 0, 0, SNOW_FIRST_TILE);
   const layer = tilemap.createLayer(0, [t1, t2], ox, oy).setDepth(0).setScale(1 / PX);
+  // 물(3)과 얼음(14)은 움직이는 타일을 위에 덮는다
+  const animTiles = { 3: 'tiles_water_anim', 14: 'tiles_ice_anim' };
+  for (let y = 0; y < grid.length; y++) for (let x = 0; x < grid[y].length; x++) {
+    const key = animTiles[grid[y][x]];
+    if (key && scene.anims.exists(key)) scene.add.sprite(ox + x * TILE, oy + y * TILE, key, 0).setOrigin(0).setScale(1 / PX).setDepth(0.01).play(key);
+  }
   return { tilemap, layer, sprites: deco.sprites };
 }
 
@@ -205,9 +281,10 @@ export function themeOf(stageId) {
 }
 
 // 유닛의 sprite 이름으로 전투/필드 스프라이트 만들기 (주인공이면 컨테이너)
+const unit_ = unit;
 export function makeUnitSprite(scene, unit, x, y, look) {
   if (unit.sprite === 'player') return makeCharacter(scene, x, y, look);
-  const im = img(scene, x, y, unit.sprite).setOrigin(0.5, 1);
+  const im = unit_(scene, x, y, unit.sprite).setOrigin(0.5, 1);
   if (unit.scale && unit.scale !== 1) im.setScale(unit.scale / PX);
   return im;
 }

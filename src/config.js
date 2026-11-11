@@ -2,7 +2,7 @@
 export const W = 320;
 export const H = 240;
 // 그림 밀도: 모든 PNG/임시 그림은 논리 픽셀의 PX 배 크기. 캔버스도 PX 배(640x480)로 그려 디테일을 살린다.
-export const PX = 2;
+export const PX = 4;
 export const GAME_W = W * PX;
 export const GAME_H = H * PX;
 // 카메라 줌 때문에 scrollFactor 0 인 UI 는 이만큼 옮겨 놓아야 제자리에 보인다

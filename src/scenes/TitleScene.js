@@ -3,7 +3,7 @@ import Data from '../systems/Data.js';
 import GameState from '../systems/GameState.js';
 import Audio from '../systems/Audio.js';
 import { txt, Button, confirm, soundButton, fadeIn, fadeOut, setupCamera } from '../systems/UI.js';
-import { makeCharacter, img } from '../systems/Assets.js';
+import { makeCharacter, img, unit } from '../systems/Assets.js';
 
 export default class TitleScene extends Phaser.Scene {
   constructor() { super('Title'); }
@@ -29,7 +29,7 @@ export default class TitleScene extends Phaser.Scene {
     if (hasSave) { const s = GameState.load(); if (s) look = GameState.s.player.look; }
     const hero = makeCharacter(this, 52, H - 46, look).setScale(2);
     this.tweens.add({ targets: hero, y: hero.y - 3, duration: 500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-    const guide = img(this, W - 56, H - 48, 'guide').setOrigin(0.5, 1).setScale(2 / PX);
+    const guide = unit(this, W - 56, H - 48, 'guide').setOrigin(0.5, 1).setScale(2 / PX);
     this.tweens.add({ targets: guide, y: guide.y - 4, duration: 700, yoyo: true, repeat: -1, ease: 'Sine.easeInOut', delay: 200 });
 
     const bw = 150, bx = (W - bw) / 2;

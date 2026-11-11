@@ -4,7 +4,7 @@ import Data from '../systems/Data.js';
 import GameState from '../systems/GameState.js';
 import Audio from '../systems/Audio.js';
 import { txt, Button, panel, UIGroup, DialogBox, confirm, toast, soundButton, fadeIn, fadeOut, tween, DEPTH, setupCamera } from '../systems/UI.js';
-import { makeCharacter, buildTilemap, img } from '../systems/Assets.js';
+import { makeCharacter, buildTilemap, img, unit, setPose } from '../systems/Assets.js';
 
 const BUILDINGS = [
   { key: 'inn',     name: '여관',      x: 44,  y: 84 },
@@ -67,7 +67,7 @@ export default class VillageScene extends Phaser.Scene {
     // 주인공
     this.hero = makeCharacter(this, 160, 150, s.player.look); this.hero.setDepth(wd(150));
     // 안내 동물 (힌트)
-    this.guide = img(this, 216, 214, 'guide').setOrigin(0.5, 1).setDepth(wd(196)).setInteractive({ useHandCursor: true, hitArea: new Phaser.Geom.Rectangle(-8 * PX, -8 * PX, 32 * PX, 32 * PX), hitAreaCallback: Phaser.Geom.Rectangle.Contains });
+    this.guide = unit(this, 216, 214, 'guide').setOrigin(0.5, 1).setDepth(wd(196)).setInteractive({ useHandCursor: true, hitArea: new Phaser.Geom.Rectangle(-8 * PX, -8 * PX, 32 * PX, 32 * PX), hitAreaCallback: Phaser.Geom.Rectangle.Contains });
     this.tweens.add({ targets: this.guide, y: this.guide.y - 3, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     this.guide.on('pointerup', () => this.guideHint());
     txt(this, 216, 216, Data.strings.guideAnimal, { size: 11, origin: [0.5, 0], color: COLORS.yellow });
@@ -107,12 +107,12 @@ export default class VillageScene extends Phaser.Scene {
   async goTo(b) {
     if (this.busy) return; this.busy = true;
     Audio.sfx('tap');
-    this.hero.setFlip(b.x < this.hero.x);
+    this.hero.setFlip(b.x < this.hero.x); this.hero.play('walk');
     const dist = Phaser.Math.Distance.Between(this.hero.x, this.hero.y, b.x, b.y + 10);
     // 이미 그 자리에 서 있으면(거리 0) 트윈을 돌리지 않는다 (0ms 트윈이 좌표를 망가뜨림)
     if (dist > 2) await tween(this, { targets: this.hero, x: b.x, y: b.y + 10, duration: Math.max(120, Math.min(900, dist * 5)), ease: 'Linear' });
     if (!Number.isFinite(this.hero.x) || !Number.isFinite(this.hero.y)) this.hero.setPosition(b.x, b.y + 10);
-    this.hero.setDepth(wd(this.hero.y));
+    this.hero.setDepth(wd(this.hero.y)); this.hero.play('idle');
     this.busy = false;
     this.openFacility(b.key);
   }
@@ -275,7 +275,7 @@ export default class VillageScene extends Phaser.Scene {
     const a = Data.animal(id);
     this.openPanel(a.name);
     const g = this.listGroup;
-    const sprite = g.add(img(this, 60, 118, a.sprite).setScale(3 / PX).setDepth(DEPTH.MODAL));
+    const sprite = g.add(unit(this, 60, 118, a.sprite).setScale(3 / PX).setDepth(DEPTH.MODAL));
     this.tweens.add({ targets: sprite, y: 114, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     const info = g.add(txt(this, 112, 36, '', { size: 11, depth: DEPTH.MODAL, lineSpacing: 4 }));
     const best = g.add(txt(this, 16, 142, '', { size: 11, depth: DEPTH.MODAL, lineSpacing: 2, color: '#b8c0e0', strokeThickness: 1 }));

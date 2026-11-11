@@ -4,7 +4,7 @@ import Data from '../systems/Data.js';
 import GameState from '../systems/GameState.js';
 import Audio from '../systems/Audio.js';
 import { txt, Button, panel, UIGroup, DialogBox, confirm, toast, bar, fadeIn, fadeOut, tween, wait, DEPTH, setupCamera, fix } from '../systems/UI.js';
-import { makeCharacter, buildTilemap, themeOf, img } from '../systems/Assets.js';
+import { makeCharacter, buildTilemap, themeOf, img, unit, setPose, fx } from '../systems/Assets.js';
 
 const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 const CORRUPT_TINT = 0x9a7fd6;
@@ -114,7 +114,7 @@ export default class FieldScene extends Phaser.Scene {
       this.blocked.add(o.x + ',' + o.y);
       this.makeTappable(obj.sprite, () => this.approach(obj));
     } else if (o.type === 'npc') {
-      obj.sprite = img(this, wp.x, wp.y + 8, o.sprite || 'guide').setOrigin(0.5, 1).setDepth(wd(wp.y + 8));
+      obj.sprite = unit(this, wp.x, wp.y + 8, o.sprite || 'guide').setOrigin(0.5, 1).setDepth(wd(wp.y + 8));
       this.tweens.add({ targets: obj.sprite, y: obj.sprite.y - 2, duration: 700, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
       const bubble = txt(this, wp.x, wp.y - 14, '…', { size: 11, origin: 0.5, color: COLORS.yellow, depth: DEPTH.WORLD_UI });
       this.tweens.add({ targets: bubble, y: bubble.y - 2, duration: 500, yoyo: true, repeat: -1 });
@@ -137,7 +137,8 @@ export default class FieldScene extends Phaser.Scene {
     } else if (o.type === 'injured') {
       if (s.flags.healed[key]) return;
       const a = Data.animal(o.animal);
-      obj.sprite = img(this, wp.x, wp.y + 8, a.sprite).setOrigin(0.5, 1).setDepth(wd(wp.y + 8)).setAngle(-12).setAlpha(0.9);
+      obj.sprite = unit(this, wp.x, wp.y + 8, a.sprite).setOrigin(0.5, 1).setDepth(wd(wp.y + 8)).setAngle(-12).setAlpha(0.9);
+      setPose(obj.sprite, 'hurt');
       const bubble = txt(this, wp.x + 10, wp.y - 14, '아야', { size: 11, origin: 0.5, color: '#ff8080', depth: DEPTH.WORLD_UI });
       this.tweens.add({ targets: bubble, y: bubble.y - 2, alpha: 0.5, duration: 600, yoyo: true, repeat: -1 });
       obj.bubble = bubble;
@@ -146,7 +147,7 @@ export default class FieldScene extends Phaser.Scene {
     } else if (o.type === 'boss') {
       if (s.flags.cleared[this.p.stageId]) return;
       const e = Data.enemy(o.enemy);
-      obj.sprite = img(this, wp.x, wp.y + 8, e.sprite).setOrigin(0.5, 1).setDepth(wd(wp.y + 8)).setTint(CORRUPT_TINT);
+      obj.sprite = unit(this, wp.x, wp.y + 8, e.sprite).setOrigin(0.5, 1).setDepth(wd(wp.y + 8)).setTint(CORRUPT_TINT);
       this.tweens.add({ targets: obj.sprite, scaleX: 1.04, scaleY: 0.96, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
       this.blocked.add(o.x + ',' + o.y);
       this.makeTappable(obj.sprite, () => this.approach(obj));
@@ -173,7 +174,7 @@ export default class FieldScene extends Phaser.Scene {
 
   spawnEnemy(e, key) {
     const wp = this.tileToWorld(e.x, e.y), data = Data.enemy(e.group[0]);
-    const sprite = img(this, wp.x, wp.y + 8, data.sprite).setOrigin(0.5, 1).setDepth(wd(wp.y + 8)).setTint(CORRUPT_TINT);
+    const sprite = unit(this, wp.x, wp.y + 8, data.sprite).setOrigin(0.5, 1).setDepth(wd(wp.y + 8)).setTint(CORRUPT_TINT);
     const en = { key, group: e.group, tx: e.x, ty: e.y, sprite, moving: false, timer: Phaser.Math.Between(500, 1500) };
     this.makeTappable(sprite, () => this.tapTile(en.tx, en.ty));
     this.enemies.push(en);
@@ -227,9 +228,9 @@ export default class FieldScene extends Phaser.Scene {
   }
   stepNext() {
     if (this.transitioning) { this.moving = false; return; }
-    if (!this.path.length) { this.moving = false; this.arrive(); return; }
+    if (!this.path.length) { this.moving = false; this.hero.play('idle'); this.arrive(); return; }
     const [nx, ny] = this.path.shift();
-    if (!this.walkable(nx, ny)) { this.path = []; this.moving = false; return; }
+    if (!this.walkable(nx, ny)) { this.path = []; this.moving = false; this.hero.play('idle'); return; }
     this.moving = true; this.nextTile = [nx, ny];
     this.hero.setFlip(nx < this.tx);
     const wp = this.tileToWorld(nx, ny);
@@ -243,7 +244,7 @@ export default class FieldScene extends Phaser.Scene {
       },
     });
     // 콩콩 걷기
-    this.tweens.add({ targets: this.hero.parts.body, y: -1, duration: 75, yoyo: true });
+    this.hero.play('walk');
   }
   arrive() {
     const obj = this.pendingInteract; this.pendingInteract = null;
@@ -309,7 +310,8 @@ export default class FieldScene extends Phaser.Scene {
       g.add(panel(this, 20, 14, W - 40, H - 28, { depth: DEPTH.MODAL - 1, fixed: true }));
       g.add(txt(this, W / 2, 20, `${a.name} 치료하기`, { size: 14, origin: [0.5, 0], color: COLORS.yellow, depth: DEPTH.MODAL, fixed: true }));
       const hint = g.add(txt(this, W / 2, 40, Data.fmt(Data.dialogues.injured.how), { size: 11, origin: [0.5, 0], align: 'center', depth: DEPTH.MODAL, fixed: true, lineSpacing: 3 }));
-      const big = g.add(fix(img(this, W / 2, 170, a.sprite).setScale(5 / PX).setOrigin(0.5, 1).setDepth(DEPTH.MODAL)));
+      const big = g.add(fix(unit(this, W / 2, 170, a.sprite).setScale(5 / PX).setOrigin(0.5, 1).setDepth(DEPTH.MODAL)));
+      setPose(big, 'hurt');
       const spots = [[-12, -58], [16, -40], [-6, -18]]; // 몸 위 상처 위치 (3곳)
       let i = 0;
       const bandages = [];
@@ -331,7 +333,8 @@ export default class FieldScene extends Phaser.Scene {
         });
       };
       const finish = async () => {
-        Audio.sfx('purify');
+        Audio.sfx('purify'); setPose(big, 'idle');
+        { const f = fx(this, 'fx_purify_anim', big.x, big.y - 40, 2.2, DEPTH.MODAL + 4); if (f) { f.setScrollFactor(0); g.add(f); } }
         for (let k = 0; k < 8; k++) { const p = img(this, big.x + Phaser.Math.Between(-40, 40), big.y - Phaser.Math.Between(0, 80), 'star').setScale(0.6 / PX).setDepth(DEPTH.MODAL + 3).setScrollFactor(0); g.add(p); this.tweens.add({ targets: p, y: p.y - 20, alpha: 0, duration: 700, delay: k * 60 }); }
         this.tweens.add({ targets: big, y: big.y - 12, duration: 150, yoyo: true, repeat: 2 });
         await wait(this, 900);
@@ -342,7 +345,7 @@ export default class FieldScene extends Phaser.Scene {
         if (obj.bubble) obj.bubble.destroy();
         await this.dialog.show([Data.fmt(Data.dialogues.injured.done).replace(/\{name\}/g, a.name)]);
         // 친구가 되어 뛰어감
-        obj.sprite.setAngle(0).setAlpha(1);
+        obj.sprite.setAngle(0).setAlpha(1); setPose(obj.sprite, 'move');
         this.blocked.delete(obj.x + ',' + obj.y);
         this.objects = this.objects.filter(o => o !== obj);
         await tween(this, { targets: obj.sprite, x: obj.sprite.x + 40, y: obj.sprite.y - 6, alpha: 0, duration: 600 });
@@ -382,9 +385,9 @@ export default class FieldScene extends Phaser.Scene {
       if (!this.walkable(nx, ny) || this.exits[nx + ',' + ny]) continue;
       if (this.enemies.some(o => o !== en && o.tx === nx && o.ty === ny)) continue;
       en.moving = true; en.tx = nx; en.ty = ny;
-      en.sprite.setFlipX(dx < 0);
+      en.sprite.setFlipX(dx < 0); setPose(en.sprite, 'move');
       const wp = this.tileToWorld(nx, ny);
-      this.tweens.add({ targets: en.sprite, x: wp.x, y: wp.y + 8, duration: 650, ease: 'Linear', onUpdate: () => en.sprite.setDepth(wd(en.sprite.y)), onComplete: () => { en.moving = false; } });
+      this.tweens.add({ targets: en.sprite, x: wp.x, y: wp.y + 8, duration: 650, ease: 'Linear', onUpdate: () => en.sprite.setDepth(wd(en.sprite.y)), onComplete: () => { en.moving = false; setPose(en.sprite, 'idle'); } });
       return;
     }
   }

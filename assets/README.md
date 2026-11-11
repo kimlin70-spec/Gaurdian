@@ -1,40 +1,23 @@
-# 그래픽 교체 안내
+# 그림 폴더 안내
 
-- 이 폴더의 PNG 가 **지금 게임에 쓰이는 진짜 그림**입니다 (`data/assets.json` 의 overrides 로 연결됨).
-- 모든 그림은 **논리 크기의 2배**로 그립니다 (PX=2). 예: 타일 한 칸 32×32, 주인공 48×64, 동물 32×32, 보스 48×48, 나무 32×48, 건물 80×72.
-- `template_sheet.png` : 전체 한눈에 보기. 어떤 그림을 바꾸고 싶으면 같은 파일명·같은 크기로 덮어쓰고 푸시하면 끝.
+- 이 폴더의 PNG 가 게임에 쓰이는 실제 그림입니다 (`data/assets.json` 의 overrides 로 연결).
+- 모든 그림은 **논리 크기의 4배**입니다 (PX=4). 타일 한 칸 64×64, 동물 64×64, 보스 96×96, 주인공 96×128, 나무 64×96, 건물 160×144, 전투 배경 1280×960.
+- 그림 묶음(zip)의 `high_resolution_4x` 폴더를 절반으로 줄여 만든 것입니다. 새 묶음을 받으면:
 
-## 새 그림 넣는 법
-1. 완성한 PNG를 이 `assets/` 폴더에 저장 (예: `assets/rabbit.png`). 투명 배경, 파일명은 템플릿과 같게.
-2. `git add assets` → `git commit -m "그래픽"` → `git push`
-3. 같은 파일명이면 바로 적용됩니다. 새 파일(새 동물 등)은 `data/assets.json` 의 `overrides` 에 한 줄 추가하면 됩니다.
-
-```json
-"overrides": {
-  "rabbit": { "type": "image", "file": "assets/rabbit.png" },
-  "tiles":  { "type": "spritesheet", "file": "assets/tiles.png", "frameWidth": 32, "frameHeight": 32 }
-}
+```bash
+python3 tools/build_assets.py <묶음>/high_resolution_4x <묶음>/animation_data.json .
 ```
 
-## 규칙
-- 배경 투명 PNG. 캐릭터·동물·나무는 **발이 그림 맨 아래**에 닿게.
-- `player_body`, `hair_0~2` 는 **흰색(밝음)·연회색(중간)·진회색(그림자) 3단계로만** 그리기. 게임이 피부색·머리색을 입힙니다. 외곽선은 검정 OK.
-- `player_clothes` 는 옷·신발·눈·입·볼터치를 진짜 색으로.
-- 동물·적은 1장만. 오염된 상태는 게임이 보라색을 덧입힙니다.
-- `tiles.png` 는 32×32 칸을 가로로 12개 이어 붙인 1줄(384×32). 순서:
-  `풀, 나무밑동(풀), 길, 물, 꽃, 오염풀, 오염나무밑동(오염풀), 바위밑동(풀), 돌바닥, 돌벽, 덤불밑동(풀), 마을흙`
-- 크기를 바꾸고 싶으면 그려서 올리고 알려주세요. 코드에서 맞춥니다. 타일만 32×32 유지.
+  이 명령이 `assets/` 를 다시 만들고 `data/assets.json`, `data/heroanim.json` 을 갱신합니다 (Pillow 필요).
 
-## 우선순위 (체감 큰 순서)
-1. 주인공 5장 (`player_body`, `player_clothes`, `hair_0`, `hair_1`, `hair_2`)
-2. 동물 5장 (`rabbit`, `squirrel`, `boar`, `deer`, `fox`) + 반디(`guide`)
-3. 타일 `tiles`, 나무 `tree`, `tree_dark`, 덤불 `bush`, 바위 `rock`
-4. 적 `mushroom`, `vine`, 보스 `bear`
-5. 건물 7장, 가구 10장, 소품 5장
+## 애니메이션 시트 (`*_anim.png`)
+- 동물·적·보스: 6프레임 가로 한 줄 = 서기A, 서기B, 움직이기A, 움직이기B, 공격, 아파함
+- 주인공 `player_body_anim`, `player_clothes_anim`: 10프레임 = 서기 2, 걷기 4, 공격 2, 아파함, 기뻐함. 머리카락과 무기는 정지 그림을 `data/heroanim.json` 의 수치로 옮겨 붙입니다.
+- `tiles_water_anim`, `tiles_ice_anim`: 물/얼음 타일 위에 덮여 반복 재생
+- `fx_hit_anim`, `fx_heal_anim`, `fx_purify_anim`, `fx_star_anim`: 전투 효과 (한 번 재생)
+- 시트가 없는 캐릭터는 정지 그림 한 장으로 표시됩니다.
 
-## 아직 임시 그림인 것 (새로 그리면 더 좋아요)
-- 눈 숲: `tree_snow` `tree_snow_dark` (32×48), `rock_snow` (32×32), 동물 `penguin` `owl` `reindeer`, 적 `snowman` `frost_vine` (32×32), 보스 `wolf` (48×48)
-- 눈 타일 `tiles_snow` (32×32 ×8칸 가로 1줄 = 256×32): 눈, 눈(나무밑), 얼음, 오염눈, 오염눈(나무밑), 눈(바위밑), 눈길, 얼음꽃
-- 무기 `w_stick` `w_wood_sword` `w_light_sword` (48×64, 주인공과 같은 캔버스에서 오른손 위치에 그리기)
-- 마당 가구 `f_flowerbed` `f_bench` `f_stonepath` (64×32), `f_birdhouse` (32×64), `f_tree_small` (64×64)
-이 키들은 PNG 를 `assets/` 에 넣고 `data/assets.json` 의 overrides 에 한 줄 추가하면 교체됩니다.
+## 아직 게임에서 쓰지 않는 그림 (준비만 됨)
+- 스테이지 3~5: `tiles_swamp/fire/castle`, 새 동물·적·보스, `king`, `king_pure`, 무기 3종
+- `item_*` 아이콘, `emote_*` 말풍선
+- `reference_for_ai/` 는 그림을 만들 때 AI 에게 준 지시문과 위치 견본입니다.

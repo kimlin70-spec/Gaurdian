@@ -4,7 +4,7 @@ import Data from '../systems/Data.js';
 import GameState from '../systems/GameState.js';
 import Audio from '../systems/Audio.js';
 import { txt, Button, panel, UIGroup, DialogBox, fadeIn, fadeOut, tween, wait, bar, DEPTH, setupCamera } from '../systems/UI.js';
-import { img } from '../systems/Assets.js';
+import { img, unit, setPose, fx } from '../systems/Assets.js';
 
 const GRADE_TITLE = ['아쉬워요...', '잘했어요!', '완벽해요!'];
 
@@ -74,7 +74,7 @@ export default class MiniGameScene extends Phaser.Scene {
     this.add.rectangle(W / 2, 214, W, 52, 0x8fc4dc);
     // 욕조 뒤
     this.add.rectangle(W / 2, 176, 150, 44, 0xffffff).setStrokeStyle(2, 0x1b1b2a);
-    this.pet = img(this, W / 2, 178, this.a.sprite).setOrigin(0.5, 1).setScale(5 / PX).setDepth(2);
+    this.pet = unit(this, W / 2, 178, this.a.sprite).setOrigin(0.5, 1).setScale(5 / PX).setDepth(2);
     // 욕조 앞 + 물
     this.add.rectangle(W / 2, 186, 146, 22, 0x7fc8ee).setDepth(3);
     this.add.rectangle(W / 2, 197, 154, 8, 0xf4f4f4).setStrokeStyle(2, 0x1b1b2a).setDepth(3);
@@ -91,7 +91,7 @@ export default class MiniGameScene extends Phaser.Scene {
     // 동물이 싫어서 몸을 흔든다 (빠른 동물일수록 많이)
     const amp = 10 + this.spd * 1.6, dur = Math.max(450, 1300 - this.spd * 70);
     this.wiggle = this.tweens.add({ targets: this.pet, x: { from: W / 2 - amp, to: W / 2 + amp }, duration: dur, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-    this.info.setText('① 더러운 곳을 문질러요!');
+    this.info.setText('① 더러운 곳을 문질러요!'); setPose(this.pet, 'hurt');
     this.scrubbed = 0; this.setScore(`거품 0/${this.spots.length}`);
     let last = null;
     const onMove = (pointer) => {
@@ -159,13 +159,13 @@ export default class MiniGameScene extends Phaser.Scene {
     const n = this.note; n.done = true;
     const x = n.target.x, y = n.target.y;
     n.target.destroy(); n.ring.destroy();
-    if (hit) { this.hits++; Audio.sfx('heal'); this.splash(x, y, 0x7fd0ff, 10); this.pop(x, y - 10, label, '#7ee081'); const s = this.spots.find(sp => sp.foam.visible); if (s) s.foam.setVisible(false); }
+    if (hit) { this.hits++; Audio.sfx('heal'); this.splash(x, y, 0x7fd0ff, 10); fx(this, 'fx_star_anim', x, y, 1.2, 8); this.pop(x, y - 10, label, '#7ee081'); const s = this.spots.find(sp => sp.foam.visible); if (s) s.foam.setVisible(false); }
     else { Audio.sfx('error'); this.pop(x, y - 10, label, '#ff8080'); }
     this.setScore(`헹구기 ${this.hits}/${this.noteTotal}`);
     this.time.delayedCall(380, () => this.nextNote());
   }
   endShower() {
-    this.phase = 0; this.running = false; if (this.wiggle) this.wiggle.stop();
+    this.phase = 0; this.running = false; if (this.wiggle) this.wiggle.stop(); setPose(this.pet, 'idle');
     const perfect = this.hits >= 9 && this.scrubbed >= this.spots.length;
     const grade = perfect ? 2 : this.hits >= 6 ? 1 : 0;
     const res = GameState.showerResult(this.id, grade, this.hits);
@@ -183,11 +183,11 @@ export default class MiniGameScene extends Phaser.Scene {
     this.add.rectangle(W / 2, 222, W, 40, 0x6cc06a);
     this.add.rectangle(W / 2, 203, W, 2, 0x58a858);
     for (let i = 0; i < 4; i++) this.add.ellipse(40 + i * 80, 50 + (i % 2) * 20, 46, 16, 0xffffff, 0.8);
-    this.pet = img(this, W / 2, 208, this.a.sprite).setOrigin(0.5, 1).setScale(3 / PX).setDepth(5);
+    this.pet = unit(this, W / 2, 208, this.a.sprite).setOrigin(0.5, 1).setScale(3 / PX).setDepth(5);
     this.items = []; this.score = 0; this.targetX = W / 2; this.stun = 0;
   }
   runCatch() {
-    this.info.setText('간식을 받아요! 진흙은 피해요!');
+    this.info.setText('간식을 받아요! 진흙은 피해요!'); setPose(this.pet, 'move');
     this.setScore('간식 0');
     const follow = (pointer) => { this.targetX = Phaser.Math.Clamp(pointer.worldX, 20, W - 20); };
     this.input.on('pointerdown', follow);
@@ -215,7 +215,7 @@ export default class MiniGameScene extends Phaser.Scene {
         const mouthY = this.pet.y - 30;
         if (!it.dead && Math.abs(it.y - mouthY) < 12 && Math.abs(it.x - this.pet.x) < 20) {
           it.dead = true;
-          if (it.mud) { this.score = Math.max(0, this.score - 1); this.stun = 0.6; Audio.sfx('error'); this.pop(it.x, it.y, '철퍽!', '#c98b5b'); this.pet.setTint(0xb08a6a); this.time.delayedCall(600, () => this.pet.clearTint()); }
+          if (it.mud) { this.score = Math.max(0, this.score - 1); this.stun = 0.6; Audio.sfx('error'); this.pop(it.x, it.y, '철퍽!', '#c98b5b'); this.pet.setTint(0xb08a6a); setPose(this.pet, 'hurt'); this.time.delayedCall(600, () => { this.pet.clearTint(); if (this.running) setPose(this.pet, 'move'); }); }
           else { this.score += 1; Audio.sfx('chest'); this.pop(it.x, it.y, '냠!', '#ffe066'); this.tweens.add({ targets: this.pet, scaleY: 3.4 / PX, duration: 80, yoyo: true }); }
           this.setScore(`간식 ${this.score}`);
         }
@@ -225,7 +225,7 @@ export default class MiniGameScene extends Phaser.Scene {
     };
   }
   endCatch() {
-    this.running = false; this.items.forEach(it => it.destroy()); this.items = [];
+    this.running = false; this.items.forEach(it => it.destroy()); this.items = []; setPose(this.pet, 'idle');
     const grade = this.score >= 12 ? 2 : this.score >= 6 ? 1 : 0;
     this.endPlay('catch', grade, this.score, `간식 ${this.score}개! (12개면 최고)`);
   }
@@ -245,7 +245,7 @@ export default class MiniGameScene extends Phaser.Scene {
       b.on('pointerup', () => this.pickBush(b));
       return b;
     });
-    this.pet = img(this, W / 2, 110, this.a.sprite).setOrigin(0.5, 1).setScale(2.5 / PX).setDepth(4);
+    this.pet = unit(this, W / 2, 110, this.a.sprite).setOrigin(0.5, 1).setScale(2.5 / PX).setDepth(4);
     this.round = 0; this.score = 0; this.canPick = false;
   }
   runHide() { this.updater = null; this.setScore('맞힘 0/3'); this.hideRound(); }

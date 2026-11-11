@@ -1,7 +1,7 @@
 import { GAME_W, GAME_H, FONT, PX } from '../config.js';
 import Data, { DATA_FILES } from '../systems/Data.js';
 import Audio from '../systems/Audio.js';
-import { generateAll, loadOverrides, img } from '../systems/Assets.js';
+import { generateAll, loadOverrides, registerAnims } from '../systems/Assets.js';
 
 export default class BootScene extends Phaser.Scene {
   constructor() { super('Boot'); }
@@ -16,6 +16,7 @@ export default class BootScene extends Phaser.Scene {
     Data.init(this.cache.json);
     Audio.init();
     generateAll(this);
+    registerAnims(this);
     this.scene.start('Title', {});
   }
 }

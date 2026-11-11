@@ -5,7 +5,7 @@ import { img } from '../systems/Assets.js';
 import GameState from '../systems/GameState.js';
 import Audio from '../systems/Audio.js';
 import { txt, DialogBox, fadeIn, fadeOut, tween, wait, setupCamera } from '../systems/UI.js';
-import { themeOf } from '../systems/Assets.js';
+import { themeOf, unit, fx } from '../systems/Assets.js';
 
 export default class PurifyScene extends Phaser.Scene {
   constructor() { super('Purify'); }
@@ -29,13 +29,13 @@ export default class PurifyScene extends Phaser.Scene {
       }
     }
     const boss = Data.enemy(this.p.bossId);
-    this.bear = img(this, W / 2, 150, boss.sprite).setOrigin(0.5, 1).setScale(2 / PX).setTint(0x9a7fd6).setDepth(10);
+    this.bear = unit(this, W / 2, 150, boss.sprite).setOrigin(0.5, 1).setScale(2 / PX).setTint(0x9a7fd6).setDepth(10);
     this.dialog = new DialogBox(this);
     this.play();
   }
   async play() {
     await wait(this, 500);
-    Audio.sfx('purify');
+    Audio.sfx('purify'); fx(this, 'fx_purify_anim', W / 2, 120, 3, 25);
     // 빛의 원이 퍼지면서 숲이 초록으로
     const ring = this.add.circle(W / 2, 130, 4, 0xffffff, 0.8).setDepth(20);
     this.tweens.add({ targets: ring, radius: 260, alpha: 0, duration: 1800, ease: 'Quad.easeOut', onUpdate: () => { ring.setRadius(ring.radius); } });

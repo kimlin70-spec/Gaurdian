@@ -4,7 +4,7 @@ import Data from '../systems/Data.js';
 import GameState from '../systems/GameState.js';
 import Audio from '../systems/Audio.js';
 import { txt, Button, panel, UIGroup, DialogBox, toast, fadeIn, fadeOut, DEPTH, setupCamera } from '../systems/UI.js';
-import { makeCharacter, img } from '../systems/Assets.js';
+import { makeCharacter, img, unit, setPose } from '../systems/Assets.js';
 
 const COLS = 14, ROWS = 8;           // 방/마당 크기 (칸)
 const OX = (W - COLS * TILE) / 2, OY = 30;
@@ -87,7 +87,7 @@ export default class HomeScene extends Phaser.Scene {
     GameState.s.party.slice(0, 3).forEach((id, i) => {
       const a = Data.animal(id); if (!a) return;
       const [gx, gy] = spots[i], x = OX + gx * TILE + 8, y = OY + (gy + 1) * TILE;
-      const sp = img(this, x, y, a.sprite).setOrigin(0.5, 1).setDepth(wd(y));
+      const sp = unit(this, x, y, a.sprite).setOrigin(0.5, 1).setDepth(wd(y)); setPose(sp, 'move');
       this.tweens.add({ targets: sp, y: y - 6, duration: Phaser.Math.Between(400, 700), yoyo: true, repeat: -1, ease: 'Sine.easeInOut', delay: i * 200 });
       this.tweens.add({ targets: sp, x: x + Phaser.Math.Between(-12, 12), duration: Phaser.Math.Between(1500, 2500), yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
       this.animalSprites.push(sp);
