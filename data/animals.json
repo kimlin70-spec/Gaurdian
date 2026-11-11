@@ -1,5 +1,5 @@
 {
-  "_comment": "구조할 수 있는 동물. base 는 1레벨 능력치, growth 는 레벨마다 오르는 양. stage 는 등장 스테이지. injuredOnly 는 다친 상태로만 숲에 나타나는(치료로만 친구가 되는) 동물.",
+  "_comment": "구조할 수 있는 동물. base 는 1레벨 능력치, growth 는 레벨마다 오르는 양. stage 는 등장 스테이지. injuredOnly 는 다친 상태로만 숲에 나타나는(치료로만 친구가 되는) 동물. traits(선택): dirtyRate 전투마다 더러워지는 양, noCold 감기 안 걸림, playBonus 놀아주기 하트 배수, cleanBelow 이 값보다 덜 더러우면 '깨끗', cleanBonus 깨끗할 때 공격 보너스, dirtyText 더러울 때 상태 글자, dirtyAgain 깨끗→더러움 알림. cleanSprite/cleanName 은 깨끗할 때 그림과 이름. hidden 은 숲이 아닌 곳에서 만나는 숨은 친구.",
   "rabbit": {
     "name": "토끼",
     "role": "회복",
@@ -194,5 +194,41 @@
       "heal_all",
       "antler"
     ]
+  },
+  "milkku": {
+    "name": "밀꾸",
+    "cleanName": "밀크",
+    "role": "응원",
+    "sprite": "milkku",
+    "cleanSprite": "milkku_clean",
+    "stage": "village",
+    "hidden": true,
+    "base": {
+      "hp": 34,
+      "mp": 18,
+      "atk": 9,
+      "def": 4,
+      "spd": 10
+    },
+    "growth": {
+      "hp": 6,
+      "mp": 3,
+      "atk": 2,
+      "def": 1,
+      "spd": 1
+    },
+    "skills": [
+      "tail_wag",
+      "woof_cheer"
+    ],
+    "traits": {
+      "dirtRate": 2,
+      "noCold": true,
+      "playBonus": 1.5,
+      "cleanBelow": 2,
+      "cleanBonus": 0.15,
+      "dirtyText": "꾸질꾸질",
+      "dirtyAgain": "밀크가 금세 다시 밀꾸가 되었어요!\n꾸질꾸질~"
+    }
   }
 }

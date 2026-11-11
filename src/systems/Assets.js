@@ -1,6 +1,6 @@
 // 임시 도트 그래픽을 코드로 만듭니다.
 // 나중에 진짜 PNG 가 생기면 data/assets.json 의 overrides 에 적으면 됩니다. (같은 키면 여기서 만들지 않음)
-import { TILE, PX, wd, SNOW_FIRST_TILE } from '../config.js';
+import { TILE, PX, wd, SNOW_FIRST_TILE, SIDE_VIEWS } from '../config.js';
 
 export const LOOKS = {
   skin: [0xf6d7b8, 0xd8a076, 0x8d5a3a],
@@ -155,35 +155,86 @@ export function generateAll(scene) {
 export function img(scene, x, y, key, frame) { return scene.add.image(x, y, key, frame).setScale(1 / PX); }
 
 // ---------------- 애니메이션 ----------------
-// _anim 시트 규칙: 동물/적/보스는 6프레임 [서기A, 서기B, 움직이기A, 움직이기B, 공격, 아파함]
-export const POSE = { attack: 4, hurt: 5 };
+// 정면 시트 (x_anim, 6프레임): 서기A, 서기B, 움직이기A, 움직이기B, 공격, 아파함
+// 옆모습 시트 (x_side_anim, 14프레임, 오른쪽 보기): 서기 2, 걷기 4, 공격준비, 공격, 마무리, 맞음, 밀려남, 방어, 주저앉음, 기뻐함
+// 동작 이름: 반복 = idle, move / 한 장면 = attack_ready, attack, attack_end, hurt, knockback, guard, down, happy
+// 옆모습이 없는 캐릭터는 같은 이름의 동작을 정면 그림에서 가장 비슷한 프레임으로 보여준다.
+export const LOOP_POSES = new Set(['idle', 'move']);
+const FRONT_POSES = { attack_ready: 0, attack: 4, attack_end: 4, hurt: 5, knockback: 5, guard: 0, down: 5, happy: 3 };
+const unitSide = () => (Data.anim && Data.anim.unitSide) || {};
+const sidePoses = () => unitSide().poses || { attack_ready: 6, attack: 7, attack_end: 8, hurt: 9, knockback: 10, guard: 11, down: 12, happy: 13 };
+
 export function registerAnims(scene) {
-  const A = scene.anims, T = scene.textures;
+  const A = scene.anims, T = scene.textures, US = unitSide();
+  const frames = (key, list) => A.generateFrameNumbers(key, { frames: list });
   for (const key of T.getTextureKeys()) {
     if (!key.endsWith('_anim')) continue;
     const base = key.slice(0, -5), n = T.get(key).frameTotal - 1; // __BASE 제외
     if (key.startsWith('fx_')) { if (!A.exists(key)) A.create({ key, frames: A.generateFrameNumbers(key, { start: 0, end: n - 1 }), frameRate: 14, repeat: 0 }); continue; }
     if (key.startsWith('tiles_')) { if (!A.exists(key)) A.create({ key, frames: A.generateFrameNumbers(key, { start: 0, end: n - 1 }), frameRate: n > 2 ? 4 : 1.2, repeat: -1 }); continue; }
-    if (key.startsWith('player_') || n < 6) continue;
-    if (!A.exists(base + '_idle')) A.create({ key: base + '_idle', frames: A.generateFrameNumbers(key, { frames: [0, 0, 0, 0, 0, 1] }), frameRate: 3, repeat: -1 }); // 가끔 깜빡/숨쉬기
-    if (!A.exists(base + '_move')) A.create({ key: base + '_move', frames: A.generateFrameNumbers(key, { frames: [2, 3] }), frameRate: 5, repeat: -1 });
+    if (key.startsWith('player_') || n < 6) continue; // 주인공은 makeCharacter 가 직접 넘긴다
+    const side = base.endsWith('_side');
+    const idle = side ? ((US.seq && US.seq.idle) || [0, 1]) : [0, 1];
+    const move = side ? ((US.seq && US.seq.move) || [2, 3, 4, 5]) : [2, 3];
+    // 서 있을 때는 가끔만 깜빡/숨쉬기
+    if (!A.exists(base + '_idle')) A.create({ key: base + '_idle', frames: frames(key, [idle[0], idle[0], idle[0], idle[0], idle[0], idle[1]]), frameRate: 3, repeat: -1 });
+    if (!A.exists(base + '_move')) A.create({ key: base + '_move', frames: frames(key, move), frameRate: side ? 8 : 5, repeat: -1 });
   }
 }
+
 // 동물/적/주민 그림. 애니메이션 시트가 있으면 움직이는 스프라이트, 없으면 정지 그림.
 export function unit(scene, x, y, key) {
   if (scene.textures.exists(key + '_anim') && scene.anims.exists(key + '_idle')) {
     const sp = scene.add.sprite(x, y, key + '_anim', 0).setScale(1 / PX);
-    sp.animKey = key;
+    sp.animKey = key; sp.curView = 'front'; sp.curPose = 'idle';
+    sp.hasSide = SIDE_VIEWS && scene.anims.exists(key + '_side_idle');
     sp.play({ key: key + '_idle', startFrame: Math.floor(Math.random() * 5) });
     return sp;
   }
   return img(scene, x, y, key);
 }
-// 자세 바꾸기: 'idle' | 'move' 는 반복 재생, 'attack' | 'hurt' 는 한 장면으로 멈춤
-export function setPose(obj, pose) {
-  if (!obj || !obj.animKey || !obj.active) return;
-  if (pose === 'idle' || pose === 'move') obj.play(obj.animKey + '_' + pose, true);
-  else { obj.anims.stop(); obj.setFrame(POSE[pose] ?? 0); }
+
+// 보는 방향: 'front' | 'side'. flip=true 면 왼쪽을 본다. 옆모습이 없으면 정면을 좌우로 뒤집는다.
+export function setView(obj, view, flip) {
+  if (!obj || !obj.active) return;
+  if (obj.isHero) { obj.setView(view, flip); return; }
+  if (flip !== undefined) obj.setFlipX(!!flip);
+  if (!obj.animKey) return;
+  const v = view === 'side' && obj.hasSide ? 'side' : 'front';
+  if (obj.curView === v) return;
+  obj.curView = v;
+  obj.anims.stop();
+  obj.setTexture(obj.animKey + (v === 'side' ? '_side_anim' : '_anim'), 0);
+  setPose(obj, obj.curPose || 'idle', true);
+}
+// 움직이는 방향을 보게 한다: 옆으로 움직이면 옆모습, 위아래면 정면.
+export function face(obj, dx, dy) {
+  if (Math.abs(dx) > Math.abs(dy)) setView(obj, 'side', dx < 0);
+  else if (dy !== 0) setView(obj, 'front', false);
+}
+// 자세 바꾸기. force 면 같은 반복 동작도 처음부터 다시.
+export function setPose(obj, pose, force) {
+  if (!obj || !obj.active) return;
+  if (obj.isHero) { obj.setPose(pose); return; }
+  if (!obj.animKey) return;
+  if (pose === 'walk') pose = 'move';
+  if (!force && obj.curPose === pose && LOOP_POSES.has(pose) && obj.anims.isPlaying) return;
+  obj.curPose = pose;
+  const k = obj.animKey + (obj.curView === 'side' ? '_side' : '');
+  if (LOOP_POSES.has(pose)) obj.play(k + '_' + pose, false);
+  else { obj.anims.stop(); obj.setFrame((obj.curView === 'side' ? sidePoses() : FRONT_POSES)[pose] ?? 0); }
+}
+// 같은 캐릭터의 다른 그림으로 바꾸기 (밀꾸: 꾀죄죄 ↔ 깨끗). 방향과 자세는 유지.
+export function retexture(obj, key) {
+  if (!obj || !obj.active || obj.isHero) return;
+  const sc = obj.scene;
+  if (!obj.animKey) { if (sc.textures.exists(key)) obj.setTexture(key); return; }
+  if (!sc.textures.exists(key + '_anim') || !sc.anims.exists(key + '_idle')) return;
+  obj.animKey = key; obj.hasSide = SIDE_VIEWS && sc.anims.exists(key + '_side_idle');
+  if (obj.curView === 'side' && !obj.hasSide) obj.curView = 'front';
+  obj.anims.stop();
+  obj.setTexture(key + (obj.curView === 'side' ? '_side_anim' : '_anim'), 0);
+  setPose(obj, obj.curPose || 'idle', true);
 }
 // 한 번 재생하고 사라지는 효과 (fx_hit_anim 등). 시트가 없으면 아무것도 안 함.
 export function fx(scene, key, x, y, scale = 1, depth = 150) {
@@ -194,54 +245,98 @@ export function fx(scene, key, x, y, scale = 1, depth = 150) {
 }
 
 // 주인공 캐릭터(몸+옷+머리+무기) 컨테이너. 24x32, origin 은 발 아래 가운데(0.5, 1).
-// 몸/옷은 10프레임 시트, 머리카락과 무기는 정지 그림을 프레임에 맞춰 옮긴다 (data/heroanim.json).
+// 몸/옷은 프레임 시트(정면 10장, 옆모습 14장), 머리카락과 무기는 정지 그림을
+// data/anim.json 의 머리 이동량·손 위치·무기 각도에 맞춰 옮겨 붙인다.
 export function makeCharacter(scene, x, y, look, opts = {}) {
-  const HA = Data.heroanim || {}, animated = scene.textures.exists('player_body_anim') && scene.textures.exists('player_clothes_anim') && HA.seq;
-  const mk = (key) => (animated ? scene.add.sprite(0, 0, key + '_anim', 0) : scene.add.image(0, 0, key)).setScale(1 / PX).setOrigin(0.5, 1);
-  const body = mk('player_body').setTint(LOOKS.skin[look.skin] ?? LOOKS.skin[0]);
-  const clothes = mk('player_clothes');
-  const hair = img(scene, 0, 0, 'hair_' + (look.hair ?? 0)).setOrigin(0.5, 1).setTint(LOOKS.hairColor[look.hairColor] ?? LOOKS.hairColor[0]);
+  const AN = Data.anim || {}, HF = AN.hero || null, HS = AN.heroSide || null, T = scene.textures;
+  const frontOK = !!(HF && T.exists('player_body_anim') && T.exists('player_clothes_anim'));
+  const sideOK = !!(SIDE_VIEWS && frontOK && HS && T.exists('player_body_side_anim') && T.exists('player_clothes_side_anim') && T.exists('hair_0_side'));
+  const mk = (key) => (frontOK ? scene.add.sprite(0, 0, key + '_anim', 0) : scene.add.image(0, 0, key)).setScale(1 / PX).setOrigin(0.5, 1);
+  const body = mk('player_body'), clothes = mk('player_clothes');
+  const hair = img(scene, 0, 0, 'hair_' + (look.hair ?? 0)).setOrigin(0.5, 1);
   const weapon = img(scene, 0, 0, 'dot').setOrigin(0.5, 1).setVisible(false);
   const c = scene.add.container(x, y, [body, clothes, hair, weapon]);
   c.setSize(24, 32);
+  c.isHero = true; c.hasSide = sideOK;
   c.parts = { body, clothes, hair, weapon };
-  let frame = 0, flip = false, wAngle = 0, wKey = null, timer = null;
-  const FW = (HA.frame || [48, 64])[0], FH = (HA.frame || [48, 64])[1], K = 24 / FW; // 시트 픽셀 → 논리 픽셀
+  c.curView = 'front'; c.curPose = null;
+  let lk = { skin: 0, hair: 0, hairColor: 0, ...look }, flip = false, frame = 0, extra = 0, wKey = null, timer = null;
+  const D = () => (c.curView === 'side' ? HS : HF) || {};
   const layout = () => {
-    const ho = (HA.hairOffset && HA.hairOffset[frame]) || [0, 0];
-    hair.setPosition((flip ? -1 : 1) * ho[0] * K, ho[1] * K);
+    const d = D(), FW = (d.frame || [48, 64])[0], FH = (d.frame || [48, 64])[1], k = 24 / FW, sx = flip ? -1 : 1;
+    const ho = (d.hairOffset && d.hairOffset[frame]) || [0, 0];
+    hair.setPosition(sx * ho[0] * k, ho[1] * k);
     if (wKey) {
-      const g = (HA.grip && HA.grip[wKey]) || [FW / 2, FH], h = (HA.hand && HA.hand[frame]) || g;
-      weapon.setOrigin(flip ? 1 - g[0] / FW : g[0] / FW, g[1] / FH);            // 손잡이를 회전축으로
-      weapon.setPosition((flip ? -1 : 1) * (h[0] - FW / 2) * K, (h[1] - FH) * K);
-      weapon.setAngle(flip ? -wAngle : wAngle);
+      const g = (d.grip && d.grip[wKey]) || [FW / 2, FH], h = (d.hand && d.hand[frame]) || g;
+      const ang = ((d.angle && d.angle[frame]) || 0) + extra;
+      weapon.setOrigin(flip ? 1 - g[0] / FW : g[0] / FW, g[1] / FH);          // 손잡이를 회전축으로
+      weapon.setPosition(sx * (h[0] - FW / 2) * k, (h[1] - FH) * k);
+      weapon.setAngle(sx * ang);
     }
   };
-  c.setFrame = (i) => { frame = i; if (animated) { body.setFrame(i); clothes.setFrame(i); } layout(); };
-  const stop = () => { if (timer) { timer.remove(false); timer = null; } };
-  // 반복 동작: 'idle' | 'walk'
-  c.play = (name) => {
-    if (!animated || c.playing === name) return;
-    stop(); c.playing = name; wAngle = 0;
-    const base = HA.seq[name] || [0]; let k = 0;
-    const seq = name === 'idle' && base.length > 1 ? [base[0], base[0], base[0], base[0], base[0], base[1]] : base; // 가끔만 깜빡
-    c.setFrame(seq[0]);
-    if (seq.length > 1) timer = scene.time.addEvent({ delay: name === 'walk' ? 110 : 330, loop: true, callback: () => { k = (k + 1) % seq.length; c.setFrame(seq[k]); } });
+  const tintAll = () => {
+    body.setTint(LOOKS.skin[lk.skin] ?? LOOKS.skin[0]);
+    hair.setTint(LOOKS.hairColor[lk.hairColor] ?? LOOKS.hairColor[0]);
   };
-  // 한 장면: pose('attack', 0|1) | pose('hurt') | pose('happy')
-  c.pose = (name, idx = 0) => { if (!animated) return; stop(); c.playing = null; const seq = HA.seq[name] || [0]; c.setFrame(seq[Math.min(idx, seq.length - 1)]); };
-  c.setWeaponAngle = (a) => { wAngle = a; layout(); };
-  c.setLook = (lk) => { body.setTint(LOOKS.skin[lk.skin]); hair.setTexture('hair_' + lk.hair); hair.setTint(LOOKS.hairColor[lk.hairColor]); };
+  const applyTextures = () => {
+    const side = c.curView === 'side';
+    if (frontOK) {
+      body.setTexture(side ? 'player_body_side_anim' : 'player_body_anim', frame);
+      clothes.setTexture(side ? 'player_clothes_side_anim' : 'player_clothes_anim', frame);
+    }
+    hair.setTexture('hair_' + (lk.hair ?? 0) + (side ? '_side' : ''));
+    tintAll();
+  };
+  const setFrame = (i) => { frame = i; if (frontOK) { body.setFrame(i); clothes.setFrame(i); } layout(); };
+  const stop = () => { if (timer) { timer.remove(false); timer = null; } };
+  const loop = (name) => {
+    const d = D(), base = (d.seq && d.seq[name === 'move' ? 'walk' : name]) || [0];
+    const seq = name === 'idle' && base.length > 1 ? [base[0], base[0], base[0], base[0], base[0], base[1]] : base;
+    let k = 0; setFrame(seq[0]);
+    if (seq.length > 1) timer = scene.time.addEvent({ delay: name === 'idle' ? 330 : (c.curView === 'side' ? 120 : 110), loop: true, callback: () => { k = (k + 1) % seq.length; setFrame(seq[k]); } });
+  };
+  // 자세: idle / move(walk) 반복, 그 밖은 한 장면
+  c.setPose = (name) => {
+    if (name === 'walk') name = 'move';
+    if (!frontOK) { c.curPose = name; return; }
+    if (LOOP_POSES.has(name) && c.curPose === name && timer) return;
+    stop(); c.curPose = name; extra = 0;
+    if (LOOP_POSES.has(name)) loop(name);
+    else setFrame((D().poses || {})[name] ?? 0);
+  };
+  c.play = (name) => c.setPose(name); // 예전 이름
+  // 방향: 'front' | 'side' (+ flip=true 면 왼쪽)
+  c.setView = (v, f) => {
+    if (f !== undefined) flip = !!f;
+    const nv = v === 'side' && sideOK ? 'side' : 'front';
+    [body, clothes, hair, weapon].forEach(o => o.setFlipX(flip));
+    if (nv !== c.curView) {
+      c.curView = nv;
+      const p = c.curPose || 'idle'; c.curPose = null;
+      stop(); frame = 0; // 정면(10장)과 옆모습(14장)은 프레임 수가 달라 0번에서 다시 시작
+      applyTextures(); c.setPose(p);
+    } else layout();
+  };
+  c.setFlip = (f) => c.setView(c.curView, f);
+  // 휘두르기 연출용 추가 각도 (프레임 각도에 더해짐)
+  c.setSwing = (a) => { extra = a; layout(); };
+  c.setLook = (l) => { lk = { ...lk, ...l }; applyTextures(); layout(); };
   c.setWeapon = (weaponId) => {
     const e = weaponId ? Data.equip(weaponId) : null;
-    if (e && e.sprite && scene.textures.exists(e.sprite)) { wKey = e.sprite; weapon.setTexture(e.sprite).setVisible(true).setScale(1 / PX); }
+    if (e && e.sprite && T.exists(e.sprite)) { wKey = e.sprite; weapon.setTexture(e.sprite).setVisible(true).setScale(1 / PX); }
     else { wKey = null; weapon.setVisible(false); }
     layout();
   };
-  c.setFlip = (f) => { flip = f; body.setFlipX(f); clothes.setFlipX(f); hair.setFlipX(f); weapon.setFlipX(f); layout(); };
+  // 맞았을 때 하얗게 번쩍 → 원래 색
+  c.flashWhite = (on) => {
+    if (on) [body, clothes, hair, weapon].forEach(o => o.setTintFill(0xffffff));
+    else { clothes.clearTint(); weapon.clearTint(); tintAll(); }
+  };
   c.once('destroy', stop);
+  applyTextures();
   c.setWeapon(opts.weapon !== undefined ? opts.weapon : (GameState.s ? GameState.s.player.equip.weapon : null));
-  if (opts.idle !== false) c.play('idle');
+  if (opts.view) c.setView(opts.view, opts.flip);
+  if (opts.idle !== false) c.setPose('idle'); else setFrame(0);
   return c;
 }
 
@@ -287,6 +382,12 @@ export function makeUnitSprite(scene, unit, x, y, look) {
   const im = unit_(scene, x, y, unit.sprite).setOrigin(0.5, 1);
   if (unit.scale && unit.scale !== 1) im.setScale(unit.scale / PX);
   return im;
+}
+// 그림의 논리 크기 (전투 거리 계산용)
+export function bodyWidth(obj) {
+  if (!obj) return 16;
+  if (obj.isHero) return 14;
+  return Math.max(10, (obj.displayWidth || 16) * 0.7);
 }
 
 export const SPRITE_KEYS = Object.keys(SPRITES);

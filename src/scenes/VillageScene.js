@@ -4,7 +4,7 @@ import Data from '../systems/Data.js';
 import GameState from '../systems/GameState.js';
 import Audio from '../systems/Audio.js';
 import { txt, Button, panel, UIGroup, DialogBox, confirm, toast, soundButton, fadeIn, fadeOut, tween, DEPTH, setupCamera } from '../systems/UI.js';
-import { makeCharacter, buildTilemap, img, unit, setPose } from '../systems/Assets.js';
+import { makeCharacter, buildTilemap, img, unit, setPose, face } from '../systems/Assets.js';
 
 const BUILDINGS = [
   { key: 'inn',     name: '여관',      x: 44,  y: 84 },
@@ -66,6 +66,13 @@ export default class VillageScene extends Phaser.Scene {
 
     // 주인공
     this.hero = makeCharacter(this, 160, 150, s.player.look); this.hero.setDepth(wd(150));
+    // 밀꾸가 함께 다니면 마을에서 그레이스 뒤를 졸졸 따라온다
+    this.dog = null;
+    if (s.animals.milkku && s.party.includes('milkku')) {
+      this.dog = unit(this, 146, 152, GameState.animalSprite('milkku')).setOrigin(0.5, 1).setDepth(wd(152));
+      this.dog.setInteractive({ useHandCursor: true, hitArea: new Phaser.Geom.Rectangle(-6 * PX, -6 * PX, 28 * PX, 28 * PX), hitAreaCallback: Phaser.Geom.Rectangle.Contains });
+      this.dog.on('pointerup', () => this.dogBark());
+    }
     // 안내 동물 (힌트)
     this.guide = unit(this, 216, 214, 'guide').setOrigin(0.5, 1).setDepth(wd(196)).setInteractive({ useHandCursor: true, hitArea: new Phaser.Geom.Rectangle(-8 * PX, -8 * PX, 32 * PX, 32 * PX), hitAreaCallback: Phaser.Geom.Rectangle.Contains });
     this.tweens.add({ targets: this.guide, y: this.guide.y - 3, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
@@ -84,6 +91,7 @@ export default class VillageScene extends Phaser.Scene {
     // 미니게임에서 돌아왔으면 쉼터 앞에 서서 그 동물 화면을 다시 연다
     if (this.params.openAnimal && s.animals[this.params.openAnimal]) {
       const sh = this.buildings.shelter; this.hero.setPosition(sh.x, sh.y + 10); this.hero.setDepth(wd(this.hero.y));
+      if (this.dog) this.dog.setPosition(sh.x - 14, sh.y + 12).setDepth(wd(sh.y + 12));
       this.openAnimalDetail(this.params.openAnimal);
     }
     // 환영 / 여관에서 깨어남
@@ -99,20 +107,45 @@ export default class VillageScene extends Phaser.Scene {
   async say(lines) { this.busy = true; await this.dialog.show(lines); this.busy = false; }
   async guideHint() {
     if (this.busy) return;
-    const hints = Data.dialogues.guideHints; const i = GameState.s.flags.hintIndex || 0;
-    GameState.s.flags.hintIndex = (i + 1) % hints.length;
+    const s = GameState.s, M = Data.dialogues.milkku;
+    const hints = Data.dialogues.guideHints; const i = s.flags.hintIndex || 0;
+    s.flags.hintIndex = (i + 1) % hints.length;
+    // 밀꾸가 침대 밑에 숨어 있으면 그 힌트부터
+    if (GameState.milkkuHiding()) return this.say([Data.fmt(M.hintHiding)]);
+    // 아직 침대를 놓은 적이 없으면 가끔 침대를 권한다
+    if (!s.animals.milkku && !s.flags.milkkuBedDay && s.day >= 3 && i % 2 === 0) return this.say([Data.fmt(M.hintBed)]);
     await this.say([Data.fmt(hints[i])]);
+  }
+  dogBark() {
+    if (!this.dog || this.busy) return;
+    Audio.sfx('tap');
+    const t = txt(this, this.dog.x, this.dog.y - 20, Data.dialogues.milkku.bark, { size: 11, origin: 0.5, depth: DEPTH.WORLD_UI });
+    this.tweens.add({ targets: t, y: t.y - 10, alpha: 0, duration: 700, onComplete: () => t.destroy() });
+    this.tweens.add({ targets: this.dog, y: this.dog.y - 6, duration: 110, yoyo: true });
+  }
+  // 밀꾸가 그레이스 뒤로 따라간다
+  dogFollow(tx, ty, duration) {
+    const d = this.dog; if (!d) return;
+    const side = tx < d.x ? 1 : -1, gx = tx + side * 14, gy = ty + 2;
+    face(d, gx - d.x, gy - d.y); setPose(d, 'move');
+    this.tweens.killTweensOf(d);
+    this.tweens.add({ targets: d, x: gx, y: gy, delay: 140, duration: Math.max(160, duration), ease: 'Linear',
+      onUpdate: () => d.setDepth(wd(d.y)), onComplete: () => { setPose(d, 'idle'); face(d, tx - d.x, 0); } });
   }
 
   async goTo(b) {
     if (this.busy) return; this.busy = true;
     Audio.sfx('tap');
-    this.hero.setFlip(b.x < this.hero.x); this.hero.play('walk');
     const dist = Phaser.Math.Distance.Between(this.hero.x, this.hero.y, b.x, b.y + 10);
     // 이미 그 자리에 서 있으면(거리 0) 트윈을 돌리지 않는다 (0ms 트윈이 좌표를 망가뜨림)
-    if (dist > 2) await tween(this, { targets: this.hero, x: b.x, y: b.y + 10, duration: Math.max(120, Math.min(900, dist * 5)), ease: 'Linear' });
+    if (dist > 2) {
+      const dur = Math.max(120, Math.min(900, dist * 5));
+      face(this.hero, b.x - this.hero.x, b.y + 10 - this.hero.y); setPose(this.hero, 'move');
+      this.dogFollow(b.x, b.y + 10, dur);
+      await tween(this, { targets: this.hero, x: b.x, y: b.y + 10, duration: dur, ease: 'Linear', onUpdate: () => this.hero.setDepth(wd(this.hero.y)) });
+    }
     if (!Number.isFinite(this.hero.x) || !Number.isFinite(this.hero.y)) this.hero.setPosition(b.x, b.y + 10);
-    this.hero.setDepth(wd(this.hero.y)); this.hero.play('idle');
+    this.hero.setDepth(wd(this.hero.y)); setPose(this.hero, 'idle');
     this.busy = false;
     this.openFacility(b.key);
   }
@@ -260,7 +293,7 @@ export default class VillageScene extends Phaser.Scene {
       const rows = Object.entries(s.animals).map(([id, rec]) => {
         const a = Data.animal(id), inParty = s.party.includes(id), st = GameState.animalStatus(id), h = GameState.hearts(id);
         return {
-          label: `${a.name} Lv${rec.level}  ${'♥'.repeat(h)}${'♡'.repeat(5 - h)}`,
+          label: `${GameState.animalName(id)} Lv${rec.level}  ${'♥'.repeat(h)}${'♡'.repeat(5 - h)}`,
           sub: `${a.role}  HP ${rec.hp}/${GameState.animalStats(id).hp}  상태: ${st.text}`,
           right: inParty ? '함께 가요' : '쉬는 중', rightColor: inParty ? '#7ee081' : '#b8c0e0',
           color: inParty ? 0x2e5a3a : 0x3d4066,
@@ -272,10 +305,10 @@ export default class VillageScene extends Phaser.Scene {
     render();
   }
   openAnimalDetail(id) {
-    const a = Data.animal(id);
+    const a = { ...Data.animal(id), name: GameState.animalName(id) }; // 밀꾸는 깨끗하면 '밀크'
     this.openPanel(a.name);
     const g = this.listGroup;
-    const sprite = g.add(unit(this, 60, 118, a.sprite).setScale(3 / PX).setDepth(DEPTH.MODAL));
+    const sprite = g.add(unit(this, 60, 118, GameState.animalSprite(id)).setScale(3 / PX).setDepth(DEPTH.MODAL));
     this.tweens.add({ targets: sprite, y: 114, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     const info = g.add(txt(this, 112, 36, '', { size: 11, depth: DEPTH.MODAL, lineSpacing: 4 }));
     const best = g.add(txt(this, 16, 142, '', { size: 11, depth: DEPTH.MODAL, lineSpacing: 2, color: '#b8c0e0', strokeThickness: 1 }));
@@ -325,7 +358,7 @@ export default class VillageScene extends Phaser.Scene {
   hop(obj) { this.tweens.add({ targets: obj, y: obj.y - 10, duration: 120, yoyo: true, repeat: 1 }); }
   // 놀이 고르기
   choosePlay(id) {
-    const a = Data.animal(id), g = new UIGroup(), w = 220, h = 124, x = (W - w) / 2, y = (H - h) / 2, d = DEPTH.MODAL + 10;
+    const a = { ...Data.animal(id), name: GameState.animalName(id) }, g = new UIGroup(), w = 220, h = 124, x = (W - w) / 2, y = (H - h) / 2, d = DEPTH.MODAL + 10;
     g.add(this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.5).setDepth(d - 1).setInteractive());
     g.add(panel(this, x, y, w, h, { depth: d }));
     g.add(txt(this, W / 2, y + 8, `${a.name}와(과) 뭐 하고 놀까요?`, { size: 11, origin: [0.5, 0], color: COLORS.yellow, depth: d + 1 }));

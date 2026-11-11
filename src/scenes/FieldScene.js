@@ -4,7 +4,7 @@ import Data from '../systems/Data.js';
 import GameState from '../systems/GameState.js';
 import Audio from '../systems/Audio.js';
 import { txt, Button, panel, UIGroup, DialogBox, confirm, toast, bar, fadeIn, fadeOut, tween, wait, DEPTH, setupCamera, fix } from '../systems/UI.js';
-import { makeCharacter, buildTilemap, themeOf, img, unit, setPose, fx } from '../systems/Assets.js';
+import { makeCharacter, buildTilemap, themeOf, img, unit, setPose, fx, face } from '../systems/Assets.js';
 
 const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 const CORRUPT_TINT = 0x9a7fd6;
@@ -228,11 +228,14 @@ export default class FieldScene extends Phaser.Scene {
   }
   stepNext() {
     if (this.transitioning) { this.moving = false; return; }
-    if (!this.path.length) { this.moving = false; this.hero.play('idle'); this.arrive(); return; }
+    if (!this.path.length) { this.moving = false; setPose(this.hero, 'idle'); this.arrive(); return; }
     const [nx, ny] = this.path.shift();
-    if (!this.walkable(nx, ny)) { this.path = []; this.moving = false; this.hero.play('idle'); return; }
+    if (!this.walkable(nx, ny)) { this.path = []; this.moving = false; setPose(this.hero, 'idle'); return; }
     this.moving = true; this.nextTile = [nx, ny];
-    this.hero.setFlip(nx < this.tx);
+    // 앞으로 세 칸의 방향을 보고 정면/옆모습을 정한다 (지그재그 길에서 매 칸 바뀌지 않게)
+    let sx = nx - this.tx, sy = ny - this.ty, px = nx, py = ny;
+    for (const [qx, qy] of this.path.slice(0, 2)) { sx += qx - px; sy += qy - py; px = qx; py = qy; }
+    face(this.hero, sx === 0 ? nx - this.tx : sx, sy);
     const wp = this.tileToWorld(nx, ny);
     this.tweens.add({
       targets: this.hero, x: wp.x, y: wp.y + 8, duration: 150, ease: 'Linear',
@@ -243,8 +246,7 @@ export default class FieldScene extends Phaser.Scene {
         this.stepNext();
       },
     });
-    // 콩콩 걷기
-    this.hero.play('walk');
+    setPose(this.hero, 'move');
   }
   arrive() {
     const obj = this.pendingInteract; this.pendingInteract = null;
@@ -279,7 +281,7 @@ export default class FieldScene extends Phaser.Scene {
     } else if (obj.type === 'npc') {
       this.busy = true;
       const lines = (Data.dialogues.npc[obj.text] || ['...']).map(l => Data.fmt(l));
-      this.hero.setFlip(obj.x < this.tx);
+      face(this.hero, obj.x - this.tx, obj.y - this.ty);
       await this.dialog.show(lines);
       this.busy = false;
     } else if (obj.type === 'gate') {
@@ -290,7 +292,7 @@ export default class FieldScene extends Phaser.Scene {
       this.busy = false;
     } else if (obj.type === 'injured') {
       this.busy = true;
-      this.hero.setFlip(obj.x < this.tx);
+      face(this.hero, obj.x - this.tx, obj.y - this.ty);
       await this.dialog.show(Data.dialogues.injured.found.map(l => Data.fmt(l)));
       await this.healMinigame(obj);
       this.busy = false;
@@ -385,7 +387,7 @@ export default class FieldScene extends Phaser.Scene {
       if (!this.walkable(nx, ny) || this.exits[nx + ',' + ny]) continue;
       if (this.enemies.some(o => o !== en && o.tx === nx && o.ty === ny)) continue;
       en.moving = true; en.tx = nx; en.ty = ny;
-      en.sprite.setFlipX(dx < 0); setPose(en.sprite, 'move');
+      face(en.sprite, dx, dy); setPose(en.sprite, 'move');
       const wp = this.tileToWorld(nx, ny);
       this.tweens.add({ targets: en.sprite, x: wp.x, y: wp.y + 8, duration: 650, ease: 'Linear', onUpdate: () => en.sprite.setDepth(wd(en.sprite.y)), onComplete: () => { en.moving = false; setPose(en.sprite, 'idle'); } });
       return;

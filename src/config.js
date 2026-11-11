@@ -62,5 +62,8 @@ export const TILE_LEGEND = {
 export const SOLID_TILES = new Set([1, 3, 6, 7, 9, 10, 13, 14, 16, 17]);
 export const SNOW_FIRST_TILE = 12;
 
+// 옆모습 그림을 쓸지 (false 면 모든 캐릭터가 정면만 본다)
+export const SIDE_VIEWS = true;
+
 // 월드 오브젝트의 깊이: y 가 클수록 앞. UI(50 이상)보다 항상 작게.
 export const wd = (y) => 1 + y / 1000;

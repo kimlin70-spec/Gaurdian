@@ -4,7 +4,7 @@ import Data from '../systems/Data.js';
 import GameState from '../systems/GameState.js';
 import Audio from '../systems/Audio.js';
 import { txt, Button, panel, UIGroup, DialogBox, fadeIn, fadeOut, tween, wait, bar, DEPTH, setupCamera } from '../systems/UI.js';
-import { img, unit, setPose, fx } from '../systems/Assets.js';
+import { img, unit, setPose, fx, face, retexture } from '../systems/Assets.js';
 
 const GRADE_TITLE = ['아쉬워요...', '잘했어요!', '완벽해요!'];
 
@@ -17,7 +17,8 @@ export default class MiniGameScene extends Phaser.Scene {
     fadeIn(this);
     Audio.playBgm('village');
     this.id = this.p.animalId; this.type = this.p.type;
-    this.a = Data.animal(this.id); this.rec = GameState.s.animals[this.id];
+    // 밀꾸는 깨끗하면 이름과 그림이 '밀크'로 바뀐다
+    this.a = { ...Data.animal(this.id), name: GameState.animalName(this.id), sprite: GameState.animalSprite(this.id) }; this.rec = GameState.s.animals[this.id];
     // 씬 인스턴스가 재사용되므로 지난 게임의 상태를 전부 지운다
     this.running = false; this.ended = false; this.updater = null; this.leaving = false;
     this.note = null; this.phase = 0; this.items = []; this.spots = []; this.bushes = []; this.wiggle = null;
@@ -169,7 +170,14 @@ export default class MiniGameScene extends Phaser.Scene {
     const perfect = this.hits >= 9 && this.scrubbed >= this.spots.length;
     const grade = perfect ? 2 : this.hits >= 6 ? 1 : 0;
     const res = GameState.showerResult(this.id, grade, this.hits);
-    const msg = Data.fmt(Data.dialogues.care[['showerFail', 'showerOk', 'showerPerfect'][grade]], { name: this.a.name });
+    // 깨끗한 그림이 따로 있는 동물(밀꾸)은 씻으면 하얗게 바뀐다
+    const clean = Data.animal(this.id).cleanSprite, becameClean = !!clean && GameState.isClean(this.id);
+    if (becameClean) {
+      retexture(this.pet, clean); this.a.name = GameState.animalName(this.id);
+      fx(this, 'fx_star_anim', this.pet.x, this.pet.y - 40, 3, 10); this.splash(this.pet.x, this.pet.y - 40, 0xffffff, 14);
+    }
+    const special = becameClean && Data.dialogues[this.id] && Data.dialogues[this.id].cleaned;
+    const msg = special ? Data.fmt(special) : Data.fmt(Data.dialogues.care[['showerFail', 'showerOk', 'showerPerfect'][grade]], { name: this.a.name });
     if (grade === 0) this.tweens.add({ targets: this.pet, x: W + 60, duration: 600, ease: 'Quad.easeIn' });
     else this.tweens.add({ targets: this.pet, y: this.pet.y - 12, duration: 150, yoyo: true, repeat: 2 });
     this.showResult(grade, [`거품 ${this.scrubbed}/${this.spots.length}   헹구기 ${this.hits}/${this.noteTotal}`, msg, this.heartLine(res.reward)], res.event, grade === 0 || this.rec.dirt > 0);
@@ -199,7 +207,7 @@ export default class MiniGameScene extends Phaser.Scene {
       if (!this.running) return;
       // 동물 이동 (진흙 맞으면 잠깐 멈춤)
       if (this.stun > 0) this.stun -= dt;
-      else { const dx = this.targetX - this.pet.x; this.pet.x += Phaser.Math.Clamp(dx, -260 * dt, 260 * dt); if (Math.abs(dx) > 1) this.pet.setFlipX(dx < 0); }
+      else { const dx = this.targetX - this.pet.x; this.pet.x += Phaser.Math.Clamp(dx, -260 * dt, 260 * dt); if (Math.abs(dx) > 1) face(this.pet, dx, 0); }
       // 떨어지는 것 만들기
       spawnIn -= dt;
       if (spawnIn <= 0) {
@@ -309,12 +317,15 @@ export default class MiniGameScene extends Phaser.Scene {
     Audio.sfx(grade === 2 ? 'levelup' : grade === 1 ? 'win' : 'error');
     if (event === 'sulk') lines.push(Data.fmt(Data.dialogues.care.sulk, { name: this.a.name }));
     if (event === 'back') lines.push(`${this.a.name}이(가) 기분이 풀려서 돌아왔어요!`);
-    const g = new UIGroup(), w = 260, h = 150, x = (W - w) / 2, y = (H - h) / 2;
+    const g = new UIGroup(), w = 260;
+    // 글 길이에 맞춰 창 높이를 정한다 (밀꾸처럼 두 줄짜리 문구가 있어도 버튼과 겹치지 않게)
+    const body = g.add(txt(this, W / 2, 0, lines.join('\n'), { size: 11, origin: [0.5, 0], align: 'center', wrap: w - 20, depth: DEPTH.MODAL + 1, lineSpacing: 3 }));
+    const h = Math.min(H - 16, Math.max(150, 52 + body.height + 44)), x = (W - w) / 2, y = (H - h) / 2;
+    body.setY(y + 52);
     g.add(this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.5).setDepth(DEPTH.MODAL - 1).setInteractive());
     g.add(panel(this, x, y, w, h, { depth: DEPTH.MODAL }));
     g.add(txt(this, W / 2, y + 10, GRADE_TITLE[grade], { size: 14, origin: [0.5, 0], color: COLORS.yellow, depth: DEPTH.MODAL + 1 }));
     g.add(txt(this, W / 2, y + 30, '★'.repeat(grade + 1) + '☆'.repeat(2 - grade), { size: 14, origin: [0.5, 0], color: '#ffd93b', depth: DEPTH.MODAL + 1 }));
-    g.add(txt(this, W / 2, y + 52, lines.join('\n'), { size: 11, origin: [0.5, 0], align: 'center', wrap: w - 20, depth: DEPTH.MODAL + 1, lineSpacing: 3 }));
     const retry = g.add(new Button(this, x + 16, y + h - 32, 104, 24, '한 번 더!', async () => { await fadeOut(this, 200); this.scene.start('MiniGame', { animalId: this.id, type: this.type }); }, { depth: DEPTH.MODAL + 1, color: COLORS.ok }));
     if (!canRetry) retry.setEnabled(false);
     g.add(new Button(this, x + w - 120, y + h - 32, 104, 24, '돌아가기', () => this.back(), { depth: DEPTH.MODAL + 1 }));

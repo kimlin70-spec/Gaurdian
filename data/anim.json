@@ -1,0 +1,503 @@
+{
+ "_comment": "그림 묶음에서 자동으로 만든 파일 (tools/build_assets.py). 직접 고치지 마세요.",
+ "sheets": {
+  "rabbit_anim": [
+   64,
+   64
+  ],
+  "squirrel_anim": [
+   64,
+   64
+  ],
+  "boar_anim": [
+   64,
+   64
+  ],
+  "deer_anim": [
+   64,
+   64
+  ],
+  "fox_anim": [
+   64,
+   64
+  ],
+  "penguin_anim": [
+   64,
+   64
+  ],
+  "owl_anim": [
+   64,
+   64
+  ],
+  "reindeer_anim": [
+   64,
+   64
+  ],
+  "guide_anim": [
+   64,
+   64
+  ],
+  "bird_anim": [
+   64,
+   64
+  ],
+  "tree_face_anim": [
+   64,
+   64
+  ],
+  "mushroom_anim": [
+   64,
+   64
+  ],
+  "vine_anim": [
+   64,
+   64
+  ],
+  "snowman_anim": [
+   64,
+   64
+  ],
+  "frost_vine_anim": [
+   64,
+   64
+  ],
+  "bear_anim": [
+   96,
+   96
+  ],
+  "wolf_anim": [
+   96,
+   96
+  ],
+  "player_body_anim": [
+   96,
+   128
+  ],
+  "player_clothes_anim": [
+   96,
+   128
+  ],
+  "tiles_water_anim": [
+   64,
+   64
+  ],
+  "tiles_ice_anim": [
+   64,
+   64
+  ],
+  "fx_hit_anim": [
+   64,
+   64
+  ],
+  "fx_heal_anim": [
+   64,
+   64
+  ],
+  "fx_purify_anim": [
+   128,
+   128
+  ],
+  "fx_star_anim": [
+   64,
+   64
+  ],
+  "rabbit_side_anim": [
+   64,
+   64
+  ],
+  "mushroom_side_anim": [
+   64,
+   64
+  ],
+  "player_body_side_anim": [
+   96,
+   128
+  ],
+  "player_clothes_side_anim": [
+   96,
+   128
+  ],
+  "milkku_clean_anim": [
+   64,
+   64
+  ],
+  "milkku_anim": [
+   64,
+   64
+  ]
+ },
+ "hero": {
+  "frame": [
+   48,
+   64
+  ],
+  "hairOffset": [
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    -2
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    -2
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    -2
+   ]
+  ],
+  "hand": [
+   [
+    37,
+    41
+   ],
+   [
+    37,
+    42
+   ],
+   [
+    37,
+    42
+   ],
+   [
+    37,
+    39
+   ],
+   [
+    37,
+    40
+   ],
+   [
+    37,
+    39
+   ],
+   [
+    40,
+    37
+   ],
+   [
+    39,
+    43
+   ],
+   [
+    36,
+    41
+   ],
+   [
+    40,
+    29
+   ]
+  ],
+  "angle": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   -35,
+   70,
+   -10,
+   0
+  ],
+  "grip": {
+   "w_stick": [
+    37,
+    41
+   ],
+   "w_wood_sword": [
+    37,
+    41
+   ],
+   "w_light_sword": [
+    37,
+    41
+   ],
+   "w_frost_sword": [
+    37,
+    41
+   ],
+   "w_flame_sword": [
+    37,
+    41
+   ],
+   "w_star_staff": [
+    37,
+    41
+   ]
+  },
+  "seq": {
+   "idle": [
+    0,
+    1
+   ],
+   "walk": [
+    2,
+    3,
+    4,
+    5
+   ]
+  },
+  "poses": {
+   "attack_ready": 6,
+   "attack": 7,
+   "attack_end": 7,
+   "hurt": 8,
+   "knockback": 8,
+   "guard": 0,
+   "down": 8,
+   "happy": 9
+  }
+ },
+ "unitSide": {
+  "seq": {
+   "idle": [
+    0,
+    1
+   ],
+   "move": [
+    2,
+    3,
+    4,
+    5
+   ]
+  },
+  "poses": {
+   "attack_ready": 6,
+   "attack": 7,
+   "attack_end": 8,
+   "hurt": 9,
+   "knockback": 10,
+   "guard": 11,
+   "down": 12,
+   "happy": 13
+  }
+ },
+ "hit": {
+  "rabbit": [
+   30,
+   22
+  ],
+  "mushroom": [
+   30,
+   13
+  ],
+  "player": [
+   61,
+   30
+  ]
+ },
+ "heroSide": {
+  "frame": [
+   48,
+   64
+  ],
+  "hairOffset": [
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    -1
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    -1
+   ],
+   [
+    -1,
+    0
+   ],
+   [
+    2,
+    0
+   ],
+   [
+    2,
+    1
+   ],
+   [
+    -1,
+    1
+   ],
+   [
+    -2,
+    0
+   ],
+   [
+    0,
+    2
+   ],
+   [
+    -1,
+    9
+   ],
+   [
+    0,
+    -2
+   ]
+  ],
+  "hand": [
+   [
+    37,
+    39
+   ],
+   [
+    37,
+    39
+   ],
+   [
+    36,
+    40
+   ],
+   [
+    36,
+    38
+   ],
+   [
+    38,
+    38
+   ],
+   [
+    37,
+    38
+   ],
+   [
+    36,
+    29
+   ],
+   [
+    41,
+    35
+   ],
+   [
+    40,
+    41
+   ],
+   [
+    35,
+    40
+   ],
+   [
+    33,
+    38
+   ],
+   [
+    35,
+    34
+   ],
+   [
+    35,
+    51
+   ],
+   [
+    38,
+    25
+   ]
+  ],
+  "angle": [
+   0,
+   0,
+   -10,
+   0,
+   10,
+   0,
+   20,
+   75,
+   110,
+   -15,
+   -25,
+   -10,
+   100,
+   10
+  ],
+  "grip": {
+   "w_stick": [
+    37,
+    41
+   ],
+   "w_wood_sword": [
+    37,
+    41
+   ],
+   "w_light_sword": [
+    37,
+    41
+   ],
+   "w_frost_sword": [
+    37,
+    41
+   ],
+   "w_flame_sword": [
+    37,
+    41
+   ],
+   "w_star_staff": [
+    37,
+    41
+   ]
+  },
+  "seq": {
+   "idle": [
+    0,
+    1
+   ],
+   "walk": [
+    2,
+    3,
+    4,
+    5
+   ]
+  },
+  "poses": {
+   "attack_ready": 6,
+   "attack": 7,
+   "attack_end": 8,
+   "hurt": 9,
+   "knockback": 10,
+   "guard": 11,
+   "down": 12,
+   "happy": 13
+  }
+ }
+}

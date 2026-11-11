@@ -47,6 +47,8 @@ const GameState = {
     // 예전 저장: 이미 정화한 무리를 보스 문 게이지에 반영
     for (const [sid, keys] of Object.entries(s.flags.defeated)) { s.flags.gate[sid] = s.flags.gate[sid] || {}; for (const k of Object.keys(keys)) s.flags.gate[sid][k] = true; }
     s.home = s.home || { placed: [], yard: [], owned: {} }; s.home.yard = s.home.yard || [];
+    // 밀꾸: 이미 침대를 놓아 둔 저장이면 지금부터 숲에 한 번 다녀오면 나타난다
+    if (!s.flags.milkkuBedDay && s.home.placed.some(p => p.id === 'bed')) s.flags.milkkuBedDay = s.day;
     for (const id of Object.keys(s.animals)) this.fixAnimal(s.animals[id]);
     return true;
   },
@@ -106,11 +108,12 @@ const GameState = {
     };
   },
   makeAnimalUnit(id) {
-    const a = Data.animal(id), rec = this.s.animals[id], st = this.animalStats(id);
+    const a = Data.animal(id), rec = this.s.animals[id], st = this.animalStats(id), tr = this.traits(id);
     if (rec.friend >= 80) st.atk = Math.round(st.atk * 1.1) + 1; // 하트 4개 이상이면 힘이 나요
+    if (tr.cleanBonus && this.isClean(id)) { st.atk = Math.round(st.atk * (1 + tr.cleanBonus)); st.spd += 1; } // 밀크: 깨끗하면 신나요
     return {
-      uid: 'animal_' + id, kind: 'animal', side: 'ally', ownerId: id, animalId: id, name: a.name,
-      sprite: a.sprite, role: a.role, stats: st, maxHp: st.hp, maxMp: st.mp,
+      uid: 'animal_' + id, kind: 'animal', side: 'ally', ownerId: id, animalId: id, name: this.animalName(id),
+      sprite: this.animalSprite(id), role: a.role, stats: st, maxHp: st.hp, maxMp: st.mp,
       hp: Math.min(rec.hp, st.hp), mp: Math.min(rec.mp, st.mp),
       skills: a.skills.slice(), auto: !!this.s.auto[id], friend: rec.friend,
     };
@@ -146,12 +149,31 @@ const GameState = {
       const a = this.animalStats(id); this.s.animals[id].hp = a.hp; this.s.animals[id].mp = a.mp;
     }
   },
-  rescueAnimal(id) {
+  // opts: level(처음 레벨), friend(처음 친구 레벨), dirt(처음 더러움)
+  rescueAnimal(id, opts = {}) {
     if (this.s.animals[id]) return false; // 이미 친구
-    const st = this.animalStats(id);
-    this.s.animals[id] = { level: 1, exp: 0, hp: st.hp, mp: st.mp, friend: 60, dirt: 0, sick: false, sulk: false, lastPlayDay: 0 };
+    const a = Data.animal(id), level = Math.max(1, opts.level || 1), st = this.statsFor(a.base, a.growth, level);
+    this.s.animals[id] = { level, exp: 0, hp: st.hp, mp: st.mp, friend: opts.friend ?? 60, dirt: opts.dirt ?? 0, sick: false, sulk: false, lastPlayDay: 0 };
     if (this.s.party.length < 3) this.s.party.push(id);
     return true;
+  },
+  // ---------- 동물별 특징 (밀꾸) ----------
+  traits(id) { const a = Data.animal(id); return (a && a.traits) || {}; },
+  // 깨끗한 그림이 따로 있는 동물(밀꾸)만: 덜 더러우면 '깨끗'
+  isClean(id) {
+    const a = Data.animal(id), r = this.s.animals[id];
+    return !!(a && a.cleanSprite && r && r.dirt < (this.traits(id).cleanBelow || 2));
+  },
+  animalSprite(id) { const a = Data.animal(id); return this.isClean(id) ? a.cleanSprite : a.sprite; },
+  animalName(id) { const a = Data.animal(id); return this.isClean(id) && a.cleanName ? a.cleanName : a.name; },
+  // ---------- 밀꾸 (집 침대 밑에 숨은 친구) ----------
+  hasBed() { return this.s.home.placed.some(p => p.id === 'bed'); },
+  // 침대를 놓고 숲에 한 번 다녀오면 침대 밑에 숨어 있다
+  milkkuHiding() { const f = this.s.flags; return !this.s.animals.milkku && !!f.milkkuBedDay && this.s.day > f.milkkuBedDay && this.hasBed(); },
+  noteBedPlaced() { if (!this.s.flags.milkkuBedDay) this.s.flags.milkkuBedDay = this.s.day; },
+  findMilkku() {
+    // 숨어 있다 만난 친구라 그레이스보다 한 레벨 아래에서 시작, 처음부터 꾸질꾸질
+    return this.rescueAnimal('milkku', { level: this.s.player.level - 1, friend: 80, dirt: 6 });
   },
   fixAnimal(rec) { // 예전 저장 파일 호환
     if (rec.friend === undefined) rec.friend = 60;
@@ -167,7 +189,7 @@ const GameState = {
     const r = this.s.animals[id];
     if (r.sick) return { text: '아픔', color: '#ff8080' };
     if (r.sulk) return { text: '삐짐', color: '#c0a0ff' };
-    if (r.dirt >= 5) return { text: '더러움', color: '#d9b57a' };
+    if (r.dirt >= 5) return { text: this.traits(id).dirtyText || '더러움', color: '#d9b57a' };
     return { text: '좋아요', color: '#7ee081' };
   },
   addFriend(id, n) {
@@ -185,7 +207,7 @@ const GameState = {
     r.best = r.best || {}; r.best[type] = Math.max(r.best[type] || 0, score);
     if (!this.canPlay(id)) return { reward: 0, event: null, free: true };
     r.lastPlayDay = this.s.day;
-    const reward = [8, 15, 22][grade];
+    const reward = Math.round([8, 15, 22][grade] * (this.traits(id).playBonus || 1)); // 밀꾸는 노는 걸 제일 좋아해요
     return { reward, event: this.addFriend(id, reward), free: false };
   },
   // 샤워 결과. grade: 0(실패: 절반만 깨끗, 하트 -5) 1(성공: 깨끗) 2(완벽: 깨끗 + 하트 +5)
@@ -211,10 +233,12 @@ const GameState = {
     const msgs = [];
     for (const u of units) {
       if (u.kind !== 'animal') continue;
-      const r = this.s.animals[u.animalId], name = u.name; if (!r) continue;
-      r.dirt += 1;
-      if (r.dirt === 5) msgs.push(Data.fmt(Data.dialogues.care.dirty).replace(/\{name\}/g, name));
-      if (r.dirt >= 8 && !r.sick) { r.sick = true; this.leaveParty(u.animalId); msgs.push(Data.fmt(Data.dialogues.care.sick).replace(/\{name\}/g, name)); }
+      const r = this.s.animals[u.animalId], name = u.name, tr = this.traits(u.animalId); if (!r) continue;
+      const before = r.dirt, wasClean = this.isClean(u.animalId);
+      r.dirt = Math.min(10, r.dirt + (tr.dirtRate || 1));
+      if (wasClean && !this.isClean(u.animalId) && tr.dirtyAgain) msgs.push(Data.fmt(tr.dirtyAgain));
+      else if (before < 5 && r.dirt >= 5) msgs.push(Data.fmt(Data.dialogues.care.dirty).replace(/\{name\}/g, name));
+      if (r.dirt >= 8 && !r.sick && !tr.noCold) { r.sick = true; this.leaveParty(u.animalId); msgs.push(Data.fmt(Data.dialogues.care.sick).replace(/\{name\}/g, name)); }
       if (u.hp <= 0) { const res = this.addFriend(u.animalId, -10); if (res === 'sulk') msgs.push(Data.fmt(Data.dialogues.care.sulk).replace(/\{name\}/g, name)); }
     }
     return msgs;

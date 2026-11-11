@@ -2,17 +2,23 @@
 
 - 이 폴더의 PNG 가 게임에 쓰이는 실제 그림입니다 (`data/assets.json` 의 overrides 로 연결).
 - 모든 그림은 **논리 크기의 4배**입니다 (PX=4). 타일 한 칸 64×64, 동물 64×64, 보스 96×96, 주인공 96×128, 나무 64×96, 건물 160×144, 전투 배경 1280×960.
-- 그림 묶음(zip)의 `high_resolution_4x` 폴더를 절반으로 줄여 만든 것입니다. 새 묶음을 받으면:
+- 그림 묶음(zip)의 `high_resolution_4x` 폴더를 절반으로 줄여 만든 것입니다. 새 묶음을 받으면 zip 을 푼 폴더를 넣어 실행합니다 (Pillow 필요):
 
 ```bash
-python3 tools/build_assets.py <묶음>/high_resolution_4x <묶음>/animation_data.json .
+python3 tools/build_assets.py <푼 묶음 폴더>
 ```
 
-  이 명령이 `assets/` 를 다시 만들고 `data/assets.json`, `data/heroanim.json` 을 갱신합니다 (Pillow 필요).
+  여러 묶음을 한 번에 넣어도 되고, 같은 이름의 그림은 새 것으로 바뀝니다. `--reset` 을 붙이면 `assets/*.png` 를 지우고 다시 만듭니다.
+  이 명령이 `data/assets.json` (그림 목록)과 `data/anim.json` (프레임 크기, 주인공 머리·손·무기 좌표)을 갱신합니다.
+  묶음 안의 `animation_data*.json` 을 읽어 시트의 프레임 크기를 알아내고, 없으면 같은 이름의 정지 그림 폭을 한 프레임으로 봅니다.
 
 ## 애니메이션 시트 (`*_anim.png`)
-- 동물·적·보스: 6프레임 가로 한 줄 = 서기A, 서기B, 움직이기A, 움직이기B, 공격, 아파함
-- 주인공 `player_body_anim`, `player_clothes_anim`: 10프레임 = 서기 2, 걷기 4, 공격 2, 아파함, 기뻐함. 머리카락과 무기는 정지 그림을 `data/heroanim.json` 의 수치로 옮겨 붙입니다.
+- 동물·적·보스 정면 `x_anim`: 6프레임 = 서기A, 서기B, 움직이기A, 움직이기B, 공격, 아파함
+- 옆모습 `x_side_anim` (오른쪽 보기, 왼쪽은 게임이 뒤집음): 14프레임 = 서기 2, 걷기 4, 공격 준비, 공격, 마무리, 맞음, 밀려남, 방어, 주저앉음, 기뻐함.
+  지금은 시범으로 `rabbit`, `mushroom`, 주인공만 있습니다. 옆모습이 없는 캐릭터는 정면 그림을 그대로 씁니다.
+- 주인공 `player_body_anim`·`player_clothes_anim` (정면 10프레임), `player_body_side_anim`·`player_clothes_side_anim` (옆모습 14프레임).
+  머리카락(`hair_N`, `hair_N_side`)과 무기는 정지 그림을 `data/anim.json` 의 수치로 옮겨 붙이고 돌립니다.
+- 밀꾸: `milkku`(꾀죄죄) / `milkku_clean`(깨끗) 정지·6프레임, `milkku_hide`(침대 밑 꼬리)
 - `tiles_water_anim`, `tiles_ice_anim`: 물/얼음 타일 위에 덮여 반복 재생
 - `fx_hit_anim`, `fx_heal_anim`, `fx_purify_anim`, `fx_star_anim`: 전투 효과 (한 번 재생)
 - 시트가 없는 캐릭터는 정지 그림 한 장으로 표시됩니다.

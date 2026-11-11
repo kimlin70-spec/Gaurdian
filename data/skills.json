@@ -297,5 +297,31 @@
     "mp": 3,
     "desc": "뿔로 밀어요",
     "fx": "hit"
+  },
+  "tail_wag": {
+    "name": "꼬리 흔들기",
+    "type": "damage",
+    "target": "enemy",
+    "mult": [
+      1.4,
+      1.7,
+      2.0
+    ],
+    "mp": 2,
+    "desc": "꼬리로 살랑살랑 톡!",
+    "fx": "hit"
+  },
+  "woof_cheer": {
+    "name": "멍멍 응원",
+    "type": "heal_all",
+    "target": "ally",
+    "power": [
+      10,
+      16,
+      24
+    ],
+    "mp": 5,
+    "desc": "멍멍! 모두 힘이 나요",
+    "fx": "heal"
   }
 }

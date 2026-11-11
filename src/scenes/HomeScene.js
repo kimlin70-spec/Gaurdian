@@ -4,7 +4,7 @@ import Data from '../systems/Data.js';
 import GameState from '../systems/GameState.js';
 import Audio from '../systems/Audio.js';
 import { txt, Button, panel, UIGroup, DialogBox, toast, fadeIn, fadeOut, DEPTH, setupCamera } from '../systems/UI.js';
-import { makeCharacter, img, unit, setPose } from '../systems/Assets.js';
+import { makeCharacter, img, unit, setPose, face, fx } from '../systems/Assets.js';
 
 const COLS = 14, ROWS = 8;           // 방/마당 크기 (칸)
 const OX = (W - COLS * TILE) / 2, OY = 30;
@@ -20,6 +20,7 @@ export default class HomeScene extends Phaser.Scene {
     Audio.playBgm('village');
     const s = GameState.s;
     this.selected = null; this.busy = false; this.pg = null; this.lg = null;
+    this.milkkuObjs = []; this.milkkuOut = false; this.milkkuTimer = null;
     this.area = this.p.area || 'indoor';
     this.bg = new UIGroup(); this.placedSprites = []; this.animalSprites = [];
     this.add.rectangle(W / 2, H / 2, W, H, 0x2a2238);
@@ -87,9 +88,11 @@ export default class HomeScene extends Phaser.Scene {
     GameState.s.party.slice(0, 3).forEach((id, i) => {
       const a = Data.animal(id); if (!a) return;
       const [gx, gy] = spots[i], x = OX + gx * TILE + 8, y = OY + (gy + 1) * TILE;
-      const sp = unit(this, x, y, a.sprite).setOrigin(0.5, 1).setDepth(wd(y)); setPose(sp, 'move');
+      const sp = unit(this, x, y, GameState.animalSprite(id)).setOrigin(0.5, 1).setDepth(wd(y)); setPose(sp, 'move');
+      const dx = (Phaser.Math.Between(6, 12)) * (i % 2 ? -1 : 1); face(sp, dx, 0);
       this.tweens.add({ targets: sp, y: y - 6, duration: Phaser.Math.Between(400, 700), yoyo: true, repeat: -1, ease: 'Sine.easeInOut', delay: i * 200 });
-      this.tweens.add({ targets: sp, x: x + Phaser.Math.Between(-12, 12), duration: Phaser.Math.Between(1500, 2500), yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+      this.tweens.add({ targets: sp, x: x + dx, duration: Phaser.Math.Between(1500, 2500), yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+        onYoyo: () => face(sp, -dx, 0), onRepeat: () => face(sp, dx, 0) });
       this.animalSprites.push(sp);
     });
   }
@@ -110,6 +113,7 @@ export default class HomeScene extends Phaser.Scene {
       im.on('pointerup', (pointer) => { if (this.busy || pointer.getDistance() > 10 * PX) return; this.pickUp(pl); });
       this.placedSprites.push(im);
     }
+    this.renderMilkku();
   }
   occupied(gx, gy) {
     for (const pl of this.list()) {
@@ -128,16 +132,99 @@ export default class HomeScene extends Phaser.Scene {
     s.home.owned[this.selected] -= 1; if (s.home.owned[this.selected] <= 0) delete s.home.owned[this.selected];
     this.list().push({ id: this.selected, x: gx, y: gy });
     Audio.sfx('chest');
+    if (this.selected === 'bed' && this.area === 'indoor') { GameState.noteBedPlaced(); this.milkkuOut = false; }
     if (!s.home.owned[this.selected]) this.selected = null;
     this.renderPlaced(); this.setHint(); GameState.save();
   }
   pickUp(pl) {
     const s = GameState.s;
+    const under = pl.id === 'bed' && this.area === 'indoor' && this.milkkuUnderBed();
+    const found = !!s.animals.milkku;
     if (this.area === 'yard') s.home.yard = s.home.yard.filter(p => p !== pl); else s.home.placed = s.home.placed.filter(p => p !== pl);
     GameState.addFurniture(pl.id);
     Audio.sfx('tap');
     this.selected = pl.id;
+    if (under) this.milkkuOut = true;
     this.renderPlaced(); this.setHint(); GameState.save();
+    if (under) this.milkkuPopOut(pl, !found);
+  }
+
+  // ---------- 밀꾸 (침대 밑에 숨은 강아지) ----------
+  // 꼬리만 보이는 때: 아직 못 만났는데 숨어 있음 / 친구인데 함께 다니지 않을 때는 침대 밑에서 낮잠
+  milkkuUnderBed() {
+    const s = GameState.s;
+    if (!GameState.hasBed() || this.milkkuOut) return false;
+    if (!s.animals.milkku) return GameState.milkkuHiding();
+    return !s.party.includes('milkku');
+  }
+  clearMilkku() {
+    this.milkkuObjs.forEach(o => { this.tweens.killTweensOf(o); o.destroy(); }); this.milkkuObjs = [];
+    if (this.milkkuTimer) { this.milkkuTimer.remove(false); this.milkkuTimer = null; }
+  }
+  renderMilkku() {
+    this.clearMilkku();
+    if (this.area !== 'indoor') return;
+    const s = GameState.s, found = !!s.animals.milkku;
+    const bed = s.home.placed.find(p => p.id === 'bed');
+    if (bed && this.milkkuUnderBed()) {
+      // 침대 아래로 삐져나온 엉덩이와 꼬리. 살랑살랑.
+      const f = Data.furniture.bed, bx = OX + bed.x * TILE + f.w * TILE * 0.66, by = OY + (bed.y + f.h) * TILE + 3;
+      const tail = img(this, bx, by, 'milkku_hide').setOrigin(0.5, 1).setDepth(wd(by) + 0.0002);
+      tail.setInteractive({ useHandCursor: true });
+      tail.on('pointerup', (pointer) => { if (this.busy || pointer.getDistance() > 10 * PX) return; this.pickUp(bed); });
+      this.tweens.add({ targets: tail, angle: { from: -7, to: 7 }, duration: found ? 900 : 280, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+      this.milkkuObjs.push(tail);
+      const say = txt(this, bx + 6, by - 14, found ? Data.dialogues.milkku.nap : Data.dialogues.milkku.sniff, { size: 11, origin: 0.5, color: '#fff4d6', depth: DEPTH.WORLD_UI }).setAlpha(0);
+      this.tweens.add({ targets: say, alpha: 1, y: say.y - 3, duration: 600, yoyo: true, hold: 900, repeat: -1, repeatDelay: 1800 });
+      this.milkkuObjs.push(say);
+      return;
+    }
+    // 침대 밖으로 나온 밀꾸(방금 들춘 침대 밑, 또는 침대가 없을 때): 방 안을 총총 돌아다님
+    if (this.milkkuOut || (found && !s.party.includes('milkku') && !bed)) {
+      const x0 = OX + 7 * TILE, y0 = OY + 5 * TILE;
+      const dog = unit(this, x0, y0, GameState.animalSprite('milkku')).setOrigin(0.5, 1).setDepth(wd(y0));
+      dog.setInteractive({ useHandCursor: true });
+      dog.on('pointerup', () => this.milkkuBark(dog));
+      this.milkkuObjs.push(dog);
+      const roam = () => {
+        if (!dog.active || this.busy) return;
+        const tx = OX + Phaser.Math.Between(1, COLS - 2) * TILE + 8, ty = OY + Phaser.Math.Between(2, ROWS - 1) * TILE;
+        face(dog, tx - dog.x, ty - dog.y); setPose(dog, 'move');
+        this.tweens.add({ targets: dog, x: tx, y: ty, duration: Phaser.Math.Distance.Between(dog.x, dog.y, tx, ty) * 22, ease: 'Linear',
+          onUpdate: () => dog.setDepth(wd(dog.y)), onComplete: () => { if (dog.active) setPose(dog, 'idle'); } });
+      };
+      this.milkkuTimer = this.time.addEvent({ delay: 2600, loop: true, callback: roam });
+    }
+  }
+  milkkuBark(dog) {
+    if (!dog.active) return;
+    Audio.sfx('tap');
+    const t = txt(this, dog.x, dog.y - 20, Data.dialogues.milkku.bark, { size: 11, origin: 0.5, color: '#ffffff', depth: DEPTH.WORLD_UI });
+    this.tweens.add({ targets: t, y: t.y - 10, alpha: 0, duration: 700, onComplete: () => t.destroy() });
+    this.tweens.add({ targets: dog, y: dog.y - 6, duration: 110, yoyo: true });
+  }
+  // 침대를 들었더니 밀꾸가! 처음이면 친구가 되고, 이미 친구면 낮잠 자다 깬다.
+  async milkkuPopOut(bed, first) {
+    const dog = this.milkkuObjs.find(o => o.animKey);
+    if (!dog) return;
+    const f = Data.furniture.bed, cx = OX + (bed.x + f.w / 2) * TILE, cy = OY + (bed.y + f.h) * TILE - 2;
+    dog.setPosition(cx, cy).setDepth(wd(cy));
+    this.busy = true;
+    Audio.sfx('star');
+    this.milkkuBark(dog);
+    await new Promise(r => this.tweens.add({ targets: dog, y: cy - 10, duration: 140, yoyo: true, repeat: 1, onComplete: r }));
+    if (first) {
+      await this.dialog.show(Data.dialogues.milkku.found.map(l => Data.fmt(l)));
+      GameState.findMilkku(); GameState.save();
+      fx(this, 'fx_heal_anim', dog.x, dog.y - 8, 1.6, wd(dog.y) + 0.001);
+      Audio.sfx('levelup');
+      setPose(dog, 'happy');
+      await this.dialog.show([Data.fmt(Data.dialogues.milkku.foundTip)]);
+      setPose(dog, 'idle');
+    } else {
+      await this.dialog.show([Data.fmt(Data.dialogues.milkku.popOut)]);
+    }
+    this.busy = false;
   }
 
   // ---------- 패널 ----------
@@ -215,6 +302,7 @@ export default class HomeScene extends Phaser.Scene {
   }
   async leave() {
     if (this.busy) return; this.busy = true;
+    this.clearMilkku();
     GameState.save();
     await fadeOut(this, 250);
     this.scene.start('Village', {});
