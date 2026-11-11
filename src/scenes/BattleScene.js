@@ -193,15 +193,17 @@ export default class BattleScene extends Phaser.Scene {
     if (!rows.length) this.cmd.add(txt(this, 216, PANEL_Y + 18, '아이템이 없어요', { size: 11, origin: 0.5 }));
     this.showChoiceList(rows, () => this.showMainMenu(u));
   }
-  // 2열 × 2행 선택 버튼 + 뒤로
-  showChoiceList(rows, onBack) {
-    const bx = 120, by = PANEL_Y + 2, bw = 96, bh = 24, gap = 4;
-    rows.slice(0, 4).forEach((r, i) => {
-      const col = i % 2, row = Math.floor(i / 2), x = bx + col * (bw + gap), y = by + row * (bh + gap);
+  // 2열 × 2행 자리: 선택 버튼 3칸 + (넷째 칸) 다음 쪽 버튼과 '뒤로'
+  showChoiceList(rows, onBack, page = 0) {
+    const bx = 120, by = PANEL_Y + 2, bh = 24, gap = 4, per = 3;
+    const pages = Math.max(1, Math.ceil(rows.length / per)); page = page % pages;
+    rows.slice(page * per, page * per + per).forEach((r, i) => {
+      const bw = 96, col = i % 2, row = Math.floor(i / 2), x = bx + col * (bw + gap), y = by + row * (bh + gap);
       const b = this.cmd.add(new Button(this, x, y, bw, bh, r.label, r.onTap, { size: 11 }));
       if (r.sub) { b.label.setOrigin(0, 0.5).setPosition(x + 4, y + bh / 2); this.cmd.add(txt(this, x + bw - 3, y + bh / 2, r.sub, { size: 11, origin: [1, 0.5], color: '#9ecbff', strokeThickness: 1, depth: DEPTH.UI + 2 })); }
       if (r.enabled === false) b.setEnabled(false);
     });
+    if (pages > 1) this.cmd.add(new Button(this, 220, PANEL_Y + 30, 56, 24, `다음 ${page + 1}/${pages}`, () => { this.clearCmd(); this.showChoiceList(rows, onBack, page + 1); }, { size: 11, color: 0x3d6a9a }));
     this.cmd.add(new Button(this, W - 40, PANEL_Y + 30, 36, 24, '뒤로', onBack, { color: 0x555577 }));
   }
   pickTarget(u, cmd, side, filter, allowDead = false) {
@@ -365,8 +367,13 @@ export default class BattleScene extends Phaser.Scene {
   }
   // 남은 밀림·폴짝을 멈추고 제자리에 세운다 (새 행동을 시작할 때)
   settle(u) {
+    const hadKb = !!u.kb;
     for (const k of ['kb', 'bounceTw']) if (u[k]) { u[k].stop(); u[k] = null; }
-    if (u.obj && u.obj.active && u.alive !== false) u.obj.setPosition(u.x, u.y);
+    if (u.obj && u.obj.active && u.alive !== false) {
+      u.obj.setPosition(u.x, u.y);
+      // 밀림을 중간에 끊었으면 그 끝에서 하던 일(서 있는 자세로)도 대신 한다
+      if (hadKb && u.hp > 0 && REACT_POSES.has(u.obj.curPose)) setPose(u.obj, u.defending ? 'guard' : 'idle');
+    }
   }
   // 방어하는 동안 남는 옅은 방패 빛
   raiseShield(u) {

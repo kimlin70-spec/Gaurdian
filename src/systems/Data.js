@@ -46,8 +46,9 @@ export default Data;
 function mergeTweaks(anim, tweaks) {
   const out = { ...anim };
   for (const [sec, tv] of Object.entries(tweaks || {})) {
-    const base = out[sec];
-    if (!base || typeof base !== 'object' || Array.isArray(base) || typeof tv !== 'object' || Array.isArray(tv)) { out[sec] = tv; continue; }
+    const base = out[sec], isObj = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
+    if (!isObj(tv)) { out[sec] = tv; continue; } // 목록·값(facesLeft 등)은 통째로
+    if (!isObj(base)) continue; // 자동 파일에 그 부분이 없으면 손질 값만으로 만들지 않는다 (반쪽짜리 데이터 방지)
     const merged = { ...base };
     for (const [field, val] of Object.entries(tv)) {
       const cur = base[field];
