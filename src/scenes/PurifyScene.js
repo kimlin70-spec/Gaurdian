@@ -63,6 +63,6 @@ export default class PurifyScene extends Phaser.Scene {
     await fadeOut(this, 500);
     const st = Data.stage(this.p.stageId);
     if (st.final) this.scene.start('StoryIntro', { key: 'ending' });
-    else this.scene.start('Village', { cleared: this.p.stageId });
+    else this.scene.start('Village', { cleared: this.p.stageId, at: 'gate' });
   }
 }

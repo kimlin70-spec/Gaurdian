@@ -1,99 +1,187 @@
-// 마을: 여관 / 상점 / 대장간 / 현자의 집 / 동물 쉼터 / 숲 입구
-import { W, H, COLORS, TILE, wd, PX } from '../config.js';
+// 마을: 숲처럼 걸어 다니는 큰 지도. 여관 / 상점 / 대장간 / 현자의 집 / 동물 쉼터 / 우리 집 / 숲 입구
+import { W, H, COLORS, TILE, SOLID_TILES, wd, PX } from '../config.js';
 import Data from '../systems/Data.js';
 import GameState from '../systems/GameState.js';
 import Audio from '../systems/Audio.js';
 import { txt, Button, panel, UIGroup, DialogBox, confirm, toast, soundButton, fadeIn, fadeOut, tween, DEPTH, setupCamera } from '../systems/UI.js';
 import { makeCharacter, buildTilemap, img, unit, setPose, face, retexture } from '../systems/Assets.js';
 
+// 마을 지도: 40 x 28 칸. 건물은 가로 3칸 x 세로 2칸을 차지하고, 문은 바로 아래 칸.
+const GW = 40, GH = 28;
 const BUILDINGS = [
-  { key: 'inn',     name: '여관',      x: 44,  y: 84 },
-  { key: 'shop',    name: '상점',      x: 118, y: 84 },
-  { key: 'smithy',  name: '대장간',    x: 192, y: 84 },
-  { key: 'sage',    name: '현자의 집', x: 266, y: 84 },
-  { key: 'shelter', name: '동물 쉼터', x: 70,  y: 178 },
-  { key: 'home',    name: '우리 집',   x: 160, y: 178 },
-  { key: 'gate',    name: '숲 입구',   x: 262, y: 178 },
+  { key: 'inn',     name: '여관',      bx: 8,  by: 4 },
+  { key: 'shop',    name: '상점',      bx: 15, by: 4 },
+  { key: 'smithy',  name: '대장간',    bx: 25, by: 4 },
+  { key: 'sage',    name: '현자의 집', bx: 33, by: 4 },
+  { key: 'shelter', name: '동물 쉼터', bx: 8,  by: 18 },
+  { key: 'home',    name: '우리 집',   bx: 26, by: 18 },
+  { key: 'gate',    name: '숲 입구',   bx: 36, by: 12 },
 ];
+// 꾸밈 (가구 그림 재사용): [그림, 칸 x, 칸 y, 가로 칸, 세로 칸]
+const DECOR = [
+  ['f_bench', 10, 12, 2, 1], ['f_bench', 3, 12, 2, 1], ['f_swing', 31, 22, 2, 2], ['f_flowerbed', 22, 18, 2, 1], ['f_flowerbed', 29, 18, 2, 1],
+  ['f_birdhouse', 15, 22, 1, 2], ['f_tree_small', 34, 17, 2, 2], ['f_bench', 18, 10, 2, 1], ['f_flowerbed', 21, 10, 2, 1], ['f_pond', 34, 22, 2, 1],
+];
+const CHESTS = [{ x: 3, y: 3, item: 'potion_s', count: 2 }, { x: 37, y: 25, item: 'snack', count: 2 }, { x: 2, y: 25, item: 'berry', count: 1 }];
+const SPAWN = { x: 20, y: 13 };
+const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 
-const VILLAGE_ROWS = [
-  '....................',
-  '.T......T.......T...',
-  '....................',
-  '....................',
-  '..ppppppppppppppp...',
-  '..p....p....p...p...',
-  '..p....p....p...p...',
-  '..ppppppppppppppp...',
-  '.....*..p......*....',
-  '........p...........',
-  '..pppppppppppppppp..',
-  '..p..............p..',
-  '..p..*........*..p..',
-  '.T.......T..........',
-  '....................',
-];
+// 지도 만들기 (타일 번호는 config.js 의 TILE_LEGEND 와 같음: 0 풀, 1 나무, 3 물, 4 꽃, 8 돌바닥, 10 덤불, 11 흙길)
+function makeGrid() {
+  const g = Array.from({ length: GH }, () => Array(GW).fill(0));
+  const set = (x0, y0, x1, y1, t) => { for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) g[y][x] = t; };
+  // 풀밭에 꽃·나무·덤불 뿌리기 (항상 같은 모양이 되게 정해진 난수)
+  let seed = 20261114; const rnd = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
+  for (let y = 1; y < GH - 1; y++) for (let x = 1; x < GW - 1; x++) {
+    const r = rnd(), pasture = y >= 22 && y <= 25 && x >= 3 && x <= 14;
+    if (r < 0.08) g[y][x] = 4; else if (!pasture && r < 0.13) g[y][x] = 1; else if (!pasture && r < 0.15) g[y][x] = 10;
+  }
+  set(0, 0, GW - 1, 0, 1); set(0, GH - 1, GW - 1, GH - 1, 1); set(0, 0, 0, GH - 1, 1); set(GW - 1, 0, GW - 1, GH - 1, 1);
+  set(5, 9, 8, 11, 3);                         // 연못
+  set(4, 12, 9, 12, 0); set(4, 8, 4, 12, 0); set(9, 8, 9, 12, 0); set(4, 8, 9, 8, 0); // 연못 둘레는 걸을 수 있게
+  set(3, 22, 14, 25, 0); for (const [x, y] of [[4, 23], [7, 24], [10, 22], [12, 25], [13, 23]]) g[y][x] = 4; // 쉼터 풀밭
+  set(3, 7, 36, 7, 11); set(20, 7, 20, 20, 11); set(4, 13, 17, 13, 11); set(12, 13, 12, 20, 11); set(5, 20, 30, 20, 11); set(23, 14, 36, 14, 11);
+  set(30, 20, 30, 24, 11); set(30, 24, 36, 24, 11); // 동쪽 꽃밭 놀이터 가는 길
+  set(17, 11, 23, 15, 8);                      // 광장
+  for (const b of BUILDINGS) {
+    set(b.bx - 1, b.by - 2, b.bx + 1, b.by, 0); // 건물 자리와 지붕 위는 비운다
+    const to = b.by < 7 ? 7 : b.key === 'gate' ? 14 : 20;
+    set(b.bx, b.by + 1, b.bx, to, 11);         // 문 앞길
+  }
+  for (const [, x, y, w, h] of DECOR) set(x, y - 1, x + w - 1, y + h - 1, 0);
+  for (const c of CHESTS) { set(c.x - 1, c.y - 1, c.x + 1, c.y + 1, 0); }
+  set(3, 3, 3, 7, 0); set(37, 24, 37, 25, 0); set(2, 20, 5, 20, 11); set(2, 20, 2, 25, 0); // 상자까지 가는 길
+  set(0, 0, GW - 1, 0, 1); set(0, GH - 1, GW - 1, GH - 1, 1); set(0, 0, 0, GH - 1, 1); set(GW - 1, 0, GW - 1, GH - 1, 1);
+  return g;
+}
 
 export default class VillageScene extends Phaser.Scene {
   constructor() { super('Village'); }
   init(data) { this.params = data || {}; }
 
   create() {
+    // 카메라 두 대: 아래는 그레이스를 따라다니는 마을 카메라, 위는 움직이지 않는 화면(UI) 카메라
     setupCamera(this);
+    const mapW = GW * TILE, mapH = GH * TILE;
+    this.wcam = this.cameras.add(0, 0);
+    this.wcam.setZoom(PX).setRoundPixels(true).setBounds(0, 0, mapW, mapH);
+    const cams = this.cameras.cameras; cams.splice(cams.indexOf(this.wcam), 1); cams.unshift(this.wcam);
+    this.worldMode = false;
+    const sort = (obj) => { (this.worldMode ? this.cameras.main : this.wcam).ignore(obj); };
+    this.events.on('addedtoscene', sort);
+    this.events.once('shutdown', () => this.events.off('addedtoscene', sort));
     fadeIn(this);
     // 씬 인스턴스가 재사용되므로 상태 초기화
     this.busy = false; this.panelGroup = null; this.listGroup = null; this.moneyText = null; this.leaving = false;
+    this.path = []; this.moving = false; this.pending = null; this.marker = null; this.dog = null; this.nextTile = null;
     Audio.playBgm('village');
     const s = GameState.s;
     GameState.setLocation({ scene: 'Village' });
     if (this.params.wokeAtInn) GameState.healAll();
     GameState.save();
 
-    // 바닥
-    const legend = { '.': 0, 'T': 1, 'p': 11, '*': 4 };
-    const grid = VILLAGE_ROWS.map(r => r.split('').map(c => legend[c] ?? 0));
-    buildTilemap(this, grid, 0, 0);
+    this.world(() => {
+      // 바닥
+      this.grid = makeGrid();
+      buildTilemap(this, this.grid, 0, 0);
+      this.blocked = new Set(); this.objects = []; this.doors = {};
+      const block = (x0, y0, w, h) => { for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) this.blocked.add(x + ',' + y); };
 
-    // 건물
-    this.buildings = {};
-    for (const b of BUILDINGS) {
-      const im = img(this, b.x, b.y, 'bld_' + b.key).setOrigin(0.5, 1).setDepth(wd(b.y));
-      im.setInteractive({ useHandCursor: true, hitArea: new Phaser.Geom.Rectangle(-6 * PX, -6 * PX, 52 * PX, 48 * PX), hitAreaCallback: Phaser.Geom.Rectangle.Contains });
-      im.on('pointerup', () => this.goTo(b));
-      const label = txt(this, b.x, b.y + 2, b.name, { size: 11, origin: [0.5, 0], depth: DEPTH.WORLD_UI });
-      this.buildings[b.key] = { ...b, img: im, label };
-    }
+      // 건물
+      this.buildings = {};
+      for (const b of BUILDINGS) {
+        const x = b.bx * TILE + TILE / 2, y = (b.by + 1) * TILE;
+        const im = img(this, x, y, 'bld_' + b.key).setOrigin(0.5, 1).setDepth(wd(y));
+        im.setInteractive({ useHandCursor: true });
+        im.on('pointerup', (pointer) => { if (!this.busy && pointer.getDistance() <= 10 * PX) this.goTo(b); });
+        const label = txt(this, x, y + 1, b.name, { size: 11, origin: [0.5, 0], depth: DEPTH.WORLD_UI });
+        this.buildings[b.key] = { ...b, x, y, img: im, label, door: [b.bx, b.by + 1] };
+        block(b.bx - 1, b.by - 1, 3, 2);
+        this.doors[b.bx + ',' + (b.by + 1)] = b.key;
+      }
+      // 꾸밈
+      for (const [key, x, y, w, h] of DECOR) {
+        if (!this.textures.exists(key)) continue;
+        const wy = (y + h) * TILE;
+        img(this, x * TILE, wy, key).setOrigin(0, 1).setDepth(wd(wy - 1));
+        block(x, y, w, h);
+      }
+      // 보물 상자
+      for (const c of CHESTS) {
+        const key = `village:${c.x},${c.y}`, wp = this.tileToWorld(c.x, c.y);
+        const obj = { ...c, type: 'chest', key, opened: !!s.flags.chests[key] };
+        obj.sprite = img(this, wp.x, wp.y, obj.opened ? 'chest_open' : 'chest').setDepth(wd(wp.y));
+        this.blocked.add(c.x + ',' + c.y); this.makeTappable(obj.sprite, () => this.approach(obj)); this.objects.push(obj);
+      }
+      // 안내 동물 반디 (광장)
+      {
+        const obj = { type: 'guide', x: 22, y: 12 }, wp = this.tileToWorld(obj.x, obj.y);
+        this.guide = obj.sprite = unit(this, wp.x, wp.y + 8, 'guide').setOrigin(0.5, 1).setDepth(wd(wp.y + 8));
+        this.tweens.add({ targets: this.guide, y: this.guide.y - 3, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+        txt(this, wp.x, wp.y + 9, Data.strings.guideAnimal, { size: 11, origin: [0.5, 0], color: COLORS.yellow, depth: DEPTH.WORLD_UI });
+        this.blocked.add(obj.x + ',' + obj.y); this.makeTappable(obj.sprite, () => this.approach(obj)); this.objects.push(obj);
+      }
+      // 쉼터 풀밭: 함께 다니지 않는 친구들이 놀고 있어요
+      this.spawnPasture();
 
-    // 주인공
-    this.hero = makeCharacter(this, 160, 150, s.player.look); this.hero.setDepth(wd(150));
-    // 밀꾸가 함께 다니면 마을에서 그레이스 뒤를 졸졸 따라온다
-    this.dog = null;
-    this.refreshDog();
-    // 안내 동물 (힌트)
-    this.guide = unit(this, 216, 214, 'guide').setOrigin(0.5, 1).setDepth(wd(196)).setInteractive({ useHandCursor: true, hitArea: new Phaser.Geom.Rectangle(-8 * PX, -8 * PX, 32 * PX, 32 * PX), hitAreaCallback: Phaser.Geom.Rectangle.Contains });
-    this.tweens.add({ targets: this.guide, y: this.guide.y - 3, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-    this.guide.on('pointerup', () => this.guideHint());
-    txt(this, 216, 216, Data.strings.guideAnimal, { size: 11, origin: [0.5, 0], color: COLORS.yellow });
+      // 주인공
+      const at = this.params.openAnimal ? 'shelter' : this.params.wokeAtInn ? 'inn' : this.params.at;
+      const start = this.buildings[at] ? this.buildings[at].door : [SPAWN.x, SPAWN.y];
+      this.tx = start[0]; this.ty = start[1];
+      const wp = this.tileToWorld(this.tx, this.ty);
+      this.hero = makeCharacter(this, wp.x, wp.y + 8, s.player.look); this.hero.setDepth(wd(this.hero.y));
+      this.wcam.startFollow(this.hero, true, 1, 1);
+      // 밀꾸가 함께 다니면 마을에서 그레이스 뒤를 졸졸 따라온다
+      this.refreshDog();
+    });
 
     // HUD
     this.hud = new UIGroup();
     this.hud.add(panel(this, 2, 2, 150, 18, { color: 0x000000, alpha: 0.55, border: false }));
     this.hudText = this.hud.add(txt(this, 6, 4, '', { size: 11 }));
+    this.tip = txt(this, W / 2, H - 14, '가고 싶은 곳을 탭하세요', { size: 11, origin: 0.5, color: '#fff4d6' });
+    this.tweens.add({ targets: this.tip, alpha: 0, delay: 3500, duration: 800 });
     soundButton(this);
     this.dialog = new DialogBox(this);
-    this.busy = false;
     this.refreshHud();
 
+    // 땅을 탭하면 그곳으로 걸어간다
+    this.input.on('pointerup', (pointer, over) => {
+      if (this.busy || this.leaving) return;
+      if (pointer.getDistance() > 10 * PX) return;
+      if (over && over.length) return;
+      const p = this.wcam.getWorldPoint(pointer.x, pointer.y);
+      this.tapTile(Math.floor(p.x / TILE), Math.floor(p.y / TILE));
+    });
+
     // 미니게임에서 돌아왔으면 쉼터 앞에 서서 그 동물 화면을 다시 연다
-    if (this.params.openAnimal && s.animals[this.params.openAnimal]) {
-      const sh = this.buildings.shelter; this.hero.setPosition(sh.x, sh.y + 10); this.hero.setDepth(wd(this.hero.y));
-      if (this.dog) this.dog.setPosition(sh.x - 14, sh.y + 12).setDepth(wd(sh.y + 12));
-      this.openAnimalDetail(this.params.openAnimal);
-    }
+    if (this.params.openAnimal && s.animals[this.params.openAnimal]) this.openAnimalDetail(this.params.openAnimal);
     // 환영 / 여관에서 깨어남
     if (this.params.wokeAtInn) this.say(Data.dialogues.lose.map(Data.fmt.bind(Data)));
     else if (this.params.welcome) this.say(Data.dialogues.villageWelcome.map(Data.fmt.bind(Data)));
     else if (this.params.cleared) { const st = Data.stage(this.params.cleared); this.say(Data.dialogues.stageClear.map(l => Data.fmt(l, { stage: st ? st.name : '숲' }))); }
+  }
+
+  // 마을 안(움직이는 카메라)에 놓이는 것을 만들 때 감싼다. 감싸지 않으면 화면에 고정된 UI 가 된다.
+  world(fn) { const prev = this.worldMode; this.worldMode = true; try { return fn(); } finally { this.worldMode = prev; } }
+  tileToWorld(x, y) { return { x: x * TILE + TILE / 2, y: y * TILE + TILE / 2 }; }
+  inBounds(x, y) { return x >= 0 && y >= 0 && x < GW && y < GH; }
+  walkable(x, y) { return this.inBounds(x, y) && !SOLID_TILES.has(this.grid[y][x]) && !this.blocked.has(x + ',' + y); }
+  makeTappable(sprite, fn) {
+    sprite.setInteractive({ useHandCursor: true, hitArea: new Phaser.Geom.Rectangle(-6 * PX, -6 * PX, sprite.width + 12 * PX, sprite.height + 12 * PX), hitAreaCallback: Phaser.Geom.Rectangle.Contains });
+    sprite.on('pointerup', (pointer) => { if (!this.busy && pointer.getDistance() <= 10 * PX) fn(); });
+  }
+  spawnPasture() {
+    const s = GameState.s, ids = Object.keys(s.animals).filter(id => !s.party.includes(id)).slice(0, 6);
+    const spots = [[5, 23], [9, 24], [12, 22], [7, 22], [13, 25], [4, 25]];
+    ids.forEach((id, i) => {
+      const [gx, gy] = spots[i], x = gx * TILE + 8, y = (gy + 1) * TILE;
+      const sp = unit(this, x, y, GameState.animalSprite(id)).setOrigin(0.5, 1).setDepth(wd(y)); setPose(sp, 'move');
+      const dx = Phaser.Math.Between(10, 22) * (i % 2 ? -1 : 1); face(sp, dx, 0);
+      this.tweens.add({ targets: sp, x: x + dx, duration: Phaser.Math.Between(1800, 3000), yoyo: true, repeat: -1, ease: 'Sine.easeInOut', delay: i * 250,
+        onYoyo: () => face(sp, -dx, 0), onRepeat: () => face(sp, dx, 0) });
+      this.makeTappable(sp, () => { Audio.sfx('tap'); toast(this, `${GameState.animalName(id)}  ${'♥'.repeat(GameState.hearts(id))}`, { y: 60 }); });
+    });
   }
 
   refreshHud() {
@@ -121,43 +209,124 @@ export default class VillageScene extends Phaser.Scene {
     if (!want) { if (this.dog) { this.tweens.killTweensOf(this.dog); this.dog.destroy(); this.dog = null; } return; }
     const key = GameState.animalSprite('milkku');
     if (this.dog) { if (this.dog.animKey !== key) retexture(this.dog, key); return; }
-    const x = this.hero.x - 14, y = this.hero.y + 2;
-    this.dog = unit(this, x, y, key).setOrigin(0.5, 1).setDepth(wd(y));
-    this.dog.setInteractive({ useHandCursor: true, hitArea: new Phaser.Geom.Rectangle(-6 * PX, -6 * PX, 28 * PX, 28 * PX), hitAreaCallback: Phaser.Geom.Rectangle.Contains });
-    this.dog.on('pointerup', () => this.dogBark());
+    this.world(() => {
+      const x = this.hero.x - 12, y = this.hero.y + 2;
+      this.dog = unit(this, x, y, key).setOrigin(0.5, 1).setDepth(wd(y));
+      this.dog.setInteractive({ useHandCursor: true, hitArea: new Phaser.Geom.Rectangle(-6 * PX, -6 * PX, 28 * PX, 28 * PX), hitAreaCallback: Phaser.Geom.Rectangle.Contains });
+      this.dog.on('pointerup', () => this.dogBark());
+    });
   }
   dogBark() {
     if (!this.dog || this.busy) return;
     Audio.sfx('tap');
-    const t = txt(this, this.dog.x, this.dog.y - 20, Data.dialogues.milkku.bark, { size: 11, origin: 0.5, depth: DEPTH.WORLD_UI });
-    this.tweens.add({ targets: t, y: t.y - 10, alpha: 0, duration: 700, onComplete: () => t.destroy() });
-    this.tweens.add({ targets: this.dog, y: this.dog.y - 6, duration: 110, yoyo: true });
+    this.world(() => {
+      const t = txt(this, this.dog.x, this.dog.y - 20, Data.dialogues.milkku.bark, { size: 11, origin: 0.5, depth: DEPTH.WORLD_UI });
+      this.tweens.add({ targets: t, y: t.y - 10, alpha: 0, duration: 700, onComplete: () => t.destroy() });
+    });
+    if (!this.tweens.isTweening(this.dog)) this.tweens.add({ targets: this.dog, y: this.dog.y - 6, duration: 110, yoyo: true });
   }
-  // 밀꾸가 그레이스 뒤로 따라간다
-  dogFollow(tx, ty, duration) {
+  // 밀꾸는 그레이스가 방금 있던 자리로 한 걸음 늦게 따라온다
+  dogFollow(x, y, last) {
     const d = this.dog; if (!d) return;
-    const side = tx < d.x ? 1 : -1, gx = tx + side * 14, gy = ty + 2;
-    face(d, gx - d.x, gy - d.y); setPose(d, 'move');
+    if (Math.abs(x - d.x) + Math.abs(y - d.y) < 1) return;
+    face(d, x - d.x, y - d.y); setPose(d, 'move');
     this.tweens.killTweensOf(d);
-    this.tweens.add({ targets: d, x: gx, y: gy, delay: 140, duration: Math.max(160, duration), ease: 'Linear',
-      onUpdate: () => d.setDepth(wd(d.y)), onComplete: () => { setPose(d, 'idle'); face(d, tx - d.x, 0); } });
+    this.tweens.add({ targets: d, x, y, duration: 170, ease: 'Linear', onUpdate: () => d.setDepth(wd(d.y - 0.5)),
+      onComplete: () => { if (last && d.active) setPose(d, 'idle'); } });
   }
 
-  async goTo(b) {
-    if (this.busy) return; this.busy = true;
-    Audio.sfx('tap');
-    const dist = Phaser.Math.Distance.Between(this.hero.x, this.hero.y, b.x, b.y + 10);
-    // 이미 그 자리에 서 있으면(거리 0) 트윈을 돌리지 않는다 (0ms 트윈이 좌표를 망가뜨림)
-    if (dist > 2) {
-      const dur = Math.max(120, Math.min(900, dist * 5));
-      face(this.hero, b.x - this.hero.x, b.y + 10 - this.hero.y); setPose(this.hero, 'move');
-      this.dogFollow(b.x, b.y + 10, dur);
-      await tween(this, { targets: this.hero, x: b.x, y: b.y + 10, duration: dur, ease: 'Linear', onUpdate: () => this.hero.setDepth(wd(this.hero.y)) });
+  // ---------- 걷기 (숲과 같은 방식: 탭한 칸까지 길 찾기) ----------
+  bfs(from, goalFn) {
+    const seen = new Set([from.join(',')]); const q = [[from, []]];
+    while (q.length) {
+      const [[x, y], path] = q.shift();
+      if (goalFn(x, y) && path.length) return path;
+      for (const [dx, dy] of DIRS) {
+        const nx = x + dx, ny = y + dy, k = nx + ',' + ny;
+        if (seen.has(k) || !this.walkable(nx, ny)) continue;
+        seen.add(k); q.push([[nx, ny], [...path, [nx, ny]]]);
+      }
     }
-    if (!Number.isFinite(this.hero.x) || !Number.isFinite(this.hero.y)) this.hero.setPosition(b.x, b.y + 10);
-    this.hero.setDepth(wd(this.hero.y)); setPose(this.hero, 'idle');
-    this.busy = false;
-    this.openFacility(b.key);
+    return null;
+  }
+  here() { return this.moving && this.nextTile ? this.nextTile : [this.tx, this.ty]; }
+  walk(path, pending, mx, my) {
+    this.pending = pending || null;
+    this.showMarker(mx, my);
+    this.path = path;
+    if (!this.moving) this.stepNext();
+  }
+  tapTile(gx, gy) {
+    if (!this.inBounds(gx, gy)) return;
+    const obj = this.objects.find(o => o.x === gx && o.y === gy);
+    if (obj) return this.approach(obj);
+    if (!this.walkable(gx, gy)) { Audio.sfx('error'); return; }
+    const path = this.bfs(this.here(), (x, y) => x === gx && y === gy);
+    if (!path) { Audio.sfx('error'); return; }
+    const door = this.doors[gx + ',' + gy];
+    this.walk(path, door ? { door } : null, gx, gy);
+  }
+  approach(obj) {
+    const from = this.here(), adjacent = (x, y) => Math.abs(x - obj.x) + Math.abs(y - obj.y) === 1;
+    if (adjacent(from[0], from[1]) && !this.moving) return this.interact(obj);
+    const path = this.bfs(from, adjacent);
+    if (!path) { Audio.sfx('error'); return; }
+    this.walk(path, { obj }, obj.x, obj.y);
+  }
+  // 건물을 탭하면 문 앞까지 걸어가서 들어간다
+  goTo(b) {
+    if (this.busy) return;
+    Audio.sfx('tap');
+    const B = this.buildings[b.key], [dx, dy] = B.door, from = this.here();
+    if (from[0] === dx && from[1] === dy && !this.moving) return this.openFacility(b.key);
+    const path = this.bfs(from, (x, y) => x === dx && y === dy);
+    if (!path) { Audio.sfx('error'); return; }
+    this.walk(path, { door: b.key }, dx, dy);
+  }
+  showMarker(gx, gy) {
+    this.world(() => {
+      const wp = this.tileToWorld(gx, gy);
+      if (this.marker) this.marker.destroy();
+      const m = this.marker = this.add.rectangle(wp.x, wp.y, TILE, TILE, 0xffffff, 0).setStrokeStyle(1, 0xffffff, 0.9).setDepth(DEPTH.WORLD_UI);
+      this.tweens.add({ targets: m, alpha: 0, duration: 700, onComplete: () => { m.destroy(); if (this.marker === m) this.marker = null; } });
+    });
+  }
+  stepNext() {
+    if (this.leaving || this.busy) { this.path = []; this.moving = false; setPose(this.hero, 'idle'); if (this.dog) setPose(this.dog, 'idle'); return; }
+    if (!this.path.length) { this.moving = false; setPose(this.hero, 'idle'); this.arrive(); return; }
+    const [nx, ny] = this.path.shift();
+    if (!this.walkable(nx, ny)) { this.path = []; this.moving = false; setPose(this.hero, 'idle'); return; }
+    this.moving = true; this.nextTile = [nx, ny];
+    let sx = nx - this.tx, sy = ny - this.ty, px = nx, py = ny;
+    for (const [qx, qy] of this.path.slice(0, 2)) { sx += qx - px; sy += qy - py; px = qx; py = qy; }
+    face(this.hero, sx === 0 ? nx - this.tx : sx, sy);
+    this.dogFollow(this.hero.x, this.hero.y, !this.path.length);
+    const wp = this.tileToWorld(nx, ny);
+    this.tweens.add({ targets: this.hero, x: wp.x, y: wp.y + 8, duration: 150, ease: 'Linear',
+      onUpdate: () => { this.hero.setDepth(wd(this.hero.y)); },
+      onComplete: () => { this.tx = nx; this.ty = ny; this.stepNext(); } });
+    setPose(this.hero, 'move');
+  }
+  arrive() {
+    const p = this.pending; this.pending = null;
+    if (!p) return;
+    if (p.door && this.doors[this.tx + ',' + this.ty] === p.door) return this.openFacility(p.door);
+    if (p.obj && Math.abs(p.obj.x - this.tx) + Math.abs(p.obj.y - this.ty) === 1) this.interact(p.obj);
+  }
+  interact(obj) {
+    face(this.hero, obj.x - this.tx, obj.y - this.ty);
+    if (obj.type === 'guide') return this.guideHint();
+    if (obj.type === 'chest') {
+      if (obj.opened) { toast(this, '빈 상자예요.'); return; }
+      obj.opened = true; GameState.s.flags.chests[obj.key] = true;
+      obj.sprite.setTexture('chest_open');
+      GameState.addItem(obj.item, obj.count || 1);
+      Audio.sfx('chest');
+      const it = Data.item(obj.item);
+      toast(this, `${it ? it.name : obj.item} ${obj.count || 1}개를 얻었어요!`);
+      this.tweens.add({ targets: obj.sprite, y: obj.sprite.y - 4, duration: 120, yoyo: true });
+      GameState.save();
+    }
   }
 
   // ---------- 공통 패널 ----------

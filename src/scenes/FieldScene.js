@@ -262,7 +262,7 @@ export default class FieldScene extends Phaser.Scene {
   }
   async goExit(ex) {
     await fadeOut(this, 250);
-    if (ex.type === 'village_exit') { this.scene.start('Village', {}); return; }
+    if (ex.type === 'village_exit') { this.scene.start('Village', { at: 'gate' }); return; }
     this.scene.start('Field', { stageId: this.p.stageId, mapId: ex.to, x: ex.tx, y: ex.ty });
   }
 
@@ -422,7 +422,7 @@ export default class FieldScene extends Phaser.Scene {
       const ok = await confirm(this, '마을로 돌아갈까요?', '네', '아니요', { fixed: true });
       if (!ok) return;
       this.closeMenu(); this.transitioning = true;
-      await fadeOut(this); this.scene.start('Village', {});
+      await fadeOut(this); this.scene.start('Village', { at: 'gate' });
     }, { depth: DEPTH.MODAL, fixed: true }));
     this.selectedItem = null;
     this.renderMenu();

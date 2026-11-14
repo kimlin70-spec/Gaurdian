@@ -324,6 +324,6 @@ export default class HomeScene extends Phaser.Scene {
     this.clearMilkku();
     GameState.save();
     await fadeOut(this, 250);
-    this.scene.start('Village', {});
+    this.scene.start('Village', { at: 'home' });
   }
 }
