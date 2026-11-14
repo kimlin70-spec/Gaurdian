@@ -27,7 +27,7 @@ export default class BattleScene extends Phaser.Scene {
     // 배경 (스테이지 테마 색)
     const th = themeOf(this.p.stageId);
     const col = (hex) => Phaser.Display.Color.HexStringToColor(hex).color;
-    const bgKey = 'bg_battle_' + (th.name || 'green');
+    const bgKey = this.p.bg || 'bg_battle_' + (th.name || 'green'); // 왕궁 던전은 배경을 따로 정해 준다
     if (this.textures.exists(bgKey)) {
       // 그림 배경 (보스전은 조금 어둡게)
       const bg = img(this, W / 2, H / 2, bgKey);
@@ -586,7 +586,8 @@ export default class BattleScene extends Phaser.Scene {
     await this.dialog.show(lines);
     if (lines.some(l => l.includes('레벨 업'))) Audio.sfx('levelup');
     await fadeOut(this, 250);
-    this.scene.start('Field', { stageId: this.p.stageId, mapId: this.p.mapId, x: this.p.x, y: this.p.y });
+    if (this.p.returnTo) this.scene.start(this.p.returnTo.scene, this.p.returnTo.data); // 숲이 아닌 곳(왕궁 던전)에서 싸웠으면 그곳으로
+    else this.scene.start('Field', { stageId: this.p.stageId, mapId: this.p.mapId, x: this.p.x, y: this.p.y });
   }
   async onLose() {
     Audio.stopBgm();

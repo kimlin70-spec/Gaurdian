@@ -10,8 +10,9 @@ import { makeCharacter, buildTilemap, img, unit, setPose, face, retexture } from
 const GW = 40, GH = 28;
 const BUILDINGS = [
   { key: 'inn',     name: '여관',      bx: 8,  by: 4 },
-  { key: 'shop',    name: '상점',      bx: 15, by: 4 },
-  { key: 'smithy',  name: '대장간',    bx: 25, by: 4 },
+  { key: 'shop',    name: '상점',      bx: 14, by: 4 },
+  { key: 'smithy',  name: '대장간',    bx: 27, by: 4 },
+  { key: 'palace',  name: '왕궁',      bx: 20, by: 5, big: true, sprite: 'build_palace' }, // 가로 7칸 x 세로 5칸
   { key: 'sage',    name: '현자의 집', bx: 33, by: 4 },
   { key: 'shelter', name: '동물 쉼터', bx: 8,  by: 18 },
   { key: 'home',    name: '우리 집',   bx: 26, by: 18 },
@@ -20,7 +21,8 @@ const BUILDINGS = [
 // 꾸밈 (가구 그림 재사용): [그림, 칸 x, 칸 y, 가로 칸, 세로 칸]
 const DECOR = [
   ['f_bench', 10, 12, 2, 1], ['f_bench', 3, 12, 2, 1], ['f_swing', 31, 22, 2, 2], ['f_flowerbed', 22, 18, 2, 1], ['f_flowerbed', 29, 18, 2, 1],
-  ['f_birdhouse', 15, 22, 1, 2], ['f_tree_small', 34, 17, 2, 2], ['f_bench', 18, 10, 2, 1], ['f_flowerbed', 21, 10, 2, 1], ['f_pond', 34, 22, 2, 1],
+  ['f_birdhouse', 15, 22, 1, 2], ['f_tree_small', 34, 17, 2, 2], ['f_bench', 17, 10, 2, 1], ['f_flowerbed', 22, 10, 2, 1], ['f_pond', 34, 22, 2, 1],
+  ['deco_palace_fountain', 18, 11, 2, 2], // 광장 분수
 ];
 const CHESTS = [{ x: 3, y: 3, item: 'potion_s', count: 2 }, { x: 37, y: 25, item: 'snack', count: 2 }, { x: 2, y: 25, item: 'berry', count: 1 }];
 const SPAWN = { x: 20, y: 13 };
@@ -44,7 +46,7 @@ function makeGrid() {
   set(30, 20, 30, 24, 11); set(30, 24, 36, 24, 11); // 동쪽 꽃밭 놀이터 가는 길
   set(17, 11, 23, 15, 8);                      // 광장
   for (const b of BUILDINGS) {
-    set(b.bx - 1, b.by - 2, b.bx + 1, b.by, 0); // 건물 자리와 지붕 위는 비운다
+    if (b.big) set(b.bx - 3, 1, b.bx + 3, b.by, 0); else set(b.bx - 1, b.by - 2, b.bx + 1, b.by, 0); // 건물 자리와 지붕 위는 비운다
     const to = b.by < 7 ? 7 : b.key === 'gate' ? 14 : 20;
     set(b.bx, b.by + 1, b.bx, to, 11);         // 문 앞길
   }
@@ -52,22 +54,8 @@ function makeGrid() {
   for (const c of CHESTS) { set(c.x - 1, c.y - 1, c.x + 1, c.y + 1, 0); }
   set(3, 3, 3, 7, 0); set(37, 24, 37, 25, 0); set(2, 20, 5, 20, 11); set(2, 20, 2, 25, 0); // 상자까지 가는 길
   set(0, 0, GW - 1, 0, 1); set(0, GH - 1, GW - 1, GH - 1, 1); set(0, 0, 0, GH - 1, 1); set(GW - 1, 0, GW - 1, GH - 1, 1);
-  set(20, 1, 20, 7, 11);                       // 북쪽: 왕궁 가는 길
   set(1, 13, 4, 13, 11);                       // 서쪽: 꽃 언덕 가는 길
   for (const n of VILLAGE_NPCS) g[n.y][n.x] = 0;
-  return g;
-}
-// 왕궁: 위쪽은 돌벽으로 둘러싼 임금님의 방, 아래쪽은 정원 (24 x 18 칸)
-function makePalace() {
-  const w = 24, h = 18, g = Array.from({ length: h }, () => Array(w).fill(0));
-  const set = (x0, y0, x1, y1, t) => { for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) g[y][x] = t; };
-  set(0, 0, w - 1, h - 1, 1); set(1, 1, w - 2, h - 2, 0);
-  set(1, 1, w - 2, 9, 9); set(2, 2, w - 3, 8, 8);            // 돌벽과 돌바닥
-  for (const x of [5, 18]) for (const y of [4, 6]) g[y][x] = 9; // 기둥
-  set(11, 9, 12, 16, 8);                                      // 문과 정원 길
-  for (const [x, y] of [[3, 11], [6, 13], [4, 15], [8, 11], [15, 12], [19, 11], [17, 14], [20, 15], [7, 15], [16, 16]]) g[y][x] = 4;
-  for (const [x, y] of [[2, 12], [9, 13], [14, 14], [21, 13], [5, 16], [18, 16]]) g[y][x] = 1;
-  set(11, 17, 12, 17, 8);
   return g;
 }
 // 꽃 언덕: 꽃이 가득한 언덕과 작은 호수 (24 x 17 칸)
@@ -87,18 +75,13 @@ function makeHill() {
 
 const VILLAGE_NPCS = [
   { id: 'bluebird', sprite: 'bird', x: 10, y: 9 },
-  { id: 'candle', sprite: 'candle_ghost', x: 12, y: 6 },
-  { id: 'stone', sprite: 'golem', x: 28, y: 6 },
+  { id: 'candle', sprite: 'candle_ghost', x: 11, y: 6 },
+  { id: 'stone', sprite: 'golem', x: 30, y: 6 },
 ];
 // 걸어 다닐 수 있는 곳들. exits: 밟으면 다른 곳으로 (to 지역, tx/ty 도착 칸)
 const AREAS = {
   village: { name: '숲 마을', gw: GW, gh: GH, grid: makeGrid, buildings: BUILDINGS, decor: DECOR, chests: CHESTS, npcs: VILLAGE_NPCS, spawn: SPAWN,
-    exits: [{ x: 20, y: 1, to: 'palace', tx: 11, ty: 15, label: '왕궁' }, { x: 1, y: 13, to: 'hill', tx: 21, ty: 8, label: '꽃 언덕' }] },
-  palace: { name: '숲의 왕궁', gw: 24, gh: 18, grid: makePalace, spawn: { x: 11, y: 15 },
-    decor: [['f_flowerbed', 8, 10, 2, 1], ['f_flowerbed', 14, 10, 2, 1], ['f_bench', 5, 13, 2, 1], ['f_bench', 17, 13, 2, 1]],
-    chests: [{ x: 20, y: 3, item: 'potion_l', count: 1 }],
-    npcs: [{ id: 'king', sprite: 'tree_face', x: 12, y: 3, scale: 2 }, { id: 'guardL', sprite: 'golem', x: 10, y: 10 }, { id: 'guardR', sprite: 'golem', x: 13, y: 10, noLabel: true }],
-    exits: [{ x: 11, y: 17, to: 'village', tx: 20, ty: 2, label: '마을' }, { x: 12, y: 17, to: 'village', tx: 20, ty: 2 }] },
+    exits: [{ x: 1, y: 13, to: 'hill', tx: 21, ty: 8, label: '꽃 언덕' }] },
   hill: { name: '꽃 언덕', gw: 24, gh: 17, grid: makeHill, spawn: { x: 21, y: 8 },
     decor: [['f_bench', 11, 6, 2, 1], ['f_swing', 13, 10, 2, 2], ['f_tree_small', 16, 2, 2, 2]],
     chests: [{ x: 3, y: 13, item: 'honey', count: 1 }, { x: 19, y: 3, item: 'petal', count: 3 }],
@@ -149,12 +132,12 @@ export default class VillageScene extends Phaser.Scene {
       this.buildings = {};
       for (const b of A.buildings || []) {
         const x = b.bx * TILE + TILE / 2, y = (b.by + 1) * TILE;
-        const im = img(this, x, y, 'bld_' + b.key).setOrigin(0.5, 1).setDepth(wd(y));
+        const im = img(this, x, y, b.sprite || 'bld_' + b.key).setOrigin(0.5, 1).setDepth(wd(y));
         im.setInteractive({ useHandCursor: true });
         im.on('pointerup', (pointer) => { if (!this.busy && pointer.getDistance() <= 10 * PX) this.goTo(b); });
         const label = txt(this, x, y + 1, b.name, { size: 11, origin: [0.5, 0], depth: DEPTH.WORLD_UI });
         this.buildings[b.key] = { ...b, x, y, img: im, label, door: [b.bx, b.by + 1] };
-        block(b.bx - 1, b.by - 1, 3, 2);
+        if (b.big) block(b.bx - 3, 1, 7, b.by); else block(b.bx - 1, b.by - 1, 3, 2);
         this.doors[b.bx + ',' + (b.by + 1)] = b.key;
       }
       // 꾸밈
@@ -406,15 +389,6 @@ export default class VillageScene extends Phaser.Scene {
     if (this.busy) return;
     const s = GameState.s, info = (Data.dialogues.villagers || {})[obj.id] || { lines: ['...'] };
     const lines = [];
-    if (obj.id === 'king') {
-      s.flags.kingGift = s.flags.kingGift || {};
-      const fresh = Data.stageList().filter(st => s.flags.cleared[st.id] && !s.flags.kingGift[st.id]);
-      if (fresh.length) {
-        for (const st of fresh) { s.flags.kingGift[st.id] = true; s.stardust += 60; s.shards += 1; lines.push(Data.fmt(info.gift, { stage: st.name })); }
-        lines.push('\u0000' + Data.fmt(info.giftGot, { n: fresh.length * 60, m: fresh.length }));
-        Audio.sfx('levelup'); GameState.save(); this.refreshHud();
-      }
-    }
     if (!lines.length) {
       s.flags.talk = s.flags.talk || {};
       const i = (s.flags.talk[obj.id] || 0) % info.lines.length; s.flags.talk[obj.id] = i + 1;
@@ -499,6 +473,7 @@ export default class VillageScene extends Phaser.Scene {
       case 'shelter': return this.openShelter();
       case 'gate': return this.openGate();
       case 'home': return this.goHome();
+      case 'palace': return this.goPalace();
     }
   }
 
@@ -678,6 +653,11 @@ export default class VillageScene extends Phaser.Scene {
   }
 
   // ---------- 우리 집 ----------
+  async goPalace() {
+    this.busy = true;
+    await fadeOut(this, 250);
+    this.scene.start('Palace', { room: 'courtyard' });
+  }
   async goHome() {
     this.busy = true;
     await fadeOut(this, 250);

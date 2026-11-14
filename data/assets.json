@@ -23,6 +23,10 @@
    "type": "image",
    "file": "assets/bg_battle_castle.png"
   },
+  "bg_battle_dungeon": {
+   "type": "image",
+   "file": "assets/bg_battle_dungeon.png"
+  },
   "bg_battle_fire": {
    "type": "image",
    "file": "assets/bg_battle_fire.png"
@@ -38,6 +42,30 @@
   "bg_battle_swamp": {
    "type": "image",
    "file": "assets/bg_battle_swamp.png"
+  },
+  "bg_palace_courtyard": {
+   "type": "image",
+   "file": "assets/bg_palace_courtyard.png"
+  },
+  "bg_palace_dungeon": {
+   "type": "image",
+   "file": "assets/bg_palace_dungeon.png"
+  },
+  "bg_palace_princess": {
+   "type": "image",
+   "file": "assets/bg_palace_princess.png"
+  },
+  "bg_palace_prison": {
+   "type": "image",
+   "file": "assets/bg_palace_prison.png"
+  },
+  "bg_palace_staff": {
+   "type": "image",
+   "file": "assets/bg_palace_staff.png"
+  },
+  "bg_palace_throne": {
+   "type": "image",
+   "file": "assets/bg_palace_throne.png"
   },
   "bird": {
    "type": "image",
@@ -87,6 +115,10 @@
    "frameWidth": 64,
    "frameHeight": 64
   },
+  "build_palace": {
+   "type": "image",
+   "file": "assets/build_palace.png"
+  },
   "bush": {
    "type": "image",
    "file": "assets/bush.png"
@@ -118,6 +150,10 @@
   "cursor": {
    "type": "image",
    "file": "assets/cursor.png"
+  },
+  "deco_palace_fountain": {
+   "type": "image",
+   "file": "assets/deco_palace_fountain.png"
   },
   "deer": {
    "type": "image",
@@ -455,6 +491,30 @@
    "frameWidth": 64,
    "frameHeight": 64
   },
+  "npc_palace_cook": {
+   "type": "image",
+   "file": "assets/npc_palace_cook.png"
+  },
+  "npc_palace_guard": {
+   "type": "image",
+   "file": "assets/npc_palace_guard.png"
+  },
+  "npc_palace_maid": {
+   "type": "image",
+   "file": "assets/npc_palace_maid.png"
+  },
+  "npc_palace_steward": {
+   "type": "image",
+   "file": "assets/npc_palace_steward.png"
+  },
+  "npc_princess": {
+   "type": "image",
+   "file": "assets/npc_princess.png"
+  },
+  "npc_royal_king": {
+   "type": "image",
+   "file": "assets/npc_royal_king.png"
+  },
   "otter": {
    "type": "image",
    "file": "assets/otter.png"
@@ -518,6 +578,10 @@
    "file": "assets/player_clothes_side_anim.png",
    "frameWidth": 96,
    "frameHeight": 128
+  },
+  "prop_dungeon_stairs": {
+   "type": "image",
+   "file": "assets/prop_dungeon_stairs.png"
   },
   "rabbit": {
    "type": "image",
