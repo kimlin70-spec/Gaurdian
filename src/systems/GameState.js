@@ -187,10 +187,10 @@ const GameState = {
   canBattle(id) { const r = this.s.animals[id]; return r && !r.sick && !r.sulk; },
   animalStatus(id) {
     const r = this.s.animals[id];
-    if (r.sick) return { text: '아픔', color: '#ff8080' };
-    if (r.sulk) return { text: '삐짐', color: '#c0a0ff' };
-    if (r.dirt >= 5) return { text: this.traits(id).dirtyText || '더러움', color: '#d9b57a' };
-    return { text: '좋아요', color: '#7ee081' };
+    if (r.sick) return { text: '아픔', color: '#ff8080', icon: 'st_sick' };
+    if (r.sulk) return { text: '삐짐', color: '#c0a0ff', icon: 'st_sulk' };
+    if (r.dirt >= 5) return { text: this.traits(id).dirtyText || '더러움', color: '#d9b57a', icon: 'st_dirty' };
+    return { text: '좋아요', color: '#7ee081', icon: 'st_happy' };
   },
   addFriend(id, n) {
     const r = this.s.animals[id];

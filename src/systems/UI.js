@@ -47,6 +47,45 @@ const BUTTON_SKINS = {
 const PRESS_TINT = 0xd1d1d1; // 눌렀을 때 0.82배 어둡게
 const mulTint = (a, b) => (((a >> 16) * (b >> 16) / 255) << 16) | ((((a >> 8) & 255) * ((b >> 8) & 255) / 255) << 8) | ((a & 255) * (b & 255) / 255);
 
+// 작은 그림 표시 (하트, 별, 자물쇠, 역할, 상태 등). 그림이 없으면 null.
+export function icon(scene, x, y, key, opts = {}) {
+  if (!scene.textures.exists(key)) return null;
+  const im = scene.add.image(x, y, key).setScale((opts.scale ?? 1) / PX).setDepth(opts.depth ?? DEPTH.UI);
+  if (opts.origin !== undefined) { Array.isArray(opts.origin) ? im.setOrigin(opts.origin[0], opts.origin[1]) : im.setOrigin(opts.origin); }
+  if (opts.fixed) fix(im);
+  return im;
+}
+// 하트 5칸, 별 3칸처럼 채운 그림 n 개 + 빈 그림. x 는 왼쪽 끝, y 는 가운데. 그림이 없으면 글자로.
+export function iconRow(scene, x, y, n, max, full = 'ui_heart_full', empty = 'ui_heart_empty', opts = {}) {
+  const g = new UIGroup(), step = opts.step ?? 10, scale = opts.scale ?? 0.8;
+  if (!scene.textures.exists(full) || !scene.textures.exists(empty)) {
+    const heart = full.includes('heart');
+    g.add(txt(scene, x, y, (heart ? '♥' : '★').repeat(n) + (heart ? '♡' : '☆').repeat(max - n), { size: 11, origin: [0, 0.5], depth: opts.depth, fixed: opts.fixed, color: heart ? '#ff8fb0' : '#ffd93b' }));
+    g.width = g.items[0].width; return g;
+  }
+  for (let i = 0; i < max; i++) g.add(icon(scene, x + i * step + step / 2, y, i < n ? full : empty, { scale, depth: opts.depth, fixed: opts.fixed }));
+  g.width = max * step;
+  return g;
+}
+export const ROLE_ICON = { '공격': 'role_attack', '탱커': 'role_tank', '회복': 'role_heal' };
+// 별가루·보석 조각 표시: 그림 + 숫자. set(별가루, 보석 조각) 으로 갱신.
+export function moneyTag(scene, x, y, opts = {}) {
+  const g = new UIGroup(), o = { depth: opts.depth, fixed: opts.fixed };
+  const has = scene.textures.exists('icon_stardust') && scene.textures.exists('icon_shard');
+  const i1 = has ? g.add(icon(scene, x + 5, y + 6, 'icon_stardust', { scale: 0.85, ...o })) : null;
+  const t1 = g.add(txt(scene, x + (has ? 12 : 0), y, '', { size: 11, ...o }));
+  const i2 = has ? g.add(icon(scene, 0, y + 6, 'icon_shard', { scale: 0.85, ...o })) : null;
+  const t2 = g.add(txt(scene, 0, y, '', { size: 11, ...o }));
+  const off = opts.fixed ? FIX_X : 0;
+  g.set = (stardust, shards) => {
+    t1.setText((has ? '' : '★') + stardust);
+    const nx = x + off + (has ? 12 : 0) + t1.width + 8;
+    if (i2) i2.x = nx + 5;
+    t2.setText((has ? '' : '◆') + shards).setX(nx + (has ? 12 : 0));
+  };
+  return g;
+}
+
 export function panel(scene, x, y, w, h, opts = {}) {
   // 기본 남색 창은 그림으로 (투명도·색을 따로 준 띠는 예전처럼)
   if (opts.alpha === undefined && opts.border !== false && (opts.color === undefined || opts.color === 0x1e2040 || opts.color === COLORS.panel)) {
@@ -140,7 +179,9 @@ export class DialogBox {
       else g.add(panel(sc, 4, y, W - 8, h, { depth: DEPTH.DIALOG, fixed: this.opts.fixed, color: 0x1e2040, alpha: 1 }));
       const ink = paper ? { color: '#3b251b', stroke: false } : {};
       const body = g.add(txt(sc, 14, y + 9, '', { size: 11, wrap: W - 32, depth: DEPTH.DIALOG + 1, fixed: this.opts.fixed, lineSpacing: 3, ...ink }));
-      const more = g.add(txt(sc, W - 16, y + h - 13, '▼', { size: 11, origin: 0.5, depth: DEPTH.DIALOG + 1, fixed: this.opts.fixed, color: paper ? '#b0562a' : COLORS.yellow, stroke: !paper }));
+      // 다음 표시: 화살표 그림(아래로 돌려서) 또는 ▼ 글자
+      const more = g.add((icon(sc, W - 16, y + h - 13, 'ui_arrow_next', { depth: DEPTH.DIALOG + 1, fixed: this.opts.fixed }) || { setAngle() { return null; } }).setAngle(90)
+        || txt(sc, W - 16, y + h - 13, '▼', { size: 11, origin: 0.5, depth: DEPTH.DIALOG + 1, fixed: this.opts.fixed, color: paper ? '#b0562a' : COLORS.yellow, stroke: !paper }));
       sc.tweens.add({ targets: more, y: more.y + 2, duration: 400, yoyo: true, repeat: -1 });
       // 화면 전체를 덮는 터치 영역
       const zone = g.add(sc.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.001).setDepth(DEPTH.DIALOG - 1).setInteractive());
@@ -186,6 +227,29 @@ export function toast(scene, message, opts = {}) {
 // HP/MP 바
 export function bar(scene, x, y, w, h, color, opts = {}) {
   const depth = opts.depth ?? DEPTH.UI;
+  // 테두리 그림이 있는 바 (opts.frame: 'hp' | 'mp'). 높이는 8로 고정, 안쪽 4픽셀이 채워진다.
+  const fillKey = opts.frame ? 'ui_bar_' + opts.frame : null;
+  if (fillKey && w >= 16 && scene.textures.exists('ui_bar_frame') && scene.textures.exists(fillKey) && scene.game.renderer.type === Phaser.WEBGL) {
+    const inner = w - 8, lowKey = scene.textures.exists(fillKey + '_low') ? fillKey + '_low' : fillKey;
+    const bg = scene.add.rectangle(x + 4, y, inner, 4, 0x1a272e).setOrigin(0, 0.5).setDepth(depth);
+    const fg = scene.add.tileSprite(x + 4, y, inner * PX, 4 * PX, fillKey).setOrigin(0, 0.5).setScale(1 / PX).setDepth(depth + 1);
+    const fr = scene.add.nineslice(x, y, 'ui_bar_frame', undefined, w * PX, 8 * PX, 4 * PX, 4 * PX, 0, 0).setOrigin(0, 0.5).setScale(1 / PX).setDepth(depth + 2);
+    let marker = null;
+    if (opts.marker !== undefined) marker = scene.add.rectangle(x + 4 + Math.round(inner * opts.marker), y, 1, 4, 0xffffff, 0.9).setOrigin(0, 0.5).setDepth(depth + 3);
+    const all = [bg, fg, fr, marker].filter(Boolean);
+    if (opts.fixed) all.forEach(fix);
+    return {
+      bg, fg, marker, frame: fr,
+      set(ratio, lowColor) {
+        const r = Math.max(0, Math.min(1, ratio)), px = Math.floor(inner * r);
+        fg.setVisible(px > 0 && bg.visible); fg.width = Math.max(1, px) * PX; fg.shown = px > 0;
+        if (lowColor !== undefined) fg.setTexture(r <= (opts.lowAt ?? 0.25) ? lowKey : fillKey);
+      },
+      setPosition(nx, ny) { if (opts.fixed) { nx += FIX_X; ny += FIX_Y; } bg.setPosition(nx + 4, ny); fg.setPosition(nx + 4, ny); fr.setPosition(nx, ny); if (marker) marker.setPosition(nx + 4 + Math.round(inner * opts.marker), ny); },
+      setVisible(v) { all.forEach(o => o.setVisible(v)); if (v && fg.shown === false) fg.setVisible(false); },
+      destroy() { all.forEach(o => o.destroy()); },
+    };
+  }
   const bg = scene.add.rectangle(x, y, w, h, 0x000000, 0.8).setOrigin(0, 0.5).setDepth(depth);
   const fg = scene.add.rectangle(x + 1, y, w - 2, h - 2, color).setOrigin(0, 0.5).setDepth(depth + 1);
   let marker = null;

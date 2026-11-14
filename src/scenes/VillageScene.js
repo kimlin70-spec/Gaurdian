@@ -3,7 +3,7 @@ import { W, H, COLORS, TILE, SOLID_TILES, wd, PX } from '../config.js';
 import Data from '../systems/Data.js';
 import GameState from '../systems/GameState.js';
 import Audio from '../systems/Audio.js';
-import { txt, Button, panel, UIGroup, DialogBox, confirm, toast, soundButton, fadeIn, fadeOut, tween, DEPTH, setupCamera } from '../systems/UI.js';
+import { txt, Button, panel, UIGroup, DialogBox, confirm, toast, soundButton, fadeIn, fadeOut, tween, DEPTH, setupCamera, icon, iconRow, moneyTag, ROLE_ICON } from '../systems/UI.js';
 import { makeCharacter, buildTilemap, img, unit, setPose, face, retexture } from '../systems/Assets.js';
 
 // 마을 지도: 40 x 28 칸. 건물은 가로 3칸 x 세로 2칸을 차지하고, 문은 바로 아래 칸.
@@ -214,8 +214,8 @@ export default class VillageScene extends Phaser.Scene {
 
     // HUD
     this.hud = new UIGroup();
-    this.hud.add(panel(this, 2, 2, 150, 18, { color: 0x000000, alpha: 0.55, border: false }));
-    this.hudText = this.hud.add(txt(this, 6, 4, '', { size: 11 }));
+    this.hud.add(panel(this, 2, 2, 110, 18, { color: 0x000000, alpha: 0.55, border: false }));
+    this.hudMoney = this.hud.add(moneyTag(this, 6, 4));
     this.tip = txt(this, W / 2, H - 14, this.areaId === 'village' ? '가고 싶은 곳을 탭하세요' : A.name, { size: 11, origin: 0.5, color: '#fff4d6' });
     this.tweens.add({ targets: this.tip, alpha: 0, delay: 3500, duration: 800 });
     soundButton(this);
@@ -263,7 +263,7 @@ export default class VillageScene extends Phaser.Scene {
 
   refreshHud() {
     const s = GameState.s;
-    this.hudText.setText(`★${Data.strings.money} ${s.stardust}   ◆${Data.strings.shard} ${s.shards}`);
+    this.hudMoney.set(s.stardust, s.shards);
   }
   async say(lines) { this.busy = true; await this.dialog.show(lines); this.busy = false; }
   async guideHint() {
@@ -448,12 +448,15 @@ export default class VillageScene extends Phaser.Scene {
     g.add(panel(this, 8, 8, W - 16, H - 16, { depth: DEPTH.MODAL - 1 }));
     g.add(txt(this, W / 2, 16, title, { size: 14, origin: [0.5, 0], color: COLORS.yellow, depth: DEPTH.MODAL }));
     g.add(new Button(this, W - 70, H - 36, 58, 24, '나가기', () => this.closePanel(), { depth: DEPTH.MODAL, color: 0x555577 }));
-    this.moneyText = g.add(txt(this, 16, H - 30, '', { size: 11, depth: DEPTH.MODAL }));
+    this.moneyText = g.add(moneyTag(this, 16, H - 30, { depth: DEPTH.MODAL }));
+    // 오른쪽 위 닫기 표시
+    const x = icon(this, W - 20, 27, 'ui_close', { depth: DEPTH.MODAL + 2 });
+    if (x) { g.add(x); x.setInteractive({ useHandCursor: true, hitArea: new Phaser.Geom.Rectangle(-6 * PX, -6 * PX, 24 * PX, 24 * PX), hitAreaCallback: Phaser.Geom.Rectangle.Contains }); x.on('pointerup', () => { Audio.sfx('tap'); this.closePanel(); }); }
     this.panelGroup = g; this.listGroup = new UIGroup(); this.page = 0;
     this.updateMoney();
     return g;
   }
-  updateMoney() { const s = GameState.s; if (this.moneyText && this.moneyText.active) this.moneyText.setText(`★${s.stardust}  ◆${s.shards}`); this.refreshHud(); }
+  updateMoney() { const s = GameState.s; if (this.moneyText && this.moneyText.items.length) this.moneyText.set(s.stardust, s.shards); this.refreshHud(); }
   closePanel() {
     if (this.listGroup) this.listGroup.destroy(); if (this.panelGroup) this.panelGroup.destroy();
     this.listGroup = null; this.panelGroup = null; this.busy = false; GameState.save();
@@ -471,8 +474,13 @@ export default class VillageScene extends Phaser.Scene {
       const y = top + i * rowH;
       const b = g.add(new Button(this, 16, y, W - 32, rowH - 4, '', r.onTap, { depth: DEPTH.MODAL, color: r.color ?? 0x3d4066 }));
       b.label.setOrigin(0, 0.5).setPosition(24, y + (rowH - 4) / 2 - (r.sub ? 5 : 0)).setText(r.label);
-      if (r.sub) g.add(txt(this, 24, y + 15, r.sub, { size: 11, color: '#b8c0e0', depth: DEPTH.MODAL + 1, strokeThickness: 1 }));
-      if (r.right) g.add(txt(this, W - 24, y + (rowH - 4) / 2, r.right, { size: 11, origin: [1, 0.5], color: r.rightColor || COLORS.yellow, depth: DEPTH.MODAL + 1 }));
+      if (r.hearts !== undefined) g.add(iconRow(this, 24 + b.label.width + 6, b.label.y, r.hearts, 5, 'ui_heart_full', 'ui_heart_empty', { depth: DEPTH.MODAL + 1 }));
+      let subX = 24;
+      if (r.subIcon) { const si = icon(this, 29, y + 20, r.subIcon, { scale: 0.75, depth: DEPTH.MODAL + 1 }); if (si) { g.add(si); subX = 36; } }
+      if (r.sub) g.add(txt(this, subX, y + 15, r.sub, { size: 11, color: '#b8c0e0', depth: DEPTH.MODAL + 1, strokeThickness: 1 }));
+      let rt = null;
+      if (r.right) rt = g.add(txt(this, W - 24, y + (rowH - 4) / 2, r.right, { size: 11, origin: [1, 0.5], color: r.rightColor || COLORS.yellow, depth: DEPTH.MODAL + 1 }));
+      if (r.lock) { const li = icon(this, W - 24 - (rt ? rt.width : 0) - 9, y + (rowH - 4) / 2, 'ui_lock', { scale: 0.85, depth: DEPTH.MODAL + 1 }); if (li) g.add(li); }
       if (r.enabled === false) b.setEnabled(false);
     });
     if (pages > 1) {
@@ -583,7 +591,7 @@ export default class VillageScene extends Phaser.Scene {
       const rows = Object.entries(s.animals).map(([id, rec]) => {
         const a = Data.animal(id), inParty = s.party.includes(id), st = GameState.animalStatus(id), h = GameState.hearts(id);
         return {
-          label: `${GameState.animalName(id)} Lv${rec.level}  ${'♥'.repeat(h)}${'♡'.repeat(5 - h)}`,
+          label: `${GameState.animalName(id)} Lv${rec.level}`, hearts: h, subIcon: ROLE_ICON[a.role],
           sub: `${a.role}  HP ${rec.hp}/${GameState.animalStats(id).hp}  상태: ${st.text}`,
           right: inParty ? '함께 가요' : '쉬는 중', rightColor: inParty ? '#7ee081' : '#b8c0e0',
           color: inParty ? 0x2e5a3a : 0x3d4066,
@@ -607,14 +615,19 @@ export default class VillageScene extends Phaser.Scene {
     const render = () => {
       const s = GameState.s, rec = s.animals[id], st = GameState.animalStatus(id), h = GameState.hearts(id), stats = GameState.animalStats(id);
       const inParty = s.party.includes(id);
-      info.setText([
-        `Lv${rec.level}  ${a.role}   HP ${rec.hp}/${stats.hp}`,
-        `친구 레벨 ${'♥'.repeat(h)}${'♡'.repeat(5 - h)}${rec.friend >= 80 ? '  힘이 나요!' : ''}`,
-        `상태: ${st.text}${rec.dirt >= 5 && !rec.sick ? ' (샤워해 주세요)' : ''}`,
-      ].join('\n'));
       const bs = rec.best || {};
       best.setText(`최고 기록\n간식 ${bs.catch || 0}개\n숨바꼭질 ${bs.hide || 0}/3\n헹구기 ${bs.shower || 0}/10`);
       btns.destroy(); btns.items = [];
+      // 세 줄: 역할 그림 + 레벨 / 친구 레벨 하트 / 상태 그림 + 글
+      const D = { size: 11, depth: DEPTH.MODAL, origin: [0, 0.5] }, ic = (x, y, key) => { const i = icon(this, x, y, key, { scale: 0.85, depth: DEPTH.MODAL }); if (i) btns.add(i); return i ? 13 : 0; };
+      info.setText('');
+      let lx = 112 + ic(118, 42, ROLE_ICON[a.role]);
+      btns.add(txt(this, lx, 42, `Lv${rec.level}  ${a.role}   HP ${rec.hp}/${stats.hp}`, D));
+      const fl = btns.add(txt(this, 112, 58, '친구 레벨', D));
+      const hr = btns.add(iconRow(this, 112 + fl.width + 4, 58, h, 5, 'ui_heart_full', 'ui_heart_empty', { depth: DEPTH.MODAL }));
+      if (rec.friend >= 80) btns.add(txt(this, 112 + fl.width + 4 + hr.width + 4, 58, '힘이 나요!', { ...D, color: COLORS.yellow }));
+      lx = 112 + ic(118, 74, st.icon);
+      btns.add(txt(this, lx, 74, `상태: ${st.text}${rec.dirt >= 5 && !rec.sick ? ' (샤워해 주세요)' : ''}`, { ...D, color: st.color }));
       const B = (i, label, fn, opts = {}) => {
         const col = i % 2, row = Math.floor(i / 2);
         return btns.add(new Button(this, 112 + col * 100, 96 + row * 30, 96, 26, label, fn, { depth: DEPTH.MODAL, ...opts }));
@@ -682,7 +695,7 @@ export default class VillageScene extends Phaser.Scene {
       return {
         label: `${st.order}. ${st.name}${cleared ? ' ✓' : ''}`,
         right: locked ? '준비 중' : needPrev ? Data.fmt(Data.dialogues.gateLocked, { prev: prev ? prev.name : '' }) : cleared ? '깨끗해졌어요' : '가기!',
-        rightColor: locked || needPrev ? '#8890aa' : cleared ? '#7ee081' : COLORS.yellow,
+        rightColor: locked || needPrev ? '#8890aa' : cleared ? '#7ee081' : COLORS.yellow, lock: locked || needPrev,
         enabled: !locked && !needPrev,
         onTap: async () => {
           this.closePanel();

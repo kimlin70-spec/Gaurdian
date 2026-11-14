@@ -3,7 +3,7 @@ import { W, H, COLORS, wd, PX } from '../config.js';
 import Data from '../systems/Data.js';
 import GameState from '../systems/GameState.js';
 import Audio from '../systems/Audio.js';
-import { txt, Button, panel, UIGroup, DialogBox, bar, toast, fadeIn, fadeOut, tween, wait, DEPTH, setupCamera } from '../systems/UI.js';
+import { txt, Button, panel, UIGroup, DialogBox, bar, icon, toast, fadeIn, fadeOut, tween, wait, DEPTH, setupCamera } from '../systems/UI.js';
 import { makeUnitSprite, themeOf, img, setPose, setView, fx, bodyWidth } from '../systems/Assets.js';
 
 const CORRUPT_TINT = 0x9a7fd6;
@@ -71,7 +71,7 @@ export default class BattleScene extends Phaser.Scene {
     if (u.side === 'enemy') {
       u.obj.setTint(CORRUPT_TINT);
       u.nameT = txt(this, x, y + 2, u.name, { size: 11, origin: [0.5, 0], color: '#f2c6ff' });
-      u.hpBar = bar(this, x - 20, y + 18, 40, 5, COLORS.hp, { marker: this.threshold, lowAt: this.threshold });
+      u.hpBar = bar(this, x - 22, y + 19, 44, 5, COLORS.hp, { marker: this.threshold, lowAt: this.threshold, frame: 'hp' });
       u.obj.setInteractive({ useHandCursor: true, hitArea: new Phaser.Geom.Rectangle(-10 * PX, -10 * PX, u.obj.width + 20 * PX, u.obj.height + 20 * PX), hitAreaCallback: Phaser.Geom.Rectangle.Contains });
       u.obj.on('pointerup', () => this.onTargetTap(u));
     } else {
@@ -85,10 +85,10 @@ export default class BattleScene extends Phaser.Scene {
     const y = PANEL_Y + 2 + i * 13;
     const row = {};
     row.name = txt(this, 6, y, u.name, { size: 11, strokeThickness: 1 });
-    row.hp = bar(this, 56, y + 4, 50, 4, COLORS.hp, { lowAt: 0.3 });
-    row.mp = bar(this, 56, y + 9, 50, 3, COLORS.mp);
+    row.hp = bar(this, 54, y + 4, 54, 4, COLORS.hp, { lowAt: 0.3, frame: 'hp' });
+    row.mp = bar(this, 58, y + 10, 46, 3, COLORS.mp);
     row.auto = txt(this, 48, y, '', { size: 11, color: COLORS.yellow, strokeThickness: 1 });
-    if (u.friend >= 80) row.heart = txt(this, 40, y, '♥', { size: 11, color: '#ff6fa0', strokeThickness: 1 });
+    if (u.friend >= 80) row.heart = icon(this, 44, y + 6, 'ui_heart_full', { scale: 0.7 }) || txt(this, 40, y, '♥', { size: 11, color: '#ff6fa0', strokeThickness: 1 });
     const hit = this.add.rectangle(56, y + 7, 108, 14, 0xffffff, 0.001).setInteractive({ useHandCursor: true });
     hit.on('pointerup', () => { if (this.targeting) this.onTargetTap(u); else if (u.kind === 'animal') this.toggleAuto(u); });
     row.pointer = txt(this, 0, y, '▶', { size: 11, color: COLORS.yellow, strokeThickness: 1 }).setVisible(false);

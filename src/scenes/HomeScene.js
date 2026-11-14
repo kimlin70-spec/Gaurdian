@@ -270,8 +270,10 @@ export default class HomeScene extends Phaser.Scene {
       const y = top + i * rowH;
       const b = g.add(new Button(this, 16, y, W - 32, rowH - 4, '', r.onTap, { depth: DEPTH.MODAL, color: r.color ?? 0x3d4066 }));
       const f = Data.furniture[r.id];
-      const icon = g.add(img(this, 24, y + (rowH - 4) / 2, f.sprite).setDepth(DEPTH.MODAL + 1).setOrigin(0, 0.5));
-      const sc = Math.min(1 / PX, 26 / Math.max(icon.width, icon.height)); icon.setScale(sc);
+      // 가구 그림은 나무 칸(슬롯) 안에
+      const cy = y + (rowH - 4) / 2, slot = this.textures.exists('ui_slot') ? g.add(img(this, 36, cy, 'ui_slot').setDepth(DEPTH.MODAL + 1)) : null;
+      const icon = g.add(img(this, slot ? 36 : 24, cy, f.sprite).setDepth(DEPTH.MODAL + 2).setOrigin(slot ? 0.5 : 0, 0.5));
+      const sc = Math.min(1 / PX, (slot ? 16 : 26) / Math.max(icon.width, icon.height)); icon.setScale(sc);
       b.label.setOrigin(0, 0.5).setPosition(58, y + (rowH - 4) / 2 - (r.sub ? 5 : 0)).setText(r.label);
       if (r.sub) g.add(txt(this, 58, y + 17, r.sub, { size: 11, color: '#b8c0e0', depth: DEPTH.MODAL + 1, strokeThickness: 1 }));
       if (r.right) g.add(txt(this, W - 24, y + (rowH - 4) / 2, r.right, { size: 11, origin: [1, 0.5], color: r.rightColor || COLORS.yellow, depth: DEPTH.MODAL + 1 }));

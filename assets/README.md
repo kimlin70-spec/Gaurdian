@@ -36,4 +36,5 @@ python3 tools/build_assets.py <푼 묶음 폴더>
 ## 화면 구성 그림 (`ui_*.png`, 확장 묶음 2)
 - `ui_panel_dark`(창), `ui_button*`(버튼), `ui_dialog`(대화창)는 9분할로 늘려 씁니다 (모서리 8픽셀 고정). 연결 코드는 `src/systems/UI.js` 의 `slice9`, `BUTTON_SKINS`.
 - 버튼 색 → 그림: 파랑(기본), 초록(좋은 선택), 분홍(정화), 주황, 보라. 뒤로·닫기는 파란 버튼을 차분하게 물들여 씁니다. 목록 줄은 단색 그대로입니다.
-- 아직 연결하지 않은 그림: `ui_panel`(크림색 창), `ui_bar_*`, `ui_tab_*`, `ui_slot*`, 하트·별·역할·상태 아이콘, `icon_*`, `ui_lock`, `ui_close`, `ui_arrow_next`.
+- 작은 그림: 하트·별(`iconRow`), 별가루·보석 조각(`moneyTag`), 역할·상태 아이콘, 자물쇠, 닫기, 다음 화살표, 가구 목록의 슬롯. HP 바는 `bar(..., { frame: 'hp' })`.
+- 아직 쓰지 않는 그림: `ui_panel`(크림색 창: 지금 글자가 흰색이라 안 맞음), `ui_tab_on/off`(탭 화면이 아직 없음), `ui_slot_selected`, `ui_bar_mp`(전투 MP 바는 자리가 좁아 가는 선 그대로).

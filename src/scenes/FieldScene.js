@@ -125,7 +125,8 @@ export default class FieldScene extends Phaser.Scene {
       obj.type = 'gate';
       obj.sprite = this.add.rectangle(wp.x, wp.y, TILE, TILE, 0xff6fd8, 0.55).setStrokeStyle(1, 0xffffff).setDepth(wd(wp.y + 8));
       this.tweens.add({ targets: obj.sprite, alpha: 0.9, duration: 700, yoyo: true, repeat: -1 });
-      txt(this, wp.x, wp.y - 12, '잠김', { size: 11, origin: 0.5, depth: DEPTH.WORLD_UI, color: '#ffb3ec' });
+      if (this.textures.exists('ui_lock')) img(this, wp.x, wp.y - 1, 'ui_lock').setDepth(wd(wp.y + 8) + 0.001);
+      else txt(this, wp.x, wp.y - 12, '잠김', { size: 11, origin: 0.5, depth: DEPTH.WORLD_UI, color: '#ffb3ec' });
       this.blocked.add(o.x + ',' + o.y);
       obj.sprite.setInteractive({ useHandCursor: true });
       obj.sprite.on('pointerup', (pointer) => { if (!this.busy && !this.transitioning && pointer.getDistance() <= 10 * PX) this.approach(obj); });

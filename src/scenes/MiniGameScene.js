@@ -3,7 +3,7 @@ import { W, H, COLORS, PX } from '../config.js';
 import Data from '../systems/Data.js';
 import GameState from '../systems/GameState.js';
 import Audio from '../systems/Audio.js';
-import { txt, Button, panel, UIGroup, DialogBox, fadeIn, fadeOut, tween, wait, bar, DEPTH, setupCamera } from '../systems/UI.js';
+import { txt, Button, panel, UIGroup, DialogBox, fadeIn, fadeOut, tween, wait, bar, DEPTH, setupCamera, iconRow } from '../systems/UI.js';
 import { img, unit, setPose, fx, face, retexture } from '../systems/Assets.js';
 
 const GRADE_TITLE = ['아쉬워요...', '잘했어요!', '완벽해요!'];
@@ -326,7 +326,7 @@ export default class MiniGameScene extends Phaser.Scene {
     g.add(this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.5).setDepth(DEPTH.MODAL - 1).setInteractive());
     g.add(panel(this, x, y, w, h, { depth: DEPTH.MODAL }));
     g.add(txt(this, W / 2, y + 10, GRADE_TITLE[grade], { size: 14, origin: [0.5, 0], color: COLORS.yellow, depth: DEPTH.MODAL + 1 }));
-    g.add(txt(this, W / 2, y + 30, '★'.repeat(grade + 1) + '☆'.repeat(2 - grade), { size: 14, origin: [0.5, 0], color: '#ffd93b', depth: DEPTH.MODAL + 1 }));
+    g.add(iconRow(this, W / 2 - 24, y + 38, grade + 1, 3, 'ui_star_full', 'ui_star_empty', { depth: DEPTH.MODAL + 1, step: 16, scale: 1.2 }));
     const retry = g.add(new Button(this, x + 16, y + h - 32, 104, 24, '한 번 더!', async () => { await fadeOut(this, 200); this.scene.start('MiniGame', { animalId: this.id, type: this.type }); }, { depth: DEPTH.MODAL + 1, color: COLORS.ok }));
     if (!canRetry) retry.setEnabled(false);
     g.add(new Button(this, x + w - 120, y + h - 32, 104, 24, '돌아가기', () => this.back(), { depth: DEPTH.MODAL + 1 }));
