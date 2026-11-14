@@ -39,3 +39,20 @@ python3 tools/build_assets.py <푼 묶음 폴더>
 - 작은 그림: 하트·별(`iconRow`), 별가루·보석 조각(`moneyTag`), 역할·상태 아이콘, 자물쇠, 닫기, 다음 화살표, 가구 목록의 슬롯. HP 바는 `bar(..., { frame: 'hp' })`.
 - 탭(`ui_tab_on/off`)과 선택 테두리(`ui_slot_selected`)는 상태 메뉴(`src/systems/Menu.js`)에서 씁니다.
 - 아직 쓰지 않는 그림: `ui_panel`(크림색 창: 지금 글자가 흰색이라 안 맞음).
+
+## 꾸미기 그림 (머리·옷·장식·갑옷·장화) — 그림을 넣으면 바로 적용되는 이름 규칙
+주인공은 48×64(템플릿 크기) 캔버스에 레이어를 겹쳐 그립니다: 몸 → 옷 → 갑옷 → 장화 → 머리카락 → 머리 장식 → 무기.
+모든 레이어는 `player_body` / `player_clothes` 와 같은 캔버스, 같은 위치로 그리고 나머지는 투명하게 둡니다.
+
+| 종류 | 파일 이름 | 내용 |
+|---|---|---|
+| 머리 모양 | `hair_N.png`, `hair_N_side.png` | 정지 그림 1장씩 (무채색, 게임이 머리 색을 곱함). N 은 3부터. `data/fashion.json` 의 hair 목록 순서와 같음 (3 포니테일, 4 땋은 머리, 5 뽀글머리가 이미 적혀 있어 그림만 넣으면 상점에 나옴) |
+| 옷(패션) | `player_clothes_<이름>_anim.png` (정면 10프레임), `player_clothes_<이름>_side_anim.png` (옆 14프레임) | 기본 옷 시트와 같은 프레임 순서. 눈·입도 이 레이어에 있음. 이름: snow, swamp, fire, star |
+| 갑옷 | `armor_<이름>_anim.png`, `armor_<이름>_side_anim.png` | 옷 위에 덧입는 부분만 그림. 이름: leather, leaf (`data/equipment.json` 의 layer) |
+| 장화 | `boots_<이름>_anim.png`, `boots_<이름>_side_anim.png` | 발 부분만 그림. 이름: leather, wind |
+| 머리 장식 | `acc_<이름>.png`, `acc_<이름>_side.png` | 정지 그림 1장씩 (완성 색). 머리카락처럼 머리 움직임을 따라감. 이름: ribbon, flower, star, crown |
+
+- 옆모습 시트가 없는 옷·갑옷·장화·머리를 하고 있으면 그레이스는 정면 그림만 씁니다 (양갈래와 같은 규칙). 머리 장식은 옆 그림이 없으면 정면 그림을 씁니다.
+- 그림이 아직 없을 때의 임시 표현: 옷과 갑옷은 기본 옷을 `tint` 색으로 물들이고, 머리 장식은 코드로 그린 작은 도트, 장화는 겉모습 변화 없음.
+- 옷(패션)을 입으면 갑옷 겉모습은 가려집니다. 능력치는 그대로 적용됩니다.
+- 새 항목 추가: `data/fashion.json` (머리·머리 색·옷·장식) 또는 `data/equipment.json` (갑옷·장화) 에 한 줄 추가하고 그림을 넣으면 상점·대장간·메뉴에 나옵니다.

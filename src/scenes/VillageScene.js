@@ -228,7 +228,7 @@ export default class VillageScene extends Phaser.Scene {
   openMenu() {
     if (this.busy || this.leaving || this.moving) return;
     this.busy = true;
-    openStatusMenu(this, { onClose: () => { this.busy = false; this.hero.setWeapon(GameState.s.player.equip.weapon); this.refreshHud(); } });
+    openStatusMenu(this, { onClose: () => { this.busy = false; this.hero.refresh(); this.refreshHud(); } });
   }
   // 마을 안(움직이는 카메라)에 놓이는 것을 만들 때 감싼다. 감싸지 않으면 화면에 고정된 UI 가 된다.
   world(fn) { const prev = this.worldMode; this.worldMode = true; try { return fn(); } finally { this.worldMode = prev; } }
@@ -443,6 +443,7 @@ export default class VillageScene extends Phaser.Scene {
     if (this.listGroup) this.listGroup.destroy(); if (this.panelGroup) this.panelGroup.destroy();
     this.listGroup = null; this.panelGroup = null; this.busy = false; GameState.save();
     this.refreshDog(); // 쉼터에서 함께 가기/쉬게 하기를 바꿨을 수 있다
+    if (this.hero && this.hero.active) this.hero.refresh(); // 대장간에서 갑옷·장화를 바꿨을 수 있다
   }
   // rows: [{label, right, sub, onTap, enabled, color}] 5줄씩 페이지
   renderList(rows, perPage = 5) {
@@ -500,8 +501,23 @@ export default class VillageScene extends Phaser.Scene {
   }
 
   // ---------- 상점 ----------
-  openShop() {
-    this.openPanel('상점');
+  // 상점: 물건 / 꾸미기(머리 모양·머리 색·옷·머리 장식) 두 쪽
+  openShop(style = false) {
+    this.openPanel(style ? '상점 - 꾸미기' : '상점');
+    this.panelGroup.add(new Button(this, 16, 12, 64, 20, style ? '◀ 물건' : '꾸미기 ▶', () => this.openShop(!style), { depth: DEPTH.MODAL, color: 0x6a4fb3 }));
+    const CAT = { hair: '머리 모양', hairColor: '머리 색', outfit: '옷', acc: '머리 장식' };
+    const renderStyle = () => {
+      const s = GameState.s, rows = [];
+      for (const cat of Object.keys(CAT)) for (const v of GameState.fashionList(cat)) {
+        if (!v.price || (cat === 'hair' && !this.textures.exists('hair_' + v.id))) continue; // 공짜와 그림 없는 머리는 팔지 않는다
+        const own = GameState.ownsFashion(cat, v.id);
+        rows.push({ label: `[${CAT[cat]}] ${v.name}`, sub: own ? '메뉴 → 꾸미기에서 바꿔요' : '사면 메뉴 → 꾸미기에서 쓸 수 있어요',
+          right: own ? '가졌어요' : `★${v.price}`, rightColor: own ? '#7ee081' : COLORS.yellow, color: own ? 0x2e5a3a : 0x3d4066, enabled: !own && s.stardust >= v.price,
+          onTap: () => { if (!GameState.buyFashion(cat, v.id)) return; Audio.sfx('chest'); toast(this, `${v.name}을(를) 샀어요!`); this.updateMoney(); renderStyle(); } });
+      }
+      this.renderList(rows);
+    };
+    if (style) return renderStyle();
     const render = () => {
       const s = GameState.s;
       const rows = Object.entries(Data.items).filter(([, it]) => it.shop).map(([id, it]) => ({
@@ -517,10 +533,10 @@ export default class VillageScene extends Phaser.Scene {
   // ---------- 대장간 ----------
   openSmithy() {
     this.openPanel('대장간');
-    const slotName = { weapon: '무기', armor: '옷', bracelet: '팔찌' };
+    const slotName = { weapon: '무기', armor: '갑옷', boots: '장화', bracelet: '팔찌' };
     const render = () => {
       const s = GameState.s;
-      const order = { weapon: 0, armor: 1, bracelet: 2 };
+      const order = { weapon: 0, armor: 1, boots: 2, bracelet: 3 };
       const rows = Object.entries(Data.equipment).sort((a, b) => order[a[1].slot] - order[b[1].slot] || a[1].price - b[1].price).map(([id, e]) => {
         const equipped = s.player.equip[e.slot] === id, owned = s.ownedEquip.includes(id);
         return {

@@ -122,7 +122,7 @@ export default class PalaceScene extends Phaser.Scene {
       if (this.busy || this.leaving) return;
       if (this.walkTween) { this.walkTween.stop(); this.walkTween = null; setPose(this.hero, 'idle'); }
       this.busy = true; this.pending = null;
-      openStatusMenu(this, { onClose: () => { this.busy = false; this.hero.setWeapon(GameState.s.player.equip.weapon); } });
+      openStatusMenu(this, { onClose: () => { this.busy = false; this.hero.refresh(); } });
     }, { depth: DEPTH.TOP, color: 0x333355 });
     this.dialog = new DialogBox(this);
 

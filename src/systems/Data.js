@@ -1,9 +1,9 @@
 // 모든 JSON 데이터를 한 곳에서 꺼내 씁니다. BootScene 에서 init() 호출.
-export const DATA_FILES = ['strings', 'skills', 'items', 'equipment', 'animals', 'enemies', 'player', 'dialogues', 'stages', 'assets', 'furniture', 'anim', 'anim_tweaks'];
+export const DATA_FILES = ['strings', 'skills', 'items', 'equipment', 'animals', 'enemies', 'player', 'dialogues', 'stages', 'assets', 'furniture', 'anim', 'anim_tweaks', 'fashion'];
 
 const Data = {
   strings: {}, skills: {}, items: {}, equipment: {}, animals: {}, enemies: {},
-  player: {}, dialogues: {}, stages: {}, assets: {}, furniture: {}, anim: {}, anim_tweaks: {},
+  player: {}, dialogues: {}, stages: {}, assets: {}, furniture: {}, anim: {}, anim_tweaks: {}, fashion: {},
 
   init(cache) {
     for (const key of DATA_FILES) {

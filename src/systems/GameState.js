@@ -12,12 +12,13 @@ const GameState = {
       version: 1,
       player: {
         name: Data.strings.heroName,
-        look: look || { skin: 0, hair: 0, hairColor: 0 },
+        look: { skin: 0, hair: 0, hairColor: 0, outfit: 'basic', acc: 'none', ...(look || {}) },
         level: 1, exp: 0,
         hp: p.base.hp, mp: p.base.mp,
         equip: { ...p.startEquip },
       },
       ownedEquip: Object.values(p.startEquip),
+      wardrobe: this.freeWardrobe(), // 가진 꾸미기: 머리 모양, 머리 색, 옷, 장식
       animals: {},            // id → { level, exp, hp, mp }
       party: [],              // 동물 id 최대 3
       auto: {},               // 동물 id → true 면 자동 전투
@@ -42,6 +43,10 @@ const GameState = {
     s.flags.chests = s.flags.chests || {}; s.flags.defeated = s.flags.defeated || {}; s.flags.cleared = s.flags.cleared || {};
     s.inventory = s.inventory || {}; s.party = s.party || []; s.animals = s.animals || {};
     s.ownedEquip = s.ownedEquip || Object.values(s.player.equip);
+    // 꾸미기(예전 저장에는 없음): 공짜 항목과 지금 하고 있는 것은 가진 것으로
+    const free = this.freeWardrobe(), lk = s.player.look; lk.outfit = lk.outfit || 'basic'; lk.acc = lk.acc || 'none';
+    s.wardrobe = s.wardrobe || {};
+    for (const c of ['hair', 'hairColor', 'outfit', 'acc']) { s.wardrobe[c] = [...new Set([...(s.wardrobe[c] || []), ...free[c], lk[c]])]; }
     s.flags.healed = s.flags.healed || {}; s.day = s.day || 1;
     s.flags.gate = s.flags.gate || {}; s.flags.gateOpen = s.flags.gateOpen || {};
     // 예전 저장: 이미 정화한 무리를 보스 문 게이지에 반영
@@ -63,11 +68,20 @@ const GameState = {
   playerStats() {
     const p = this.s.player;
     const st = this.statsFor(Data.player.base, Data.player.growth, p.level);
-    for (const slot of ['weapon', 'armor']) {
+    for (const slot of ['weapon', 'armor', 'boots']) {
       const e = Data.equip(p.equip[slot]);
       if (e) { st.atk += e.atk || 0; st.def += e.def || 0; st.spd += e.spd || 0; }
     }
     return st;
+  },
+  // ---------- 꾸미기 (data/fashion.json) ----------
+  fashionList(cat) { const f = Data.fashion[cat] || {}; return Array.isArray(f) ? f.map((v, i) => ({ id: i, ...v })) : Object.entries(f).map(([id, v]) => ({ id, ...v })); },
+  freeWardrobe() { const w = {}; for (const c of ['hair', 'hairColor', 'outfit', 'acc']) w[c] = this.fashionList(c).filter(v => !v.price).map(v => v.id); return w; },
+  ownsFashion(cat, id) { return (this.s.wardrobe[cat] || []).includes(id); },
+  buyFashion(cat, id) {
+    const it = this.fashionList(cat).find(v => v.id === id);
+    if (!it || this.ownsFashion(cat, id) || this.s.stardust < it.price) return false;
+    this.s.stardust -= it.price; this.s.wardrobe[cat].push(id); return true;
   },
   animalStats(id) {
     const a = Data.animal(id), st = this.s.animals[id];

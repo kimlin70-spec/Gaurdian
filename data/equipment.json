@@ -1,5 +1,5 @@
 {
-  "_comment": "slot: weapon | armor | bracelet. bracelet 의 purify 는 정화 가능 HP 비율. price 0 은 처음부터 가진 것. weapon 의 sprite 는 주인공 손에 보이는 그림(24x32 레이어).",
+  "_comment": "slot: weapon | armor | boots | bracelet. bracelet 의 purify 는 정화 가능 HP 비율. price 0 은 처음부터 가진 것. weapon 의 sprite 는 주인공 손에 보이는 그림. armor/boots 의 layer 는 몸 위에 덧입히는 그림 이름: <layer>_anim.png(정면 10프레임), <layer>_side_anim.png(옆 14프레임). 그림이 아직 없으면 옷을 tint 색으로 살짝 물들여 표시합니다.",
   "stick": {
     "name": "나무 막대",
     "slot": "weapon",
@@ -36,14 +36,35 @@
     "slot": "armor",
     "def": 3,
     "price": 25,
-    "desc": "방어 +3"
+    "desc": "방어 +3",
+    "layer": "armor_leather",
+    "tint": "#d9a066"
   },
   "leaf_armor": {
     "name": "나뭇잎 갑옷",
     "slot": "armor",
     "def": 6,
     "price": 70,
-    "desc": "방어 +6"
+    "desc": "방어 +6",
+    "layer": "armor_leaf",
+    "tint": "#a8e070"
+  },
+  "boots_leather": {
+    "name": "가죽 장화",
+    "slot": "boots",
+    "def": 1,
+    "price": 20,
+    "desc": "방어 +1",
+    "layer": "boots_leather"
+  },
+  "boots_wind": {
+    "name": "바람 장화",
+    "slot": "boots",
+    "def": 1,
+    "spd": 2,
+    "price": 60,
+    "desc": "방어 +1 빠르기 +2",
+    "layer": "boots_wind"
   },
   "bracelet_1": {
     "name": "보석 팔찌",

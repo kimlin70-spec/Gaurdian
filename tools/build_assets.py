@@ -203,7 +203,12 @@ def ingest_meta(pack, src_dir, mode, anim):
 def frame_size_guess(key):
     """JSON 에 없는 시트: 같은 이름의 정지 그림 폭을 한 프레임으로 본다 (x_side_anim → x.png)."""
     base = key[:-5]
-    _, h = Image.open(os.path.join(OUT, key + '.png')).size
+    w0, h = Image.open(os.path.join(OUT, key + '.png')).size
+    # 주인공 몸에 겹치는 시트(옷·갑옷·장화): 정면 10프레임, 옆모습 14프레임
+    if key.startswith(('player_', 'armor_', 'boots_')):
+        n = 14 if base.endswith('_side') else 10
+        if w0 % n == 0:
+            return [w0 // n, h]
     for cand in (base, base[:-5] if base.endswith('_side') else None):
         if cand and os.path.exists(os.path.join(OUT, cand + '.png')):
             w, _ = Image.open(os.path.join(OUT, cand + '.png')).size

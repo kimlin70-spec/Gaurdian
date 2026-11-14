@@ -1,0 +1,40 @@
+{
+ "_comment": "꾸미기 목록. price 0 은 처음부터 가진 것. 그림 파일이 아직 없는 항목은 임시 표현으로 보입니다 (옷: tint 색으로 물들임, 장식: 코드로 그린 작은 도트). 그림 규격은 assets/README.md 의 '꾸미기 그림' 참고.",
+ "_hair": "머리 모양. 번호 N 은 hair_N.png / hair_N_side.png. 새 머리를 추가하려면 그림을 넣고 여기에 한 줄 추가 (그림이 없으면 목록에 안 나옴).",
+ "hair": [
+  { "name": "단발", "price": 0 },
+  { "name": "긴 머리", "price": 0 },
+  { "name": "양갈래", "price": 0 },
+  { "name": "포니테일", "price": 40 },
+  { "name": "땋은 머리", "price": 40 },
+  { "name": "뽀글머리", "price": 40 }
+ ],
+ "_hairColor": "머리 색. 머리 그림(무채색)에 곱해지는 색이라 그림 없이 추가할 수 있어요.",
+ "hairColor": [
+  { "name": "갈색", "color": "#3b2314", "price": 0 },
+  { "name": "노랑", "color": "#f2c14e", "price": 0 },
+  { "name": "빨강", "color": "#c0392b", "price": 0 },
+  { "name": "검정", "color": "#1f1f1f", "price": 0 },
+  { "name": "분홍", "color": "#ff8fb5", "price": 30 },
+  { "name": "하늘", "color": "#6fb7ff", "price": 30 },
+  { "name": "보라", "color": "#a070e0", "price": 30 },
+  { "name": "민트", "color": "#6fd6b0", "price": 30 },
+  { "name": "은빛", "color": "#e8e8f0", "price": 50 }
+ ],
+ "_outfit": "옷(패션). sprite 는 옷 레이어 그림 이름: <sprite>_anim.png(정면 10프레임), <sprite>_side_anim.png(옆 14프레임). 그림이 없으면 기본 옷을 tint 색으로 물들여 보여줍니다.",
+ "outfit": {
+  "basic": { "name": "숲 원피스", "price": 0 },
+  "snow": { "name": "겨울 코트", "price": 60, "sprite": "player_clothes_snow", "tint": "#9fc8ff" },
+  "swamp": { "name": "노란 우비", "price": 60, "sprite": "player_clothes_swamp", "tint": "#ffe45a" },
+  "fire": { "name": "모험가 조끼", "price": 60, "sprite": "player_clothes_fire", "tint": "#ff9a6a" },
+  "star": { "name": "별빛 로브", "price": 120, "sprite": "player_clothes_star", "tint": "#b48cff" }
+ },
+ "_acc": "머리 장식. sprite.png(정면), sprite_side.png(옆, 없으면 정면 그림을 씀). 머리카락처럼 머리 움직임을 따라갑니다.",
+ "acc": {
+  "none": { "name": "없음", "price": 0 },
+  "ribbon": { "name": "분홍 리본", "price": 20, "sprite": "acc_ribbon" },
+  "flower": { "name": "꽃 머리핀", "price": 20, "sprite": "acc_flower" },
+  "star": { "name": "별 머리핀", "price": 40, "sprite": "acc_star" },
+  "crown": { "name": "작은 왕관", "price": 80, "sprite": "acc_crown" }
+ }
+}

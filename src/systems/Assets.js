@@ -131,7 +131,23 @@ export function loadOverrides(scene, assetsJson) {
 }
 
 // ---- 전부 만들기: BootScene.create 에서 호출 ----
+// 머리 장식 임시 도트 (진짜 그림 acc_*.png 가 오면 그것을 쓴다). 48x64 캔버스의 머리 위치에 그린다.
+function genAccessories(scene) {
+  const draw = (key, cells) => {
+    if (scene.textures.exists(key)) return;
+    const t = scene.textures.createCanvas(key, 24 * PX, 32 * PX), ctx = t.getContext(), u = PX / 2; // u = 템플릿 1픽셀
+    for (const [x, y, w, h, col] of cells) { ctx.fillStyle = col; ctx.fillRect(x * u, y * u, w * u, h * u); }
+    t.refresh();
+  };
+  const O = '#3b251b';
+  draw('acc_ribbon', [[27, 3, 6, 5, O], [35, 3, 6, 5, O], [32, 4, 4, 4, O], [28, 4, 4, 3, '#ff8fb5'], [36, 4, 4, 3, '#ff8fb5'], [33, 5, 2, 2, '#ffd1e0']]);
+  draw('acc_flower', [[14, 7, 7, 7, O], [15, 8, 5, 5, '#fff4f8'], [16, 6, 3, 9, O], [17, 7, 1, 7, '#ffb3cf'], [13, 9, 9, 3, O], [14, 10, 7, 1, '#ffb3cf'], [17, 10, 1, 1, '#ffd93b']]);
+  draw('acc_star', [[32, 8, 7, 7, O], [35, 7, 1, 9, O], [31, 11, 9, 1, O], [33, 9, 5, 5, '#ffd93b'], [35, 8, 1, 7, '#ffd93b'], [32, 11, 7, 1, '#ffd93b'], [35, 11, 1, 1, '#fff6c0']]);
+  draw('acc_crown', [[19, 0, 11, 6, O], [20, 3, 9, 2, '#f5c542'], [20, 1, 2, 2, '#f5c542'], [24, 1, 1, 2, '#f5c542'], [27, 1, 2, 2, '#f5c542'], [24, 3, 1, 1, '#ff6fd8']]);
+}
+
 export function generateAll(scene) {
+  genAccessories(scene);
   genTiles(scene);
   genSnowTiles(scene);
   genBuildings(scene);
@@ -262,20 +278,45 @@ export function makeCharacter(scene, x, y, look, opts = {}) {
   const body = mk('player_body'), clothes = mk('player_clothes');
   const hair = img(scene, 0, 0, 'hair_' + (look.hair ?? 0)).setOrigin(0.5, 1);
   const weapon = img(scene, 0, 0, 'dot').setOrigin(0.5, 1).setVisible(false);
-  const c = scene.add.container(x, y, [body, clothes, hair, weapon]);
+  // 덧입는 그림: 갑옷, 장화 (옷과 같은 프레임 시트), 머리 장식 (머리카락처럼 머리를 따라감)
+  const armorL = scene.add.sprite(0, 0, 'dot').setScale(1 / PX).setOrigin(0.5, 1).setVisible(false);
+  const bootsL = scene.add.sprite(0, 0, 'dot').setScale(1 / PX).setOrigin(0.5, 1).setVisible(false);
+  const acc = img(scene, 0, 0, 'dot').setOrigin(0.5, 1).setVisible(false);
+  const c = scene.add.container(x, y, [body, clothes, armorL, bootsL, hair, acc, weapon]);
   c.setSize(24, 32);
   c.isHero = true;
-  c.parts = { body, clothes, hair, weapon };
+  c.parts = { body, clothes, armor: armorL, boots: bootsL, hair, acc, weapon };
   c.curView = 'front'; c.curPose = null;
-  let lk = { skin: 0, hair: 0, hairColor: 0, ...look }, flip = false, frame = 0, extra = 0, wKey = null, timer = null, want = 'front';
-  // 옆모습 머리 그림이 아직 어색한 머리 모양(anim_tweaks.json heroSideHairOff)이면 정면만 쓴다
-  const sideFor = () => sideOK && T.exists('hair_' + (lk.hair ?? 0) + '_side') && !(Array.isArray(AN.heroSideHairOff) && AN.heroSideHairOff.includes(lk.hair ?? 0));
+  let lk = { skin: 0, hair: 0, hairColor: 0, outfit: 'basic', acc: 'none', ...look }, flip = false, frame = 0, extra = 0, wKey = null, timer = null, want = 'front';
+  // 낀 방어구 (겉모습용). 캐릭터 만들기 화면처럼 무기를 뺀 미리보기는 방어구도 없이.
+  let gear = { ...(opts.gear || (opts.weapon === null || !GameState.s ? {} : GameState.s.player.equip)) };
+  const FA = Data.fashion || {}, hex = (h) => (typeof h === 'string' ? parseInt(h.slice(1), 16) : h);
+  // 지금 차림에서 쓸 그림들. 그림 파일이 없으면 null (→ 기본 옷을 색으로 물들이는 임시 표현)
+  const wear = () => {
+    const o = (FA.outfit || {})[lk.outfit], custom = !!(o && o.sprite), a = Data.equip(gear.armor), b = Data.equip(gear.boots), ac = (FA.acc || {})[lk.acc];
+    const has = (k) => !!k && T.exists(k + '_anim');
+    return {
+      clothes: custom && has(o.sprite) ? o.sprite : 'player_clothes',
+      // 옷(패션)을 입으면 갑옷 겉모습은 가려진다
+      armor: !custom && a && has(a.layer) ? a.layer : null,
+      boots: b && has(b.layer) ? b.layer : null,
+      acc: ac && ac.sprite && T.exists(ac.sprite) ? ac.sprite : null,
+      tint: custom ? (has(o.sprite) ? null : o.tint) : (a && a.tint && !has(a.layer) ? a.tint : null),
+    };
+  };
+  // 옆모습을 쓸 수 있는지: 머리(anim_tweaks.json heroSideHairOff 는 제외)와 입은 것 모두 옆모습 그림이 있어야 한다
+  const sideFor = () => {
+    const w = wear(), sd = (k) => !k || T.exists(k + '_side_anim');
+    return sideOK && T.exists('hair_' + (lk.hair ?? 0) + '_side') && !(Array.isArray(AN.heroSideHairOff) && AN.heroSideHairOff.includes(lk.hair ?? 0))
+      && sd(w.clothes) && sd(w.armor) && sd(w.boots);
+  };
   c.hasSide = sideFor();
   const D = () => (c.curView === 'side' ? HS : HF) || {};
   const layout = () => {
     const d = D(), FW = (d.frame || [48, 64])[0], FH = (d.frame || [48, 64])[1], k = 24 / FW, sx = flip ? -1 : 1;
     const ho = (d.hairOffset && d.hairOffset[frame]) || [0, 0];
     hair.setPosition(sx * ho[0] * k, ho[1] * k);
+    acc.setPosition(sx * ho[0] * k, ho[1] * k);
     if (wKey) {
       // 옆모습 손잡이 값이 없으면 정면 값을 쓴다 (같은 48x64 무기 그림)
       const g = (d.grip && d.grip[wKey]) || (HF && HF.grip && HF.grip[wKey]) || [FW / 2, FH], h = (d.hand && d.hand[frame]) || g;
@@ -287,18 +328,33 @@ export function makeCharacter(scene, x, y, look, opts = {}) {
   };
   const tintAll = () => {
     body.setTint(LOOKS.skin[lk.skin] ?? LOOKS.skin[0]);
-    hair.setTint(LOOKS.hairColor[lk.hairColor] ?? LOOKS.hairColor[0]);
+    const hc = (FA.hairColor || [])[lk.hairColor];
+    hair.setTint(hc ? hex(hc.color) : (LOOKS.hairColor[lk.hairColor] ?? LOOKS.hairColor[0]));
+    const w = wear();
+    if (w.tint) clothes.setTint(hex(w.tint)); else clothes.clearTint();
+    armorL.clearTint(); bootsL.clearTint(); acc.clearTint();
   };
   const applyTextures = () => {
-    const side = c.curView === 'side';
+    const side = c.curView === 'side', w = wear(), suf = side ? '_side_anim' : '_anim';
     if (frontOK) {
       body.setTexture(side ? 'player_body_side_anim' : 'player_body_anim', frame);
-      clothes.setTexture(side ? 'player_clothes_side_anim' : 'player_clothes_anim', frame);
+      clothes.setTexture(w.clothes + suf, frame);
+      for (const [layer, key] of [[armorL, w.armor], [bootsL, w.boots]]) {
+        layer.setVisible(!!key);
+        if (key) layer.setTexture(key + suf, frame);
+      }
     }
-    hair.setTexture('hair_' + (lk.hair ?? 0) + (side ? '_side' : ''));
+    const hk = 'hair_' + (lk.hair ?? 0);
+    hair.setTexture(T.exists(hk + (side ? '_side' : '')) ? hk + (side ? '_side' : '') : 'hair_0' + (side ? '_side' : ''));
+    acc.setVisible(!!w.acc);
+    if (w.acc) acc.setTexture(side && T.exists(w.acc + '_side') ? w.acc + '_side' : w.acc).setScale(1 / PX);
     tintAll();
   };
-  const setFrame = (i) => { frame = i; if (frontOK) { body.setFrame(i); clothes.setFrame(i); } layout(); };
+  const setFrame = (i) => {
+    frame = i;
+    if (frontOK) { body.setFrame(i); clothes.setFrame(i); if (armorL.visible) armorL.setFrame(i); if (bootsL.visible) bootsL.setFrame(i); }
+    layout();
+  };
   const stop = () => { if (timer) { timer.remove(false); timer = null; } };
   const loop = (name) => {
     const d = D(), base = (d.seq && d.seq[name === 'move' ? 'walk' : name]) || [0];
@@ -321,7 +377,7 @@ export function makeCharacter(scene, x, y, look, opts = {}) {
     if (f !== undefined) flip = !!f;
     want = v;
     const nv = v === 'side' && c.hasSide ? 'side' : 'front';
-    [body, clothes, hair, weapon].forEach(o => o.setFlipX(flip));
+    [body, clothes, armorL, bootsL, hair, acc, weapon].forEach(o => o.setFlipX(flip));
     if (nv !== c.curView) {
       c.curView = nv;
       const p = c.curPose || 'idle'; c.curPose = null;
@@ -332,12 +388,18 @@ export function makeCharacter(scene, x, y, look, opts = {}) {
   c.setFlip = (f) => c.setView(c.curView, f);
   // 휘두르기 연출용 추가 각도 (프레임 각도에 더해짐)
   c.setSwing = (a) => { extra = a; layout(); };
-  c.setLook = (l) => {
-    lk = { ...lk, ...l };
+  // 차림이 바뀌면: 옆모습 그림이 다 있는지 다시 보고, 정면/옆모습을 맞춘다
+  const redress = () => {
     const had = c.hasSide; c.hasSide = sideFor();
+    if (!c.hasSide && c.curView === 'side') { c.setView(want); return; } // 옆모습 그림이 없는 차림 → 정면으로
     applyTextures(); layout();
-    if (had !== c.hasSide) c.setView(want); // 머리 모양에 따라 옆모습을 켜고 끈다
+    if (had !== c.hasSide) c.setView(want);
   };
+  c.setLook = (l) => { lk = { ...lk, ...l }; redress(); };
+  // 방어구 겉모습 (갑옷·장화). 예: c.setGear({ armor: 'leaf_armor', boots: 'boots_wind' })
+  c.setGear = (g) => { gear = { ...gear, ...g }; redress(); };
+  // 저장된 모습·장비로 한 번에 다시 맞추기 (메뉴에서 바꾼 뒤)
+  c.refresh = () => { const p = GameState.s.player; lk = { ...lk, ...p.look }; gear = { ...p.equip }; redress(); c.setWeapon(p.equip.weapon); };
   c.setWeapon = (weaponId) => {
     const e = weaponId ? Data.equip(weaponId) : null;
     if (e && e.sprite && T.exists(e.sprite)) { wKey = e.sprite; weapon.setTexture(e.sprite).setVisible(true).setScale(1 / PX); }
@@ -346,8 +408,8 @@ export function makeCharacter(scene, x, y, look, opts = {}) {
   };
   // 맞았을 때 하얗게 번쩍 → 원래 색
   c.flashWhite = (on) => {
-    if (on) [body, clothes, hair, weapon].forEach(o => o.setTintFill(0xffffff));
-    else { clothes.clearTint(); weapon.clearTint(); tintAll(); }
+    if (on) [body, clothes, armorL, bootsL, hair, acc, weapon].forEach(o => o.setTintFill(0xffffff));
+    else { weapon.clearTint(); tintAll(); }
   };
   c.once('destroy', stop);
   applyTextures();

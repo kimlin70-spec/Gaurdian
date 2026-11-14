@@ -7,8 +7,10 @@ import Audio from './Audio.js';
 import { txt, Button, panel, UIGroup, bar, icon, iconRow, slice9, fix, DEPTH, ROLE_ICON } from './UI.js';
 import { makeCharacter } from './Assets.js';
 
-const TABS = [['hero', '그레이스'], ['equip', '장비'], ['bag', '가방'], ['friends', '친구']];
-const SLOT_NAME = { weapon: '무기', armor: '옷', bracelet: '팔찌' };
+const TABS = [['hero', '그레이스'], ['style', '꾸미기'], ['equip', '장비'], ['bag', '가방'], ['friends', '친구']];
+const SLOT_NAME = { weapon: '무기', armor: '갑옷', boots: '장화', bracelet: '팔찌' };
+// 꾸미기 종류: [wardrobe 키, 이름]
+const STYLE_ROWS = [['hair', '머리 모양'], ['hairColor', '머리 색'], ['outfit', '옷'], ['acc', '머리 장식']];
 const ITEM_ICON = { potion_s: 'item_heal_potion', potion_l: 'item_heal_potion', medicine: 'item_bandage', berry: 'item_herb', pebble: 'item_gem', snack: 'item_seed' };
 const INK = '#3b251b';
 
@@ -44,7 +46,7 @@ export function openStatusMenu(scene, opts = {}) {
   const drawTabs = () => {
     tabs.destroy();
     TABS.forEach(([id, label], i) => {
-      const x = 16 + i * 72, y = 31, w = 68, h = 18, on = id === tab, key = on ? 'ui_tab_on' : 'ui_tab_off';
+      const x = 16 + i * 58, y = 31, w = 55, h = 18, on = id === tab, key = on ? 'ui_tab_on' : 'ui_tab_off';
       let bg = null;
       if (scene.textures.exists(key) && scene.game.renderer.type === Phaser.WEBGL) bg = scene.add.nineslice(x, y, key, undefined, Math.round(w / 1.5 * PX), 12 * PX, 4 * PX, 4 * PX, 0, 0).setOrigin(0, 0).setScale(1.5 / PX).setDepth(D + 1);
       else bg = scene.add.rectangle(x, y, w, h, on ? 0xf4e3c0 : 0x9a9a80).setOrigin(0, 0).setDepth(D + 1);
@@ -96,21 +98,40 @@ export function openStatusMenu(scene, opts = {}) {
         y += 13;
       }
     },
+    // 꾸미기: 가진 것 중에서 ◀ ▶ 로 바꿔 본다. 바꾸면 바로 그레이스에게 보인다.
+    style() {
+      const lk = s.player.look;
+      const c = makeCharacter(scene, 60, 158, lk).setScale(3).setDepth(D + 2); page.add(c);
+      if (fixed) { c.setScrollFactor(0, 0, true); c.x += FIX_X; c.y += FIX_Y; }
+      // 그림이 아직 없는 머리 모양은 목록에서 뺀다
+      const owned = (cat) => GameState.fashionList(cat).filter(v => GameState.ownsFashion(cat, v.id) && (cat !== 'hair' || scene.textures.exists('hair_' + v.id)));
+      STYLE_ROWS.forEach(([cat, label], i) => {
+        const y = 62 + i * 31, list = owned(cat), idx = Math.max(0, list.findIndex(v => v.id === lk[cat])), cur = list[idx] || { name: '-' };
+        page.add(T(128, y - 9, label, { color: '#b8c0e0', strokeThickness: 1 }));
+        const step = (d) => { if (list.length < 2) return; lk[cat] = list[(idx + d + list.length) % list.length].id; Audio.sfx('tap'); render(); };
+        page.add(new Button(scene, 126, y + 3, 26, 20, '◀', () => step(-1), { depth: D + 2, fixed }).setEnabled(list.length > 1));
+        page.add(T(215, y + 13, cur.name, { origin: 0.5 }));
+        if (cat === 'hairColor' && cur.color) page.add(F(scene.add.rectangle(215 - 34, y + 13, 8, 8, parseInt(cur.color.slice(1), 16)).setStrokeStyle(1, 0xffffff).setDepth(D + 2)));
+        page.add(new Button(scene, 278, y + 3, 26, 20, '▶', () => step(1), { depth: D + 2, fixed }).setEnabled(list.length > 1));
+        page.add(T(215, y - 9, `${idx + 1}/${list.length}`, { origin: [0.5, 0], color: '#8890aa', strokeThickness: 1 }));
+      });
+      page.add(T(60, 164, '더 많은 꾸미기는\n상점에서 사요', { origin: [0.5, 0], align: 'center', color: '#b8c0e0', strokeThickness: 1, lineSpacing: 2 }));
+    },
     equip() {
-      const eq = s.player.equip; let y = 66;
-      for (const sl of ['weapon', 'armor', 'bracelet']) {
+      const eq = s.player.equip; let y = 64;
+      for (const sl of ['weapon', 'armor', 'boots', 'bracelet']) {
         const e = Data.equip(eq[sl]);
         slot(page, 30, y, e && (e.sprite || (sl === 'bracelet' ? 'item_bracelet' : null)), SLOT_NAME[sl][0]);
         page.add(T(48, y - 6, `${SLOT_NAME[sl]}: ${e ? e.name : '없음'}`, { origin: [0, 0.5] }));
         page.add(T(48, y + 7, e ? e.desc : '', { origin: [0, 0.5], color: '#b8c0e0', strokeThickness: 1 }));
-        y += 28;
+        y += 26;
       }
       // 가지고 있지만 끼지 않은 장비: 탭하면 바꿔 낀다
       const spare = s.ownedEquip.filter(id => Data.equip(id) && eq[Data.equip(id).slot] !== id);
-      page.add(T(170, 56, spare.length ? '바꿔 끼기' : '다른 장비는\n대장간에서 사요', { color: COLORS.yellow, lineSpacing: 3 }));
+      page.add(T(158, 56, spare.length ? '바꿔 끼기' : '다른 장비는\n대장간에서 사요', { color: COLORS.yellow, lineSpacing: 3 }));
       spare.slice(pg * 4, pg * 4 + 4).forEach((id, i) => {
         const e = Data.equip(id);
-        page.add(new Button(scene, 170, 70 + i * 28, 132, 24, `${e.name} (${e.desc})`, () => { eq[e.slot] = id; Audio.sfx('chest'); render(); }, { depth: D + 2, fixed, size: 11, color: COLORS.ok }));
+        page.add(new Button(scene, 156, 70 + i * 28, 148, 24, `${e.name} (${e.desc})`, () => { eq[e.slot] = id; Audio.sfx('chest'); render(); }, { depth: D + 2, fixed, size: 11, color: COLORS.ok }));
       });
       if (spare.length > 4) pager(spare.length, 4);
     },
