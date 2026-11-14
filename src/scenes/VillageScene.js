@@ -4,6 +4,7 @@ import Data from '../systems/Data.js';
 import GameState from '../systems/GameState.js';
 import Audio from '../systems/Audio.js';
 import { txt, Button, panel, UIGroup, DialogBox, confirm, toast, soundButton, fadeIn, fadeOut, tween, DEPTH, setupCamera, icon, iconRow, moneyTag, ROLE_ICON } from '../systems/UI.js';
+import { openStatusMenu } from '../systems/Menu.js';
 import { makeCharacter, buildTilemap, img, unit, setPose, face, retexture } from '../systems/Assets.js';
 
 // 마을 지도: 40 x 28 칸. 건물은 가로 3칸 x 세로 2칸을 차지하고, 문은 바로 아래 칸.
@@ -202,6 +203,7 @@ export default class VillageScene extends Phaser.Scene {
     this.tip = txt(this, W / 2, H - 14, this.areaId === 'village' ? '가고 싶은 곳을 탭하세요' : A.name, { size: 11, origin: 0.5, color: '#fff4d6' });
     this.tweens.add({ targets: this.tip, alpha: 0, delay: 3500, duration: 800 });
     soundButton(this);
+    new Button(this, W - 84, 4, 50, 18, '메뉴', () => this.openMenu(), { depth: DEPTH.TOP, color: 0x333355 });
     this.dialog = new DialogBox(this);
     this.refreshHud();
 
@@ -222,6 +224,12 @@ export default class VillageScene extends Phaser.Scene {
     else if (this.params.cleared) { const st = Data.stage(this.params.cleared); this.say(Data.dialogues.stageClear.map(l => Data.fmt(l, { stage: st ? st.name : '숲' }))); }
   }
 
+  // 그레이스 상태·장비·가방·친구를 보는 메뉴
+  openMenu() {
+    if (this.busy || this.leaving || this.moving) return;
+    this.busy = true;
+    openStatusMenu(this, { onClose: () => { this.busy = false; this.hero.setWeapon(GameState.s.player.equip.weapon); this.refreshHud(); } });
+  }
   // 마을 안(움직이는 카메라)에 놓이는 것을 만들 때 감싼다. 감싸지 않으면 화면에 고정된 UI 가 된다.
   world(fn) { const prev = this.worldMode; this.worldMode = true; try { return fn(); } finally { this.worldMode = prev; } }
   tileToWorld(x, y) { return { x: x * TILE + TILE / 2, y: y * TILE + TILE / 2 }; }

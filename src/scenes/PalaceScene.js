@@ -4,7 +4,8 @@ import { W, H, COLORS, wd, PX } from '../config.js';
 import Data from '../systems/Data.js';
 import GameState from '../systems/GameState.js';
 import Audio from '../systems/Audio.js';
-import { txt, panel, UIGroup, DialogBox, toast, soundButton, fadeIn, fadeOut, DEPTH, setupCamera, moneyTag } from '../systems/UI.js';
+import { txt, Button, panel, UIGroup, DialogBox, toast, soundButton, fadeIn, fadeOut, DEPTH, setupCamera, moneyTag } from '../systems/UI.js';
+import { openStatusMenu } from '../systems/Menu.js';
 import { makeCharacter, img, unit, setPose, face } from '../systems/Assets.js';
 
 const CORRUPT_TINT = 0x9a7fd6;
@@ -117,6 +118,12 @@ export default class PalaceScene extends Phaser.Scene {
     const nameT = txt(this, W / 2, 26, R.name, { size: 14, origin: 0.5, color: COLORS.yellow });
     this.tweens.add({ targets: nameT, alpha: 0, delay: 2200, duration: 600 });
     soundButton(this);
+    new Button(this, W - 84, 4, 50, 18, '메뉴', () => {
+      if (this.busy || this.leaving) return;
+      if (this.walkTween) { this.walkTween.stop(); this.walkTween = null; setPose(this.hero, 'idle'); }
+      this.busy = true; this.pending = null;
+      openStatusMenu(this, { onClose: () => { this.busy = false; this.hero.setWeapon(GameState.s.player.equip.weapon); } });
+    }, { depth: DEPTH.TOP, color: 0x333355 });
     this.dialog = new DialogBox(this);
 
     // 바닥을 탭하면 걸어간다

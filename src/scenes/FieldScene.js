@@ -4,6 +4,7 @@ import Data from '../systems/Data.js';
 import GameState from '../systems/GameState.js';
 import Audio from '../systems/Audio.js';
 import { txt, Button, panel, UIGroup, DialogBox, confirm, toast, bar, fadeIn, fadeOut, tween, wait, DEPTH, setupCamera, fix } from '../systems/UI.js';
+import { openStatusMenu } from '../systems/Menu.js';
 import { makeCharacter, buildTilemap, themeOf, img, unit, setPose, fx, face } from '../systems/Assets.js';
 
 const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
@@ -419,6 +420,8 @@ export default class FieldScene extends Phaser.Scene {
     this.menuInfo = g.add(txt(this, 16, 34, '', { size: 11, depth: DEPTH.MODAL, fixed: true, color: '#b8c0e0' }));
     this.menuRows = new UIGroup(); this.menuItems = new UIGroup();
     g.add(new Button(this, W - 70, H - 36, 58, 24, '닫기', () => this.closeMenu(), { depth: DEPTH.MODAL, fixed: true, color: 0x555577 }));
+    // 그레이스 상태·장비·가방·친구 보기 (이 메뉴 위에 열린다)
+    g.add(new Button(this, 132, H - 36, 70, 24, '상태 보기', () => openStatusMenu(this, { fixed: true, depth: DEPTH.MODAL + 20, onClose: () => { this.hero.setWeapon(GameState.s.player.equip.weapon); if (this.menu) this.renderMenu(); } }), { depth: DEPTH.MODAL, fixed: true, color: 0x6a4fb3 }));
     g.add(new Button(this, 16, H - 36, 110, 24, '마을로 돌아가기', async () => {
       const ok = await confirm(this, '마을로 돌아갈까요?', '네', '아니요', { fixed: true });
       if (!ok) return;
