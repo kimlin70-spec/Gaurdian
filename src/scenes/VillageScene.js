@@ -23,10 +23,11 @@ const BUILDINGS = [
 const DECOR = [
   ['f_bench', 10, 12, 2, 1], ['f_bench', 3, 12, 2, 1], ['f_swing', 31, 22, 2, 2], ['f_flowerbed', 22, 18, 2, 1], ['f_flowerbed', 29, 18, 2, 1],
   ['f_birdhouse', 15, 22, 1, 2], ['f_tree_small', 34, 17, 2, 2], ['f_bench', 17, 10, 2, 1], ['f_flowerbed', 22, 10, 2, 1], ['f_pond', 34, 22, 2, 1],
-  ['deco_palace_fountain', 18, 11, 2, 2], // 광장 분수
 ];
 const CHESTS = [{ x: 3, y: 3, item: 'potion_s', count: 2 }, { x: 37, y: 25, item: 'snack', count: 2 }, { x: 2, y: 25, item: 'berry', count: 1 }];
-const SPAWN = { x: 20, y: 13 };
+const SPAWN = { x: 20, y: 14 };
+// 광장 분수 정원 (plaza_fountain_garden.png, 7x5칸 한 장 그림). 걸을 수 있는 칸만 '.', 화단·분수는 '#'.
+const GARDEN = { x: 17, y: 11, rows: ['###.###', '#.....#', '..###.#', '#......', '###.###'] };
 const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 
 // 지도 만들기 (타일 번호는 config.js 의 TILE_LEGEND 와 같음: 0 풀, 1 나무, 3 물, 4 꽃, 8 돌바닥, 10 덤불, 11 흙길)
@@ -129,6 +130,14 @@ export default class VillageScene extends Phaser.Scene {
       this.blocked = new Set(); this.objects = []; this.doors = {}; this.exits = {};
       const block = (x0, y0, w, h) => { for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) this.blocked.add(x + ',' + y); };
 
+      // 광장 분수 정원: 큰 그림 한 장을 바닥에 깔고, 화단과 분수 자리는 못 지나가게
+      if (this.areaId === 'village' && this.textures.exists('plaza_fountain_garden')) {
+        const gx = GARDEN.x * TILE, gy = GARDEN.y * TILE;
+        img(this, gx, gy, 'plaza_fountain_garden').setOrigin(0, 0).setDepth(0.3);
+        GARDEN.rows.forEach((row, j) => row.split('').forEach((ch, i) => { if (ch === '#') this.blocked.add((GARDEN.x + i) + ',' + (GARDEN.y + j)); }));
+        // 분수 윗부분을 한 번 더 그려서, 분수 뒤(위쪽 칸)를 지나갈 때 그레이스가 분수에 가려지게 한다
+        img(this, gx, gy, 'plaza_fountain_garden').setOrigin(0, 0).setCrop(46 * PX, 5 * PX, 29 * PX, 27 * PX).setDepth(wd(gy + 2 * TILE + 2));
+      }
       // 건물
       this.buildings = {};
       for (const b of A.buildings || []) {
@@ -175,7 +184,7 @@ export default class VillageScene extends Phaser.Scene {
       }
       // 안내 동물 반디 (광장)
       if (this.areaId === 'village') {
-        const obj = { type: 'guide', x: 22, y: 12 }, wp = this.tileToWorld(obj.x, obj.y);
+        const obj = { type: 'guide', x: 22, y: 13 }, wp = this.tileToWorld(obj.x, obj.y);
         this.guide = obj.sprite = unit(this, wp.x, wp.y + 8, 'guide').setOrigin(0.5, 1).setDepth(wd(wp.y + 8));
         this.tweens.add({ targets: this.guide, y: this.guide.y - 3, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
         txt(this, wp.x, wp.y + 9, Data.strings.guideAnimal, { size: 11, origin: [0.5, 0], color: COLORS.yellow, depth: DEPTH.WORLD_UI });
