@@ -52,8 +52,59 @@ function makeGrid() {
   for (const c of CHESTS) { set(c.x - 1, c.y - 1, c.x + 1, c.y + 1, 0); }
   set(3, 3, 3, 7, 0); set(37, 24, 37, 25, 0); set(2, 20, 5, 20, 11); set(2, 20, 2, 25, 0); // 상자까지 가는 길
   set(0, 0, GW - 1, 0, 1); set(0, GH - 1, GW - 1, GH - 1, 1); set(0, 0, 0, GH - 1, 1); set(GW - 1, 0, GW - 1, GH - 1, 1);
+  set(20, 1, 20, 7, 11);                       // 북쪽: 왕궁 가는 길
+  set(1, 13, 4, 13, 11);                       // 서쪽: 꽃 언덕 가는 길
+  for (const n of VILLAGE_NPCS) g[n.y][n.x] = 0;
   return g;
 }
+// 왕궁: 위쪽은 돌벽으로 둘러싼 임금님의 방, 아래쪽은 정원 (24 x 18 칸)
+function makePalace() {
+  const w = 24, h = 18, g = Array.from({ length: h }, () => Array(w).fill(0));
+  const set = (x0, y0, x1, y1, t) => { for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) g[y][x] = t; };
+  set(0, 0, w - 1, h - 1, 1); set(1, 1, w - 2, h - 2, 0);
+  set(1, 1, w - 2, 9, 9); set(2, 2, w - 3, 8, 8);            // 돌벽과 돌바닥
+  for (const x of [5, 18]) for (const y of [4, 6]) g[y][x] = 9; // 기둥
+  set(11, 9, 12, 16, 8);                                      // 문과 정원 길
+  for (const [x, y] of [[3, 11], [6, 13], [4, 15], [8, 11], [15, 12], [19, 11], [17, 14], [20, 15], [7, 15], [16, 16]]) g[y][x] = 4;
+  for (const [x, y] of [[2, 12], [9, 13], [14, 14], [21, 13], [5, 16], [18, 16]]) g[y][x] = 1;
+  set(11, 17, 12, 17, 8);
+  return g;
+}
+// 꽃 언덕: 꽃이 가득한 언덕과 작은 호수 (24 x 17 칸)
+function makeHill() {
+  const w = 24, h = 17, g = Array.from({ length: h }, () => Array(w).fill(0));
+  const set = (x0, y0, x1, y1, t) => { for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) g[y][x] = t; };
+  let seed = 777; const rnd = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
+  for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++) { const r = rnd(); g[y][x] = r < 0.3 ? 4 : r < 0.36 ? 1 : r < 0.39 ? 10 : 0; }
+  set(0, 0, w - 1, 0, 1); set(0, h - 1, w - 1, h - 1, 1); set(0, 0, 0, h - 1, 1); set(w - 1, 0, w - 1, h - 1, 1);
+  set(4, 3, 9, 6, 3);                                         // 호수
+  set(3, 2, 10, 2, 0); set(3, 7, 10, 7, 0); set(3, 2, 3, 7, 0); set(10, 2, 10, 7, 0);
+  set(10, 8, 23, 8, 11); set(10, 8, 10, 13, 11); set(4, 13, 18, 13, 11); set(18, 3, 18, 13, 11); // 길
+  set(11, 6, 12, 7, 0); set(16, 2, 20, 4, 0); set(2, 12, 6, 14, 0); set(4, 13, 6, 13, 11); set(18, 3, 18, 4, 11);
+  set(13, 10, 15, 11, 0);
+  return g;
+}
+
+const VILLAGE_NPCS = [
+  { id: 'bluebird', sprite: 'bird', x: 10, y: 9 },
+  { id: 'candle', sprite: 'candle_ghost', x: 12, y: 6 },
+  { id: 'stone', sprite: 'golem', x: 28, y: 6 },
+];
+// 걸어 다닐 수 있는 곳들. exits: 밟으면 다른 곳으로 (to 지역, tx/ty 도착 칸)
+const AREAS = {
+  village: { name: '숲 마을', gw: GW, gh: GH, grid: makeGrid, buildings: BUILDINGS, decor: DECOR, chests: CHESTS, npcs: VILLAGE_NPCS, spawn: SPAWN,
+    exits: [{ x: 20, y: 1, to: 'palace', tx: 11, ty: 15, label: '왕궁' }, { x: 1, y: 13, to: 'hill', tx: 21, ty: 8, label: '꽃 언덕' }] },
+  palace: { name: '숲의 왕궁', gw: 24, gh: 18, grid: makePalace, spawn: { x: 11, y: 15 },
+    decor: [['f_flowerbed', 8, 10, 2, 1], ['f_flowerbed', 14, 10, 2, 1], ['f_bench', 5, 13, 2, 1], ['f_bench', 17, 13, 2, 1]],
+    chests: [{ x: 20, y: 3, item: 'potion_l', count: 1 }],
+    npcs: [{ id: 'king', sprite: 'tree_face', x: 12, y: 3, scale: 2 }, { id: 'guardL', sprite: 'golem', x: 10, y: 10 }, { id: 'guardR', sprite: 'golem', x: 13, y: 10, noLabel: true }],
+    exits: [{ x: 11, y: 17, to: 'village', tx: 20, ty: 2, label: '마을' }, { x: 12, y: 17, to: 'village', tx: 20, ty: 2 }] },
+  hill: { name: '꽃 언덕', gw: 24, gh: 17, grid: makeHill, spawn: { x: 21, y: 8 },
+    decor: [['f_bench', 11, 6, 2, 1], ['f_swing', 13, 10, 2, 2], ['f_tree_small', 16, 2, 2, 2]],
+    chests: [{ x: 3, y: 13, item: 'honey', count: 1 }, { x: 19, y: 3, item: 'petal', count: 3 }],
+    npcs: [{ id: 'firefly', sprite: 'firefly', x: 12, y: 12 }, { id: 'turtle', sprite: 'turtle', x: 6, y: 8 }],
+    exits: [{ x: 23, y: 8, to: 'village', tx: 2, ty: 13, label: '마을' }] },
+};
 
 export default class VillageScene extends Phaser.Scene {
   constructor() { super('Village'); }
@@ -62,7 +113,10 @@ export default class VillageScene extends Phaser.Scene {
   create() {
     // 카메라 두 대: 아래는 그레이스를 따라다니는 마을 카메라, 위는 움직이지 않는 화면(UI) 카메라
     setupCamera(this);
-    const mapW = GW * TILE, mapH = GH * TILE;
+    this.areaId = AREAS[this.params.area] ? this.params.area : 'village';
+    const A = this.area = AREAS[this.areaId];
+    this.gw = A.gw; this.gh = A.gh;
+    const mapW = this.gw * TILE, mapH = this.gh * TILE;
     this.wcam = this.cameras.add(0, 0);
     this.wcam.setZoom(PX).setRoundPixels(true).setBounds(0, 0, mapW, mapH);
     const cams = this.cameras.cameras; cams.splice(cams.indexOf(this.wcam), 1); cams.unshift(this.wcam);
@@ -82,14 +136,18 @@ export default class VillageScene extends Phaser.Scene {
 
     this.world(() => {
       // 바닥
-      this.grid = makeGrid();
+      this.grid = A.grid();
+      // 주민·상자·꾸밈 자리에 나무가 겹치지 않게 비운다
+      const clear = (x, y) => { if (SOLID_TILES.has(this.grid[y][x]) || this.grid[y][x] === 4) this.grid[y][x] = 0; };
+      for (const n of [...(A.npcs || []), ...(A.chests || [])]) clear(n.x, n.y);
+      for (const [, x, y, w, h] of A.decor || []) for (let yy = y - 1; yy < y + h; yy++) for (let xx = x; xx < x + w; xx++) clear(xx, yy);
       buildTilemap(this, this.grid, 0, 0);
-      this.blocked = new Set(); this.objects = []; this.doors = {};
+      this.blocked = new Set(); this.objects = []; this.doors = {}; this.exits = {};
       const block = (x0, y0, w, h) => { for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) this.blocked.add(x + ',' + y); };
 
       // 건물
       this.buildings = {};
-      for (const b of BUILDINGS) {
+      for (const b of A.buildings || []) {
         const x = b.bx * TILE + TILE / 2, y = (b.by + 1) * TILE;
         const im = img(this, x, y, 'bld_' + b.key).setOrigin(0.5, 1).setDepth(wd(y));
         im.setInteractive({ useHandCursor: true });
@@ -100,21 +158,39 @@ export default class VillageScene extends Phaser.Scene {
         this.doors[b.bx + ',' + (b.by + 1)] = b.key;
       }
       // 꾸밈
-      for (const [key, x, y, w, h] of DECOR) {
+      for (const [key, x, y, w, h] of A.decor || []) {
         if (!this.textures.exists(key)) continue;
         const wy = (y + h) * TILE;
         img(this, x * TILE, wy, key).setOrigin(0, 1).setDepth(wd(wy - 1));
         block(x, y, w, h);
       }
       // 보물 상자
-      for (const c of CHESTS) {
-        const key = `village:${c.x},${c.y}`, wp = this.tileToWorld(c.x, c.y);
+      for (const c of A.chests || []) {
+        const key = `${this.areaId}:${c.x},${c.y}`, wp = this.tileToWorld(c.x, c.y);
         const obj = { ...c, type: 'chest', key, opened: !!s.flags.chests[key] };
         obj.sprite = img(this, wp.x, wp.y, obj.opened ? 'chest_open' : 'chest').setDepth(wd(wp.y));
         this.blocked.add(c.x + ',' + c.y); this.makeTappable(obj.sprite, () => this.approach(obj)); this.objects.push(obj);
       }
+      // 주민
+      for (const n of A.npcs || []) {
+        if (!this.textures.exists(n.sprite)) continue;
+        const obj = { ...n, type: 'npc' }, wp = this.tileToWorld(n.x, n.y), info = (Data.dialogues.villagers || {})[n.id] || {};
+        obj.sprite = unit(this, wp.x, wp.y + 8, n.sprite).setOrigin(0.5, 1).setDepth(wd(wp.y + 8));
+        if (n.scale) obj.sprite.setScale(n.scale / PX);
+        this.tweens.add({ targets: obj.sprite, y: obj.sprite.y - 2, duration: 700, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+        if (!n.noLabel) txt(this, wp.x, wp.y + 9, info.name || '', { size: 11, origin: [0.5, 0], color: COLORS.yellow, depth: DEPTH.WORLD_UI });
+        this.blocked.add(n.x + ',' + n.y); this.makeTappable(obj.sprite, () => this.approach(obj)); this.objects.push(obj);
+      }
+      // 다른 곳으로 가는 길
+      for (const e of A.exits || []) {
+        const wp = this.tileToWorld(e.x, e.y);
+        const g = this.add.rectangle(wp.x, wp.y, TILE - 2, TILE - 2, 0x5aa9ff, 0.35).setDepth(0.5);
+        this.tweens.add({ targets: g, alpha: 0.75, duration: 600, yoyo: true, repeat: -1 });
+        if (e.label) txt(this, Phaser.Math.Clamp(wp.x, 20, mapW - 20), Phaser.Math.Clamp(wp.y - 10, 8, mapH - 22), e.label + ' ▶', { size: 11, origin: 0.5, depth: DEPTH.WORLD_UI, color: COLORS.yellow });
+        this.exits[e.x + ',' + e.y] = e;
+      }
       // 안내 동물 반디 (광장)
-      {
+      if (this.areaId === 'village') {
         const obj = { type: 'guide', x: 22, y: 12 }, wp = this.tileToWorld(obj.x, obj.y);
         this.guide = obj.sprite = unit(this, wp.x, wp.y + 8, 'guide').setOrigin(0.5, 1).setDepth(wd(wp.y + 8));
         this.tweens.add({ targets: this.guide, y: this.guide.y - 3, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
@@ -122,11 +198,12 @@ export default class VillageScene extends Phaser.Scene {
         this.blocked.add(obj.x + ',' + obj.y); this.makeTappable(obj.sprite, () => this.approach(obj)); this.objects.push(obj);
       }
       // 쉼터 풀밭: 함께 다니지 않는 친구들이 놀고 있어요
-      this.spawnPasture();
+      if (this.areaId === 'village') this.spawnPasture();
 
       // 주인공
       const at = this.params.openAnimal ? 'shelter' : this.params.wokeAtInn ? 'inn' : this.params.at;
-      const start = this.buildings[at] ? this.buildings[at].door : [SPAWN.x, SPAWN.y];
+      const P = this.params;
+      const start = Number.isInteger(P.x) && Number.isInteger(P.y) ? [P.x, P.y] : this.buildings[at] ? this.buildings[at].door : [A.spawn.x, A.spawn.y];
       this.tx = start[0]; this.ty = start[1];
       const wp = this.tileToWorld(this.tx, this.ty);
       this.hero = makeCharacter(this, wp.x, wp.y + 8, s.player.look); this.hero.setDepth(wd(this.hero.y));
@@ -139,7 +216,7 @@ export default class VillageScene extends Phaser.Scene {
     this.hud = new UIGroup();
     this.hud.add(panel(this, 2, 2, 150, 18, { color: 0x000000, alpha: 0.55, border: false }));
     this.hudText = this.hud.add(txt(this, 6, 4, '', { size: 11 }));
-    this.tip = txt(this, W / 2, H - 14, '가고 싶은 곳을 탭하세요', { size: 11, origin: 0.5, color: '#fff4d6' });
+    this.tip = txt(this, W / 2, H - 14, this.areaId === 'village' ? '가고 싶은 곳을 탭하세요' : A.name, { size: 11, origin: 0.5, color: '#fff4d6' });
     this.tweens.add({ targets: this.tip, alpha: 0, delay: 3500, duration: 800 });
     soundButton(this);
     this.dialog = new DialogBox(this);
@@ -165,7 +242,7 @@ export default class VillageScene extends Phaser.Scene {
   // 마을 안(움직이는 카메라)에 놓이는 것을 만들 때 감싼다. 감싸지 않으면 화면에 고정된 UI 가 된다.
   world(fn) { const prev = this.worldMode; this.worldMode = true; try { return fn(); } finally { this.worldMode = prev; } }
   tileToWorld(x, y) { return { x: x * TILE + TILE / 2, y: y * TILE + TILE / 2 }; }
-  inBounds(x, y) { return x >= 0 && y >= 0 && x < GW && y < GH; }
+  inBounds(x, y) { return x >= 0 && y >= 0 && x < this.gw && y < this.gh; }
   walkable(x, y) { return this.inBounds(x, y) && !SOLID_TILES.has(this.grid[y][x]) && !this.blocked.has(x + ',' + y); }
   makeTappable(sprite, fn) {
     sprite.setInteractive({ useHandCursor: true, hitArea: new Phaser.Geom.Rectangle(-6 * PX, -6 * PX, sprite.width + 12 * PX, sprite.height + 12 * PX), hitAreaCallback: Phaser.Geom.Rectangle.Contains });
@@ -304,8 +381,19 @@ export default class VillageScene extends Phaser.Scene {
     const wp = this.tileToWorld(nx, ny);
     this.tweens.add({ targets: this.hero, x: wp.x, y: wp.y + 8, duration: 150, ease: 'Linear',
       onUpdate: () => { this.hero.setDepth(wd(this.hero.y)); },
-      onComplete: () => { this.tx = nx; this.ty = ny; this.stepNext(); } });
+      onComplete: () => {
+        this.tx = nx; this.ty = ny;
+        const ex = this.exits[nx + ',' + ny];
+        if (ex) { this.path = []; this.moving = false; return this.goArea(ex); }
+        this.stepNext();
+      } });
     setPose(this.hero, 'move');
+  }
+  async goArea(ex) {
+    if (this.leaving) return; this.leaving = true;
+    GameState.save();
+    await fadeOut(this, 250);
+    this.scene.start('Village', { area: ex.to, x: ex.tx, y: ex.ty });
   }
   arrive() {
     const p = this.pending; this.pending = null;
@@ -313,9 +401,31 @@ export default class VillageScene extends Phaser.Scene {
     if (p.door && this.doors[this.tx + ',' + this.ty] === p.door) return this.openFacility(p.door);
     if (p.obj && Math.abs(p.obj.x - this.tx) + Math.abs(p.obj.y - this.ty) === 1) this.interact(p.obj);
   }
+  // 주민과 이야기: 탭할 때마다 다음 말. 임금님은 숲을 깨끗하게 할 때마다 선물을 준다.
+  async talk(obj) {
+    if (this.busy) return;
+    const s = GameState.s, info = (Data.dialogues.villagers || {})[obj.id] || { lines: ['...'] };
+    const lines = [];
+    if (obj.id === 'king') {
+      s.flags.kingGift = s.flags.kingGift || {};
+      const fresh = Data.stageList().filter(st => s.flags.cleared[st.id] && !s.flags.kingGift[st.id]);
+      if (fresh.length) {
+        for (const st of fresh) { s.flags.kingGift[st.id] = true; s.stardust += 60; s.shards += 1; lines.push(Data.fmt(info.gift, { stage: st.name })); }
+        lines.push('\u0000' + Data.fmt(info.giftGot, { n: fresh.length * 60, m: fresh.length }));
+        Audio.sfx('levelup'); GameState.save(); this.refreshHud();
+      }
+    }
+    if (!lines.length) {
+      s.flags.talk = s.flags.talk || {};
+      const i = (s.flags.talk[obj.id] || 0) % info.lines.length; s.flags.talk[obj.id] = i + 1;
+      lines.push(Data.fmt(info.lines[i]));
+    }
+    await this.say(lines.map(l => l[0] === '\u0000' ? l.slice(1) : `${info.name}: ${l}`)); // 알림 줄에는 이름을 붙이지 않는다
+  }
   interact(obj) {
     face(this.hero, obj.x - this.tx, obj.y - this.ty);
     if (obj.type === 'guide') return this.guideHint();
+    if (obj.type === 'npc') return this.talk(obj);
     if (obj.type === 'chest') {
       if (obj.opened) { toast(this, '빈 상자예요.'); return; }
       obj.opened = true; GameState.s.flags.chests[obj.key] = true;
