@@ -32,3 +32,8 @@ python3 tools/build_assets.py <푼 묶음 폴더>
 - 스테이지 3~5: `tiles_swamp/fire/castle`, 새 동물·적·보스, `king`, `king_pure`, 무기 3종
 - `item_*` 아이콘, `emote_*` 말풍선
 - `reference_for_ai/` 는 그림을 만들 때 AI 에게 준 지시문과 위치 견본입니다.
+
+## 화면 구성 그림 (`ui_*.png`, 확장 묶음 2)
+- `ui_panel_dark`(창), `ui_button*`(버튼), `ui_dialog`(대화창)는 9분할로 늘려 씁니다 (모서리 8픽셀 고정). 연결 코드는 `src/systems/UI.js` 의 `slice9`, `BUTTON_SKINS`.
+- 버튼 색 → 그림: 파랑(기본), 초록(좋은 선택), 분홍(정화), 주황, 보라. 뒤로·닫기는 파란 버튼을 차분하게 물들여 씁니다. 목록 줄은 단색 그대로입니다.
+- 아직 연결하지 않은 그림: `ui_panel`(크림색 창), `ui_bar_*`, `ui_tab_*`, `ui_slot*`, 하트·별·역할·상태 아이콘, `icon_*`, `ui_lock`, `ui_close`, `ui_arrow_next`.

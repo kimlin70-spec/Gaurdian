@@ -29,7 +29,30 @@ export function txt(scene, x, y, str, opts = {}) {
   return t;
 }
 
+// ---- 그림 UI (assets/ui_*.png, 9분할) ----
+// 모서리 8픽셀(논리)은 그대로 두고 가운데만 늘린다. 그림이 없거나 너무 작으면 null → 예전처럼 단색으로 그린다.
+const SLICE = 8;
+export function slice9(scene, key, x, y, w, h) {
+  if (w < SLICE * 2 || h < SLICE * 2 || !scene.textures.exists(key) || scene.game.renderer.type !== Phaser.WEBGL) return null;
+  const c = SLICE * PX;
+  return scene.add.nineslice(x, y, key, undefined, Math.round(w * PX), Math.round(h * PX), c, c, c, c).setOrigin(0, 0).setScale(1 / PX);
+}
+// 버튼 색 → 버튼 그림. 목록 줄처럼 그 밖의 색은 단색 그대로.
+const BUTTON_SKINS = {
+  [COLORS.button]: ['ui_button'], 0x4a90e2: ['ui_button'], 0x3d6a9a: ['ui_button'],
+  [COLORS.ok]: ['ui_button_green'], [COLORS.purify]: ['ui_button_pink'], 0xd6679a: ['ui_button_pink'],
+  0xe08a3c: ['ui_button_orange'], 0x6a4fb3: ['ui_button_purple'],
+  0x555577: ['ui_button', 0xb4b4c8], 0x333355: ['ui_button', 0x9a9ab4], // 뒤로·닫기: 차분한 색
+};
+const PRESS_TINT = 0xd1d1d1; // 눌렀을 때 0.82배 어둡게
+const mulTint = (a, b) => (((a >> 16) * (b >> 16) / 255) << 16) | ((((a >> 8) & 255) * ((b >> 8) & 255) / 255) << 8) | ((a & 255) * (b & 255) / 255);
+
 export function panel(scene, x, y, w, h, opts = {}) {
+  // 기본 남색 창은 그림으로 (투명도·색을 따로 준 띠는 예전처럼)
+  if (opts.alpha === undefined && opts.border !== false && (opts.color === undefined || opts.color === 0x1e2040 || opts.color === COLORS.panel)) {
+    const n = slice9(scene, 'ui_panel_dark', x, y, w, h);
+    if (n) { if (opts.fixed) fix(n); n.setDepth(opts.depth ?? DEPTH.UI); return n; }
+  }
   const g = scene.add.graphics();
   g.fillStyle(opts.color ?? COLORS.panel, opts.alpha ?? 0.95);
   g.fillRoundedRect(x, y, w, h, opts.radius ?? 4);
@@ -45,18 +68,39 @@ export class Button {
     this.color = opts.color ?? COLORS.button;
     const depth = opts.depth ?? DEPTH.UI;
     this.glow = scene.add.rectangle(x + w / 2, y + h / 2, w + 4, h + 4, COLORS.gold, 0).setDepth(depth - 1);
-    this.bg = scene.add.rectangle(x + w / 2, y + h / 2, w, h, this.color).setStrokeStyle(1, COLORS.border).setDepth(depth);
+    this.w = w; this.h = h; this.down = false;
+    // 그림 버튼(9분할) 또는 단색 버튼
+    this.skin = null;
+    if (BUTTON_SKINS[this.color]) { const n = slice9(scene, BUTTON_SKINS[this.color][0], x, y, w, h); if (n) this.skin = n.setOrigin(0.5, 0.5).setPosition(x + w / 2, y + h / 2).setDepth(depth); }
+    this.bg = this.skin || scene.add.rectangle(x + w / 2, y + h / 2, w, h, this.color).setStrokeStyle(1, COLORS.border).setDepth(depth);
     this.label = txt(scene, x + w / 2, y + h / 2, label, { size: opts.size || 11, origin: 0.5, depth: depth + 1, color: opts.textColor, align: 'center' });
     this.fixed = !!opts.fixed;
     if (opts.fixed) { fix(this.glow); fix(this.bg); fix(this.label); }
     this.bg.setInteractive({ useHandCursor: true });
-    this.bg.on('pointerdown', () => { if (!this.enabled) return; this.bg.setFillStyle(COLORS.buttonDown); this.bg.setScale(0.96); this.label.setScale(0.96); });
-    const release = () => { this.bg.setFillStyle(this.enabled ? this.color : COLORS.buttonDisabled); this.bg.setScale(1); this.label.setScale(1); };
+    this.bg.on('pointerdown', () => {
+      if (!this.enabled) return;
+      if (this.skin) { if (!this.down) { this.down = true; this.label.y += 1; } this.paint(); }
+      else { this.bg.setFillStyle(COLORS.buttonDown); this.bg.setScale(0.96); this.label.setScale(0.96); }
+    });
+    const release = () => {
+      if (this.skin) { if (this.down) { this.down = false; this.label.y -= 1; } this.paint(); }
+      else { this.bg.setFillStyle(this.enabled ? this.color : COLORS.buttonDisabled); this.bg.setScale(1); this.label.setScale(1); }
+    };
     this.bg.on('pointerout', release);
     this.bg.on('pointerup', () => { release(); if (!this.enabled) return; Audio.sfx('tap'); if (this.onTap) this.onTap(this); });
     this.objs = [this.glow, this.bg, this.label];
+    this.paint();
   }
-  setEnabled(b) { this.enabled = b; this.bg.setFillStyle(b ? this.color : COLORS.buttonDisabled); this.label.setAlpha(b ? 1 : 0.5); if (!b) this.setGlow(false); return this; }
+  // 그림 버튼의 상태(보통/눌림/꺼짐)에 맞는 그림과 색
+  paint() {
+    if (!this.skin) return;
+    const [key, tint] = BUTTON_SKINS[this.color] || ['ui_button'];
+    if (!this.enabled) { this.skin.setTexture('ui_button_off'); this.skin.tint = 0xffffff; return; }
+    if (this.down && key === 'ui_button' && !tint) { this.skin.setTexture('ui_button_down'); this.skin.tint = 0xffffff; return; }
+    this.skin.setTexture(key);
+    this.skin.tint = this.down ? mulTint(tint ?? 0xffffff, PRESS_TINT) : (tint ?? 0xffffff);
+  }
+  setEnabled(b) { this.enabled = b; if (this.skin) this.paint(); else this.bg.setFillStyle(b ? this.color : COLORS.buttonDisabled); this.label.setAlpha(b ? 1 : 0.5); if (!b) this.setGlow(false); return this; }
   setGlow(b) {
     if (this.glowTween) { this.glowTween.stop(); this.glowTween = null; }
     if (b) { this.glow.setFillStyle(COLORS.gold, 0.9); this.glowTween = this.scene.tweens.add({ targets: this.glow, alpha: { from: 1, to: 0.3 }, duration: 450, yoyo: true, repeat: -1 }); }
@@ -64,9 +108,9 @@ export class Button {
     return this;
   }
   setLabel(s) { this.label.setText(s); return this; }
-  setColor(c) { this.color = c; if (this.enabled) this.bg.setFillStyle(c); return this; }
+  setColor(c) { this.color = c; if (this.skin) this.paint(); else if (this.enabled) this.bg.setFillStyle(c); return this; }
   setVisible(v) { this.objs.forEach(o => o.setVisible(v)); return this; }
-  setPosition(x, y) { const w = this.bg.width, h = this.bg.height, ox = this.fixed ? FIX_X : 0, oy = this.fixed ? FIX_Y : 0; this.glow.setPosition(x + w / 2 + ox, y + h / 2 + oy); this.bg.setPosition(x + w / 2 + ox, y + h / 2 + oy); this.label.setPosition(x + w / 2 + ox, y + h / 2 + oy); return this; }
+  setPosition(x, y) { const w = this.w, h = this.h, ox = this.fixed ? FIX_X : 0, oy = this.fixed ? FIX_Y : 0; this.glow.setPosition(x + w / 2 + ox, y + h / 2 + oy); this.bg.setPosition(x + w / 2 + ox, y + h / 2 + oy); this.label.setPosition(x + w / 2 + ox, y + h / 2 + oy); return this; }
   destroy() { if (this.glowTween) this.glowTween.stop(); this.objs.forEach(o => o.destroy()); }
 }
 
@@ -90,9 +134,13 @@ export class DialogBox {
       this.open = true;
       const sc = this.scene, g = new UIGroup(); this.group = g;
       const h = 58, y = H - h - 4;
-      g.add(panel(sc, 4, y, W - 8, h, { depth: DEPTH.DIALOG, fixed: this.opts.fixed, color: 0x1e2040, alpha: 1 }));
-      const body = g.add(txt(sc, 12, y + 8, '', { size: 11, wrap: W - 28, depth: DEPTH.DIALOG + 1, fixed: this.opts.fixed, lineSpacing: 3 }));
-      const more = g.add(txt(sc, W - 14, y + h - 12, '▼', { size: 11, origin: 0.5, depth: DEPTH.DIALOG + 1, fixed: this.opts.fixed, color: COLORS.yellow }));
+      // 꽃과 덩굴 대화창 그림(크림색 종이 + 갈색 글자). 그림이 없으면 예전 남색 창.
+      const paper = slice9(sc, 'ui_dialog', 4, y, W - 8, h);
+      if (paper) { if (this.opts.fixed) fix(paper); g.add(paper.setDepth(DEPTH.DIALOG)); }
+      else g.add(panel(sc, 4, y, W - 8, h, { depth: DEPTH.DIALOG, fixed: this.opts.fixed, color: 0x1e2040, alpha: 1 }));
+      const ink = paper ? { color: '#3b251b', stroke: false } : {};
+      const body = g.add(txt(sc, 14, y + 9, '', { size: 11, wrap: W - 32, depth: DEPTH.DIALOG + 1, fixed: this.opts.fixed, lineSpacing: 3, ...ink }));
+      const more = g.add(txt(sc, W - 16, y + h - 13, '▼', { size: 11, origin: 0.5, depth: DEPTH.DIALOG + 1, fixed: this.opts.fixed, color: paper ? '#b0562a' : COLORS.yellow, stroke: !paper }));
       sc.tweens.add({ targets: more, y: more.y + 2, duration: 400, yoyo: true, repeat: -1 });
       // 화면 전체를 덮는 터치 영역
       const zone = g.add(sc.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.001).setDepth(DEPTH.DIALOG - 1).setInteractive());

@@ -331,6 +331,14 @@
    "type": "image",
    "file": "assets/hair_2_side.png"
   },
+  "icon_shard": {
+   "type": "image",
+   "file": "assets/icon_shard.png"
+  },
+  "icon_stardust": {
+   "type": "image",
+   "file": "assets/icon_stardust.png"
+  },
   "item_bandage": {
    "type": "image",
    "file": "assets/item_bandage.png"
@@ -557,6 +565,18 @@
    "type": "image",
    "file": "assets/rock_swamp.png"
   },
+  "role_attack": {
+   "type": "image",
+   "file": "assets/role_attack.png"
+  },
+  "role_heal": {
+   "type": "image",
+   "file": "assets/role_heal.png"
+  },
+  "role_tank": {
+   "type": "image",
+   "file": "assets/role_tank.png"
+  },
   "rubble_castle": {
    "type": "image",
    "file": "assets/rubble_castle.png"
@@ -588,6 +608,22 @@
    "file": "assets/squirrel_anim.png",
    "frameWidth": 64,
    "frameHeight": 64
+  },
+  "st_dirty": {
+   "type": "image",
+   "file": "assets/st_dirty.png"
+  },
+  "st_happy": {
+   "type": "image",
+   "file": "assets/st_happy.png"
+  },
+  "st_sick": {
+   "type": "image",
+   "file": "assets/st_sick.png"
+  },
+  "st_sulk": {
+   "type": "image",
+   "file": "assets/st_sulk.png"
   },
   "star": {
    "type": "image",
@@ -680,6 +716,106 @@
   "turtle": {
    "type": "image",
    "file": "assets/turtle.png"
+  },
+  "ui_arrow_next": {
+   "type": "image",
+   "file": "assets/ui_arrow_next.png"
+  },
+  "ui_bar_frame": {
+   "type": "image",
+   "file": "assets/ui_bar_frame.png"
+  },
+  "ui_bar_hp": {
+   "type": "image",
+   "file": "assets/ui_bar_hp.png"
+  },
+  "ui_bar_hp_low": {
+   "type": "image",
+   "file": "assets/ui_bar_hp_low.png"
+  },
+  "ui_bar_mp": {
+   "type": "image",
+   "file": "assets/ui_bar_mp.png"
+  },
+  "ui_button": {
+   "type": "image",
+   "file": "assets/ui_button.png"
+  },
+  "ui_button_down": {
+   "type": "image",
+   "file": "assets/ui_button_down.png"
+  },
+  "ui_button_green": {
+   "type": "image",
+   "file": "assets/ui_button_green.png"
+  },
+  "ui_button_off": {
+   "type": "image",
+   "file": "assets/ui_button_off.png"
+  },
+  "ui_button_orange": {
+   "type": "image",
+   "file": "assets/ui_button_orange.png"
+  },
+  "ui_button_pink": {
+   "type": "image",
+   "file": "assets/ui_button_pink.png"
+  },
+  "ui_button_purple": {
+   "type": "image",
+   "file": "assets/ui_button_purple.png"
+  },
+  "ui_close": {
+   "type": "image",
+   "file": "assets/ui_close.png"
+  },
+  "ui_dialog": {
+   "type": "image",
+   "file": "assets/ui_dialog.png"
+  },
+  "ui_heart_empty": {
+   "type": "image",
+   "file": "assets/ui_heart_empty.png"
+  },
+  "ui_heart_full": {
+   "type": "image",
+   "file": "assets/ui_heart_full.png"
+  },
+  "ui_lock": {
+   "type": "image",
+   "file": "assets/ui_lock.png"
+  },
+  "ui_panel": {
+   "type": "image",
+   "file": "assets/ui_panel.png"
+  },
+  "ui_panel_dark": {
+   "type": "image",
+   "file": "assets/ui_panel_dark.png"
+  },
+  "ui_slot": {
+   "type": "image",
+   "file": "assets/ui_slot.png"
+  },
+  "ui_slot_selected": {
+   "type": "image",
+   "file": "assets/ui_slot_selected.png"
+  },
+  "ui_star_empty": {
+   "type": "image",
+   "file": "assets/ui_star_empty.png"
+  },
+  "ui_star_full": {
+   "type": "image",
+   "file": "assets/ui_star_full.png"
+  },
+  "ui_tab_off": {
+   "type": "image",
+   "file": "assets/ui_tab_off.png"
+  },
+  "ui_tab_on": {
+   "type": "image",
+   "file": "assets/ui_tab_on.png"
   },
   "vine": {
    "type": "image",
